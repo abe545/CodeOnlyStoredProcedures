@@ -1,0 +1,26 @@
+<#@ template language="C#" debug="True" #>
+<#@ output extension="generated.cs" #>
+<#@ include file="T4Toolbox.tt" #>
+<#@ include file="StoredProcedureTemplate.tt" #>
+using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Data;
+using System.Data.Common;
+using System.Data.SqlClient;
+using System.Diagnostics.Contracts;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace CodeOnlyStoredProcedure
+{
+<#
+	for (int i = 1; i < 8; ++i)
+	{
+		StoredProcedureTemplate template = new StoredProcedureTemplate();
+		template.TypeCount = i;
+		template.Render();
+	}
+#>
+}

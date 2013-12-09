@@ -1,0 +1,160 @@
+﻿<#+
+public class StoredProcedureTemplate : Template
+{
+	public int TypeCount;
+
+	private void GetTypes(int count)
+	{
+		if (count == 0) return;
+
+		Write("<");
+		for (int i = 1; i <= count; ++i)
+		{
+			if (i > 1)
+				Write(", ");
+			Write("T" + i);
+		}
+		Write(">");
+	}
+
+	private void CreateCachedFields()
+	{
+		PushIndent("\t\t");
+		for (int i = 1; i <= TypeCount; ++i)
+			WriteLine("private static readonly Type t" + i + " = typeof(T" + i + ");");
+		PopIndent();
+	}
+
+	private void GetResults()
+	{
+		if (TypeCount > 1)
+			Write("Tuple<");
+
+		for (int i = 1; i <= TypeCount; ++i)
+		{
+			if (i > 1)
+				Write(", ");
+			Write("IEnumerable<T" + i + ">");
+		}
+
+		if (TypeCount > 1)
+			Write(">");
+	}
+
+	public void GetCachedFields()
+	{
+		for (int i = 1; i <= TypeCount; ++i)
+		{
+			if (i > 1)
+				Write(", ");
+			Write("t" + i);
+		}
+	}
+
+	public void ParseResults()
+	{
+		if (TypeCount > 1)
+			Write("Tuple.Create(");
+
+		for (int i = 1; i <= TypeCount; ++i)
+		{
+			if (i > 1)
+				Write(", ");
+
+			Write("(IEnumerable<T" + i + ">)results[t" + i + "]");
+		}
+
+		if (TypeCount > 1)
+			Write(")");
+
+		Write(";");
+	}
+
+    public override string TransformText()
+    {
+#>
+	#region StoredProcedure<#+ GetTypes(TypeCount); #>
+
+	public class StoredProcedure<#+ GetTypes(TypeCount); #> : StoredProcedure<#+ GetTypes(TypeCount - 1); #>
+
+	{
+<#+ CreateCachedFields(); #>
+
+		public StoredProcedure(string name) : base(name)
+		{ 
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+		}
+
+		public StoredProcedure(string schema, string name) : base(schema, name)
+		{ 
+            Contract.Requires(!string.IsNullOrWhiteSpace(schema));
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+		}
+		
+		internal StoredProcedure(StoredProcedure toClone)
+			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.OutputParameterSetters) 
+		{ 
+			Contract.Requires(toClone != null);
+		}
+		
+		protected StoredProcedure(string schema, 
+            string name,
+            ImmutableList<SqlParameter> parameters,
+            ImmutableDictionary<string, Action<object>> outputParameterSetters)
+			: base(schema, name, parameters, outputParameterSetters)
+        {
+		}
+		
+		public new <#+ GetResults(); #> Execute(IDbConnection connection, int? timeout = null)
+		{
+			Contract.Requires(connection != null);
+			Contract.Ensures(Contract.Result<<#+ GetResults(); #>>() != null);
+
+			return Execute(connection, CancellationToken.None, timeout);
+		}
+
+		<#+ GetResults(); #> Execute(IDbConnection connection, CancellationToken token, int? timeout = null)
+		{
+			Contract.Requires(connection != null);
+			Contract.Ensures(Contract.Result<<#+ GetResults(); #>>() != null);
+
+			var results = connection.Execute(FullName,
+				token, 
+				timeout,
+				Parameters,
+				new[] { <#+ GetCachedFields(); #> });
+			TransferOutputParameters();
+
+			return <#+ ParseResults(); #> 
+		}
+
+		public new Task<<#+ GetResults(); #>> ExecuteAsync(IDbConnection connection, int? timeout = null)
+		{
+			Contract.Requires(connection != null);
+			Contract.Ensures(Contract.Result<Task<<#+ GetResults(); #>>>() != null);
+
+			return ExecuteAsync(connection, CancellationToken.None, timeout);
+		}
+
+		public new Task<<#+ GetResults(); #>> ExecuteAsync(IDbConnection connection, CancellationToken token, int? timeout = null)
+		{
+			Contract.Requires(connection != null);
+			Contract.Ensures(Contract.Result<Task<<#+ GetResults(); #>>>() != null);
+
+			return Task.Run(() => Execute(connection, token, timeout));
+		}
+
+		protected override StoredProcedure CloneCore(ImmutableList<SqlParameter> parameters,
+            ImmutableDictionary<string, Action<object>> outputParameterSetters)
+        {
+            return new StoredProcedure<#+ GetTypes(TypeCount); #>(Schema, Name, parameters, outputParameterSetters);
+        }
+	}
+	#endregion
+
+
+<#+
+        return this.GenerationEnvironment.ToString();
+    }
+}
+#>

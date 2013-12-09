@@ -1,0 +1,25 @@
+﻿<#@ template language="C#" debug="True" #>
+<#@ output extension="generated.cs" #>
+<#@ include file="T4Toolbox.tt" #>
+<#@ include file="StoredProcedureExtensions.WithResults.tt" #>
+using System;
+using System.Data;
+using System.Data.SqlClient;
+
+namespace CodeOnlyStoredProcedure
+{
+    public static partial class StoredProcedureExtensions
+    {
+		#region WithResults
+		<#  
+			for (int i = 1; i < 8; ++i)
+			{
+				StoredProcedureExtensionsWithResultsTemplate template = 
+					new StoredProcedureExtensionsWithResultsTemplate();
+				template.TypeCount = i;
+				template.Render();
+			}
+		#>
+		#endregion
+	}
+}

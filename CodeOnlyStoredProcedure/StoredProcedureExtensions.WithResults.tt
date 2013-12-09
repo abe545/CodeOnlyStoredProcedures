@@ -1,0 +1,33 @@
+﻿<#+
+public class StoredProcedureExtensionsWithResultsTemplate : Template
+{
+	public int TypeCount;
+
+	private void GetTypes(int count)
+	{
+		if (count == 0) return;
+
+		Write("<");
+		for (int i = 1; i <= count; ++i)
+		{
+			if (i > 1)
+				Write(", ");
+			Write("T" + i);
+		}
+		Write(">");
+	}
+
+	public override string TransformText()
+	{
+#>
+
+		public static StoredProcedure<#+ GetTypes(TypeCount); #> WithResults<#+ GetTypes(TypeCount); #>(this StoredProcedure sp)
+		{
+			return new StoredProcedure<#+ GetTypes(TypeCount); #>(sp);
+		}
+
+<#+
+        return this.GenerationEnvironment.ToString();
+	}
+}
+#>
