@@ -57,7 +57,6 @@
     <Compile Include="TableValuedParameterAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
     <None Include="StoredProcedure.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>StoredProcedure.generated.cs</LastGenOutput>
