@@ -35,8 +35,8 @@ namespace CodeOnlyStoredProcedure
 		
 		protected StoredProcedure(string schema, 
             string name,
-            ImmutableList<SqlParameter> parameters,
-            ImmutableDictionary<string, Action<object>> outputParameterSetters)
+            IEnumerable<SqlParameter> parameters,
+            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
 			: base(schema, name, parameters, outputParameterSetters)
         {
 		}
@@ -80,8 +80,8 @@ namespace CodeOnlyStoredProcedure
 			return Task.Run(() => Execute(connection, token, timeout));
 		}
 
-		protected override StoredProcedure CloneCore(ImmutableList<SqlParameter> parameters,
-            ImmutableDictionary<string, Action<object>> outputParameterSetters)
+		protected override StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,
+            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
         {
             return new StoredProcedure<T1>(Schema, Name, parameters, outputParameterSetters);
         }
@@ -113,8 +113,8 @@ namespace CodeOnlyStoredProcedure
 		
 		protected StoredProcedure(string schema, 
             string name,
-            ImmutableList<SqlParameter> parameters,
-            ImmutableDictionary<string, Action<object>> outputParameterSetters)
+            IEnumerable<SqlParameter> parameters,
+            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
 			: base(schema, name, parameters, outputParameterSetters)
         {
 		}
@@ -158,8 +158,8 @@ namespace CodeOnlyStoredProcedure
 			return Task.Run(() => Execute(connection, token, timeout));
 		}
 
-		protected override StoredProcedure CloneCore(ImmutableList<SqlParameter> parameters,
-            ImmutableDictionary<string, Action<object>> outputParameterSetters)
+		protected override StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,
+            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
         {
             return new StoredProcedure<T1, T2>(Schema, Name, parameters, outputParameterSetters);
         }
@@ -192,8 +192,8 @@ namespace CodeOnlyStoredProcedure
 		
 		protected StoredProcedure(string schema, 
             string name,
-            ImmutableList<SqlParameter> parameters,
-            ImmutableDictionary<string, Action<object>> outputParameterSetters)
+            IEnumerable<SqlParameter> parameters,
+            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
 			: base(schema, name, parameters, outputParameterSetters)
         {
 		}
@@ -237,8 +237,8 @@ namespace CodeOnlyStoredProcedure
 			return Task.Run(() => Execute(connection, token, timeout));
 		}
 
-		protected override StoredProcedure CloneCore(ImmutableList<SqlParameter> parameters,
-            ImmutableDictionary<string, Action<object>> outputParameterSetters)
+		protected override StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,
+            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
         {
             return new StoredProcedure<T1, T2, T3>(Schema, Name, parameters, outputParameterSetters);
         }
@@ -272,8 +272,8 @@ namespace CodeOnlyStoredProcedure
 		
 		protected StoredProcedure(string schema, 
             string name,
-            ImmutableList<SqlParameter> parameters,
-            ImmutableDictionary<string, Action<object>> outputParameterSetters)
+            IEnumerable<SqlParameter> parameters,
+            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
 			: base(schema, name, parameters, outputParameterSetters)
         {
 		}
@@ -317,8 +317,8 @@ namespace CodeOnlyStoredProcedure
 			return Task.Run(() => Execute(connection, token, timeout));
 		}
 
-		protected override StoredProcedure CloneCore(ImmutableList<SqlParameter> parameters,
-            ImmutableDictionary<string, Action<object>> outputParameterSetters)
+		protected override StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,
+            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
         {
             return new StoredProcedure<T1, T2, T3, T4>(Schema, Name, parameters, outputParameterSetters);
         }
@@ -353,8 +353,8 @@ namespace CodeOnlyStoredProcedure
 		
 		protected StoredProcedure(string schema, 
             string name,
-            ImmutableList<SqlParameter> parameters,
-            ImmutableDictionary<string, Action<object>> outputParameterSetters)
+            IEnumerable<SqlParameter> parameters,
+            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
 			: base(schema, name, parameters, outputParameterSetters)
         {
 		}
@@ -398,8 +398,8 @@ namespace CodeOnlyStoredProcedure
 			return Task.Run(() => Execute(connection, token, timeout));
 		}
 
-		protected override StoredProcedure CloneCore(ImmutableList<SqlParameter> parameters,
-            ImmutableDictionary<string, Action<object>> outputParameterSetters)
+		protected override StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,
+            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
         {
             return new StoredProcedure<T1, T2, T3, T4, T5>(Schema, Name, parameters, outputParameterSetters);
         }
@@ -435,8 +435,8 @@ namespace CodeOnlyStoredProcedure
 		
 		protected StoredProcedure(string schema, 
             string name,
-            ImmutableList<SqlParameter> parameters,
-            ImmutableDictionary<string, Action<object>> outputParameterSetters)
+            IEnumerable<SqlParameter> parameters,
+            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
 			: base(schema, name, parameters, outputParameterSetters)
         {
 		}
@@ -480,8 +480,8 @@ namespace CodeOnlyStoredProcedure
 			return Task.Run(() => Execute(connection, token, timeout));
 		}
 
-		protected override StoredProcedure CloneCore(ImmutableList<SqlParameter> parameters,
-            ImmutableDictionary<string, Action<object>> outputParameterSetters)
+		protected override StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,
+            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
         {
             return new StoredProcedure<T1, T2, T3, T4, T5, T6>(Schema, Name, parameters, outputParameterSetters);
         }
@@ -518,8 +518,8 @@ namespace CodeOnlyStoredProcedure
 		
 		protected StoredProcedure(string schema, 
             string name,
-            ImmutableList<SqlParameter> parameters,
-            ImmutableDictionary<string, Action<object>> outputParameterSetters)
+            IEnumerable<SqlParameter> parameters,
+            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
 			: base(schema, name, parameters, outputParameterSetters)
         {
 		}
@@ -563,8 +563,8 @@ namespace CodeOnlyStoredProcedure
 			return Task.Run(() => Execute(connection, token, timeout));
 		}
 
-		protected override StoredProcedure CloneCore(ImmutableList<SqlParameter> parameters,
-            ImmutableDictionary<string, Action<object>> outputParameterSetters)
+		protected override StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,
+            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
         {
             return new StoredProcedure<T1, T2, T3, T4, T5, T6, T7>(Schema, Name, parameters, outputParameterSetters);
         }

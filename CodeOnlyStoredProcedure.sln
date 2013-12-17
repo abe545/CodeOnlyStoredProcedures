@@ -5,6 +5,8 @@ VisualStudioVersion = 12.0.21005.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeOnlyStoredProcedure", "CodeOnlyStoredProcedure\CodeOnlyStoredProcedure.csproj", "{37762E7B-48CC-4001-B479-ECB1923AE2E0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeOnlyStoredProcedure-NET40", "CodeOnlyStoredProcedure-NET40\CodeOnlyStoredProcedure-NET40.csproj", "{31800E2D-04B0-4D10-A40F-D59ECD63933A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{37762E7B-48CC-4001-B479-ECB1923AE2E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{37762E7B-48CC-4001-B479-ECB1923AE2E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{37762E7B-48CC-4001-B479-ECB1923AE2E0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{31800E2D-04B0-4D10-A40F-D59ECD63933A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{31800E2D-04B0-4D10-A40F-D59ECD63933A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{31800E2D-04B0-4D10-A40F-D59ECD63933A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{31800E2D-04B0-4D10-A40F-D59ECD63933A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

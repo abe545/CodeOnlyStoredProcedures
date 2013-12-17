@@ -8,6 +8,7 @@ using System.Data.SqlClient;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace CodeOnlyStoredProcedure
 {
@@ -123,15 +124,19 @@ namespace CodeOnlyStoredProcedure
             foreach (var pi in typeof(TInput).GetMappedProperties())
             {
                 SqlParameter parameter;
-                var tableAttr = pi.GetCustomAttribute<TableValuedParameterAttribute>();
-                var attr = pi.GetCustomAttribute<StoredProcedureParameterAttribute>();
+                var tableAttr = pi.GetCustomAttributes(typeof(TableValuedParameterAttribute), false)
+                                  .OfType<TableValuedParameterAttribute>()
+                                  .FirstOrDefault();
+                var attr = pi.GetCustomAttributes(typeof(StoredProcedureParameterAttribute), false)
+                             .OfType<StoredProcedureParameterAttribute>()
+                             .FirstOrDefault();
 
                 if (tableAttr != null)
                     parameter = tableAttr.CreateSqlParameter(pi.Name);
                 else if (attr != null)
                     parameter = attr.CreateSqlParameter(pi.Name);
                 else
-                    parameter = new SqlParameter(pi.Name, pi.GetValue(input));
+                    parameter = new SqlParameter(pi.Name, pi.GetValue(input, null));
 
                 // store table values, scalar value or null
                 var value = pi.GetValue(input, null);
@@ -146,7 +151,9 @@ namespace CodeOnlyStoredProcedure
                     var baseType = value.GetType().GetEnumeratedType();
                     if (tableAttr == null)
                     {
-                        tableAttr = baseType.GetCustomAttribute<TableValuedParameterAttribute>();
+                        tableAttr = baseType.GetCustomAttributes(typeof(TableValuedParameterAttribute), false)
+                                            .OfType<TableValuedParameterAttribute>()
+                                            .FirstOrDefault();
                         if (tableAttr != null)
                             parameter = tableAttr.CreateSqlParameter(pi.Name);
                     }
@@ -165,13 +172,13 @@ namespace CodeOnlyStoredProcedure
 
                     case ParameterDirection.InputOutput:
                     case ParameterDirection.Output:
-                        sp = (TSP)sp.CloneWith(parameter, o => pi.SetValue(input, o));
+                        sp = (TSP)sp.CloneWith(parameter, o => pi.SetValue(input, o, null));
                         break;
 
                     case ParameterDirection.ReturnValue:
                         if (pi.PropertyType != typeof(int))
                             throw new NotSupportedException("Can only use a ReturnValue of type int.");
-                        sp = (TSP)sp.CloneWith(parameter, o => pi.SetValue(input, o));
+                        sp = (TSP)sp.CloneWith(parameter, o => pi.SetValue(input, o, null));
                         break;
                 }
             }
@@ -270,8 +277,12 @@ namespace CodeOnlyStoredProcedure
             foreach (var pi in t.GetMappedProperties())
             {
                 var name = pi.Name;
-                var tableAttr = pi.GetCustomAttribute<TableValuedParameterAttribute>();
-                var attr = pi.GetCustomAttribute<StoredProcedureParameterAttribute>();
+                var tableAttr = pi.GetCustomAttributes(typeof(TableValuedParameterAttribute), false)
+                                  .OfType<TableValuedParameterAttribute>()
+                                  .FirstOrDefault();
+                var attr = pi.GetCustomAttributes(typeof(StoredProcedureParameterAttribute), false)
+                             .OfType<StoredProcedureParameterAttribute>()
+                             .FirstOrDefault();
 
                 if (tableAttr != null && !string.IsNullOrWhiteSpace(tableAttr.Name))
                     name = tableAttr.Name;
@@ -287,7 +298,7 @@ namespace CodeOnlyStoredProcedure
         static IEnumerable<PropertyInfo> GetMappedProperties(this Type t)
         {
             return t.GetProperties()
-                    .Where(p => p.GetCustomAttribute<NotMappedAttribute>() == null)
+                    .Where(p => !p.GetCustomAttributes(typeof(NotMappedAttribute), false).Any())
                     .ToArray();
         }
 
@@ -310,7 +321,9 @@ namespace CodeOnlyStoredProcedure
 
             foreach (var pi in props)
             {
-                var attr = pi.GetCustomAttribute<StoredProcedureParameterAttribute>();
+                var attr = pi.GetCustomAttributes(typeof(StoredProcedureParameterAttribute), false)
+                             .OfType<StoredProcedureParameterAttribute>()
+                             .FirstOrDefault();
                 if (attr != null && !string.IsNullOrWhiteSpace(attr.Name))
                     name = attr.Name;
                 else
@@ -415,8 +428,30 @@ namespace CodeOnlyStoredProcedure
         {
             PropertyInfo pi;
             token.ThrowIfCancellationRequested();
-            var reader = cmd.ExecuteReader();
             var results = new Dictionary<Type, IList>();
+            var readerTask = Task.Factory.StartNew(() => cmd.ExecuteReader());
+            
+            var continueWaiting = true;
+            while (continueWaiting)
+            {
+                Thread.SpinWait(1);
+                switch (readerTask.Status)
+                {
+                    case TaskStatus.Canceled:
+                    case TaskStatus.Faulted:
+                    case TaskStatus.RanToCompletion:
+                        continueWaiting = false;
+                        break;
+                }
+
+                if (token.IsCancellationRequested)
+                {
+                    cmd.Cancel();
+                    token.ThrowIfCancellationRequested();
+                }
+            }
+
+            var reader = readerTask.Result;
 
             foreach (var currentType in outputTypes)
             {
@@ -439,7 +474,7 @@ namespace CodeOnlyStoredProcedure
                         var name = reader.GetName(i);
                         if (props.TryGetValue(name, out pi))
                         {
-                            pi.SetValue(row, values[i]);
+                            pi.SetValue(row, values[i], null);
                             props.Remove(name);
                         }
                     }

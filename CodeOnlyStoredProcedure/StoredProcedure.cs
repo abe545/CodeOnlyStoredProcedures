@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Data;
 using System.Data.Common;
 using System.Data.SqlClient;
@@ -8,6 +7,11 @@ using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+#if NET40
+using System.Collections.ObjectModel;
+#else
+using System.Collections.Immutable;
+#endif
 
 namespace CodeOnlyStoredProcedure
 {
@@ -16,8 +20,13 @@ namespace CodeOnlyStoredProcedure
         #region Private Fields
         private readonly string schema;
         private readonly string name;
+#if NET40
+        private readonly IEnumerable<SqlParameter> parameters;
+        private readonly ReadOnlyDictionary<string, Action<object>> outputParameterSetters;
+#else
         private readonly ImmutableList<SqlParameter> parameters;
         private readonly ImmutableDictionary<string, Action<object>> outputParameterSetters; 
+#endif
         #endregion
 
         #region Properties
@@ -46,22 +55,22 @@ namespace CodeOnlyStoredProcedure
                 Contract.Ensures(!string.IsNullOrWhiteSpace(Contract.Result<string>()));
                 return string.Format("[{0}].[{1}]", schema, name); 
             }
-        } 
+        }
 
-        protected internal ImmutableList<SqlParameter> Parameters
+        protected internal IEnumerable<SqlParameter> Parameters
         {
             get
             {
-                Contract.Ensures(Contract.Result<ImmutableList<SqlParameter>>() != null);
+                Contract.Ensures(Contract.Result<IEnumerable<SqlParameter>>() != null);
                 return parameters;
             }
         }
 
-        protected internal ImmutableDictionary<string, Action<object>> OutputParameterSetters
+        protected internal IDictionary<string, Action<object>> OutputParameterSetters
         {
             get
             {
-                Contract.Ensures(Contract.Result<ImmutableDictionary<string, Action<object>>>() != null);
+                Contract.Ensures(Contract.Result<IDictionary<string, Action<object>>>() != null);
                 return outputParameterSetters;
             }
         }
@@ -74,6 +83,17 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
         }
 
+#if NET40
+        public StoredProcedure(string schema, string name)
+            : this(schema, name,
+                   new SqlParameter[0],
+                   new Dictionary<string, Action<object>>())
+        {
+            Contract.Requires(!string.IsNullOrWhiteSpace(schema));
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+        }
+#else
+
         public StoredProcedure(string schema, string name)
             : this(schema, name,
                    ImmutableList<SqlParameter>.Empty,
@@ -82,11 +102,12 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
         }
+#endif
 
         protected StoredProcedure(string schema,
             string name,
-            ImmutableList<SqlParameter> parameters,
-            ImmutableDictionary<string, Action<object>> outputParameterSetters)
+            IEnumerable<SqlParameter> parameters,
+            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
@@ -95,8 +116,13 @@ namespace CodeOnlyStoredProcedure
 
             this.schema = schema;
             this.name = name;
-            this.parameters = parameters;
-            this.outputParameterSetters = outputParameterSetters;
+#if NET40
+            this.parameters = new ReadOnlyCollection<SqlParameter>(parameters.ToArray());
+            this.outputParameterSetters = new ReadOnlyDictionary<string, Action<object>>(outputParameterSetters.ToArray());
+#else
+            this.parameters = (ImmutableList<SqlParameter>)parameters;
+            this.outputParameterSetters = (ImmutableDictionary<string, Action<object>>)outputParameterSetters;
+#endif
         } 
         #endregion
 
@@ -117,17 +143,30 @@ namespace CodeOnlyStoredProcedure
 
         protected internal StoredProcedure CloneWith(SqlParameter parameter)
         {
+#if NET40
+            return CloneCore(parameters.Concat(new[] { parameter }), outputParameterSetters);
+#else
             return CloneCore(parameters.Add(parameter), outputParameterSetters);
+#endif
         }
 
         protected internal StoredProcedure CloneWith(SqlParameter parameter, Action<object> setter)
         {
+#if NET40
+            return CloneCore(parameters.Concat(new[] { parameter }),
+                outputParameterSetters.Concat(new[] 
+                    {
+                        new KeyValuePair<string, Action<object>>(parameter.ParameterName, setter) 
+                    }));
+
+#else
             return CloneCore(parameters.Add(parameter), 
                 outputParameterSetters.Add(parameter.ParameterName, setter));
+#endif
         }
 
-        protected virtual StoredProcedure CloneCore(ImmutableList<SqlParameter> parameters,
-            ImmutableDictionary<string, Action<object>> outputParameterSetters)
+        protected virtual StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,
+            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
         {
             return new StoredProcedure(schema, name, parameters, outputParameterSetters);
         }
@@ -168,7 +207,7 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(connection != null);
             Contract.Ensures(Contract.Result<Task>() != null);
 
-            return Task.Run(() => Execute(connection, token, timeout));
+            return Task.Factory.StartNew(() => Execute(connection, token, timeout));
         }
         #endregion
 

@@ -99,8 +99,8 @@ public class StoredProcedureTemplate : Template
 		
 		protected StoredProcedure(string schema, 
             string name,
-            ImmutableList<SqlParameter> parameters,
-            ImmutableDictionary<string, Action<object>> outputParameterSetters)
+            IEnumerable<SqlParameter> parameters,
+            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
 			: base(schema, name, parameters, outputParameterSetters)
         {
 		}
@@ -144,8 +144,8 @@ public class StoredProcedureTemplate : Template
 			return Task.Run(() => Execute(connection, token, timeout));
 		}
 
-		protected override StoredProcedure CloneCore(ImmutableList<SqlParameter> parameters,
-            ImmutableDictionary<string, Action<object>> outputParameterSetters)
+		protected override StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,
+            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
         {
             return new StoredProcedure<#+ GetTypes(TypeCount); #>(Schema, Name, parameters, outputParameterSetters);
         }
