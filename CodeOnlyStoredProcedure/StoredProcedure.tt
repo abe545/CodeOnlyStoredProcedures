@@ -4,7 +4,9 @@
 <#@ include file="StoredProcedureTemplate.tt" #>
 using System;
 using System.Collections.Generic;
+#if !NET40
 using System.Collections.Immutable;
+#endif
 using System.Data;
 using System.Data.Common;
 using System.Data.SqlClient;
