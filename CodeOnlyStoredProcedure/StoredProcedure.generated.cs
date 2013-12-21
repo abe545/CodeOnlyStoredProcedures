@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+#if !NET40
 using System.Collections.Immutable;
+#endif
 using System.Data;
 using System.Data.Common;
 using System.Data.SqlClient;
@@ -77,7 +79,7 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Task<IEnumerable<T1>>>() != null);
 
-			return Task.Run(() => Execute(connection, token, timeout));
+			return Task.Factory.StartNew(() => Execute(connection, token, timeout));
 		}
 
 		protected override StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,
@@ -155,7 +157,7 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Task<Tuple<IEnumerable<T1>, IEnumerable<T2>>>>() != null);
 
-			return Task.Run(() => Execute(connection, token, timeout));
+			return Task.Factory.StartNew(() => Execute(connection, token, timeout));
 		}
 
 		protected override StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,
@@ -234,7 +236,7 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>>>>() != null);
 
-			return Task.Run(() => Execute(connection, token, timeout));
+			return Task.Factory.StartNew(() => Execute(connection, token, timeout));
 		}
 
 		protected override StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,
@@ -314,7 +316,7 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>>>>() != null);
 
-			return Task.Run(() => Execute(connection, token, timeout));
+			return Task.Factory.StartNew(() => Execute(connection, token, timeout));
 		}
 
 		protected override StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,
@@ -395,7 +397,7 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>>>>() != null);
 
-			return Task.Run(() => Execute(connection, token, timeout));
+			return Task.Factory.StartNew(() => Execute(connection, token, timeout));
 		}
 
 		protected override StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,
@@ -477,7 +479,7 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>>>>() != null);
 
-			return Task.Run(() => Execute(connection, token, timeout));
+			return Task.Factory.StartNew(() => Execute(connection, token, timeout));
 		}
 
 		protected override StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,
@@ -560,7 +562,7 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>, IEnumerable<T7>>>>() != null);
 
-			return Task.Run(() => Execute(connection, token, timeout));
+			return Task.Factory.StartNew(() => Execute(connection, token, timeout));
 		}
 
 		protected override StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,
