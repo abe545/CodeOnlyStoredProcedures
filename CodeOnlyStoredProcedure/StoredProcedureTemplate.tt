@@ -141,7 +141,7 @@ public class StoredProcedureTemplate : Template
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Task<<#+ GetResults(); #>>>() != null);
 
-			return Task.Run(() => Execute(connection, token, timeout));
+			return Task.Factory.StartNew(() => Execute(connection, token, timeout));
 		}
 
 		protected override StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,

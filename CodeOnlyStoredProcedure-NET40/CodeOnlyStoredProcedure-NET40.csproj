@@ -51,8 +51,20 @@
     <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedure.cs">
       <Link>StoredProcedure.cs</Link>
     </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedure.generated.cs">
+      <Link>StoredProcedure.generated.cs</Link>
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>StoredProcedure.tt</DependentUpon>
+    </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedureExtensions.cs">
       <Link>StoredProcedureExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedureExtensions.generated.cs">
+      <Link>StoredProcedureExtensions.generated.cs</Link>
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>StoredProcedureExtensions.tt</DependentUpon>
     </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedureParameterAttribute.cs">
       <Link>StoredProcedureParameterAttribute.cs</Link>
@@ -66,7 +78,24 @@
     <Compile Include="ReadOnlyDictionary.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\CodeOnlyStoredProcedure\StoredProcedure.tt">
+      <Link>StoredProcedure.tt</Link>
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>StoredProcedure.generated.cs</LastGenOutput>
+      <DependentUpon>StoredProcedure.cs</DependentUpon>
+      <LastOutputs>.\StoredProcedure.generated.cs</LastOutputs>
+    </None>
+    <None Include="..\CodeOnlyStoredProcedure\StoredProcedureExtensions.tt">
+      <Link>StoredProcedureExtensions.tt</Link>
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>StoredProcedureExtensions.generated.cs</LastGenOutput>
+      <DependentUpon>StoredProcedureExtensions.cs</DependentUpon>
+      <LastOutputs>.\StoredProcedureExtensions.generated.cs</LastOutputs>
+    </None>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
