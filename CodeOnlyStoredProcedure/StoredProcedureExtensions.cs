@@ -277,6 +277,9 @@ namespace CodeOnlyStoredProcedure
             foreach (var pi in t.GetMappedProperties())
             {
                 var name = pi.Name;
+                var col = pi.GetCustomAttributes(typeof(ColumnAttribute), false)
+                            .OfType<ColumnAttribute>()
+                            .FirstOrDefault();
                 var tableAttr = pi.GetCustomAttributes(typeof(TableValuedParameterAttribute), false)
                                   .OfType<TableValuedParameterAttribute>()
                                   .FirstOrDefault();
@@ -284,7 +287,9 @@ namespace CodeOnlyStoredProcedure
                              .OfType<StoredProcedureParameterAttribute>()
                              .FirstOrDefault();
 
-                if (tableAttr != null && !string.IsNullOrWhiteSpace(tableAttr.Name))
+                if (col != null && !string.IsNullOrWhiteSpace(col.Name))
+                    name = col.Name;
+                else if (tableAttr != null && !string.IsNullOrWhiteSpace(tableAttr.Name))
                     name = tableAttr.Name;
                 else if (attr != null && !string.IsNullOrWhiteSpace(attr.Name))
                     name = attr.Name;
@@ -458,6 +463,7 @@ namespace CodeOnlyStoredProcedure
                 // process results - repeat this loop for each result set returned
                 // by the stored proc for which we have a result type specified
                 var props = currentType.GetMappedPropertiesBySqlName();
+                var foundProps = new HashSet<string>();
                 var values = new object[reader.FieldCount];
                 var output = (IList)Activator.CreateInstance(
                     typeof(List<>).MakeGenericType(currentType));
@@ -475,15 +481,16 @@ namespace CodeOnlyStoredProcedure
                         if (props.TryGetValue(name, out pi))
                         {
                             pi.SetValue(row, values[i], null);
-                            props.Remove(name);
+                            foundProps.Add(name);
                         }
                     }
 
-                    if(props.Count > 0)
-                        throw new StoredProcedureResultsException(currentType, props.Keys.ToArray());
-
                     output.Add(row);
                 }
+
+                var unused = props.Keys.Except(foundProps).ToArray();
+                if (unused.Length > 0)
+                    throw new StoredProcedureResultsException(currentType, unused);
 
                 results.Add(currentType, output);
 
