@@ -64,10 +64,14 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <Compile Include="..\CodeOnlyTests\StoredProcedureExtensionsTests.cs">
+      <Link>StoredProcedureExtensionsTests.cs</Link>
+    </Compile>
     <Compile Include="..\CodeOnlyTests\StoredProcedureTests.cs">
       <Link>StoredProcedureTests.cs</Link>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ReadOnlyDictionaryTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CodeOnlyStoredProcedure-NET40\CodeOnlyStoredProcedure-NET40.csproj">

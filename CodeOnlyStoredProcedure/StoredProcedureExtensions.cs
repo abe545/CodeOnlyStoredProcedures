@@ -149,14 +149,6 @@ namespace CodeOnlyStoredProcedure
                         throw new InvalidCastException(string.Format("{0} must be an IEnumerable type to be used as a Table-Valued Parameter", pi.Name));
 
                     var baseType = value.GetType().GetEnumeratedType();
-                    if (tableAttr == null)
-                    {
-                        tableAttr = baseType.GetCustomAttributes(typeof(TableValuedParameterAttribute), false)
-                                            .OfType<TableValuedParameterAttribute>()
-                                            .FirstOrDefault();
-                        if (tableAttr != null)
-                            parameter = tableAttr.CreateSqlParameter(pi.Name);
-                    }
 
                     // generate table valued parameter
                     parameter.Value = ((IEnumerable)value).ToTableValuedParameter(baseType);
@@ -190,13 +182,33 @@ namespace CodeOnlyStoredProcedure
         #region WithTableValuedParameter
         public static TSP WithTableValuedParameter<TSP, TRow>(this TSP sp, 
             string name,
-            IEnumerable<TRow> table)
+            IEnumerable<TRow> table,
+            string tableTypeName)
             where TSP : StoredProcedure
         {
             var p = new SqlParameter
             {
                 ParameterName = name,
                 SqlDbType = SqlDbType.Structured,
+                TypeName = "[dbo].[" + tableTypeName + "]",
+                Value = table.ToTableValuedParameter(typeof(TRow))
+            };
+
+            return (TSP)sp.CloneWith(p);
+        }
+
+        public static TSP WithTableValuedParameter<TSP, TRow>(this TSP sp,
+            string name,
+            IEnumerable<TRow> table,
+            string tableTypeSchema,
+            string tableTypeName)
+            where TSP : StoredProcedure
+        {
+            var p = new SqlParameter
+            {
+                ParameterName = name,
+                SqlDbType = SqlDbType.Structured,
+                TypeName = tableTypeName,
                 Value = table.ToTableValuedParameter(typeof(TRow))
             };
 
@@ -319,8 +331,7 @@ namespace CodeOnlyStoredProcedure
         {
             var recordList = new List<SqlDataRecord>();
             var columnList = new List<SqlMetaData>();
-            var props = enumeratedType.GetMappedProperties();
-            var mapping = new Dictionary<string, string>();
+            var props = enumeratedType.GetMappedProperties().ToList();
             string name;
             SqlDbType coltype;
 
@@ -333,8 +344,6 @@ namespace CodeOnlyStoredProcedure
                     name = attr.Name;
                 else
                     name = pi.Name;
-
-                mapping.Add(name, pi.Name);
 
                 if (attr != null && attr.SqlDbType.HasValue)
                     coltype = attr.SqlDbType.Value;
@@ -381,15 +390,14 @@ namespace CodeOnlyStoredProcedure
                 columnList.Add(column);
             }
 
-            var propMap = props.ToDictionary(p => p.Name);
-            // copy the input list into a list of SqlDataRecords return table.
+            // copy the input list into a list of SqlDataRecords
             foreach (var row in table)
             {
                 var record = new SqlDataRecord(columnList.ToArray());
                 for (int i = 0; i < columnList.Count; i++)
                 {
                     // locate the value of the matching property
-                    var value = propMap[mapping[columnList[i].Name]].GetValue(row, null);
+                    var value = props[i].GetValue(row, null);
                     record.SetValue(i, value);
                 }
 
@@ -452,9 +460,11 @@ namespace CodeOnlyStoredProcedure
                 if (token.IsCancellationRequested)
                 {
                     cmd.Cancel();
-                    token.ThrowIfCancellationRequested();
+                    continueWaiting = false;
                 }
             }
+
+            token.ThrowIfCancellationRequested();
 
             var reader = readerTask.Result;
 
@@ -480,7 +490,11 @@ namespace CodeOnlyStoredProcedure
                         var name = reader.GetName(i);
                         if (props.TryGetValue(name, out pi))
                         {
-                            pi.SetValue(row, values[i], null);
+                            var value = values[i];
+                            if (DBNull.Value.Equals(value))
+                                value = null;
+
+                            pi.SetValue(row, value, null);
                             foundProps.Add(name);
                         }
                     }
