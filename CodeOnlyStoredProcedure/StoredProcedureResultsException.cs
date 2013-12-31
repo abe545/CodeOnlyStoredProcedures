@@ -15,8 +15,8 @@ namespace CodeOnlyStoredProcedure
             string props, cols = "columns", were = "were";
             if (propertyNames.Length == 1)
             {
-                cols = "column";
-                were = "was";
+                cols  = "column";
+                were  = "was";
                 props = propertyNames[0];
             }
             else if (propertyNames.Length == 2)

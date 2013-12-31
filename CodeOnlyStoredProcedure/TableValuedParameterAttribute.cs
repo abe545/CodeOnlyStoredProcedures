@@ -26,7 +26,7 @@ namespace CodeOnlyStoredProcedure
         {
             var param = base.CreateSqlParameter(propertyName);
 
-            param.TypeName = string.Format("{0}.{1}", Schema, TableName ?? propertyName);
+            param.TypeName = string.Format("[{0}].[{1}]", Schema, TableName ?? propertyName);
 
             return param;
         }

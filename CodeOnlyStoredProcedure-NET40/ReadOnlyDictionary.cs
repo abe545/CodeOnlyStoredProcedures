@@ -73,17 +73,12 @@ namespace CodeOnlyStoredProcedure
             throw new NotSupportedException(mutateException);
         }
 
-        bool IDictionary<TKey, TValue>.Remove(TKey key)
-        {
-            throw new NotSupportedException(mutateException);
-        }
-
         void ICollection<KeyValuePair<TKey, TValue>>.Add(KeyValuePair<TKey, TValue> item)
         {
             throw new NotSupportedException(mutateException);
         }
 
-        void ICollection<KeyValuePair<TKey, TValue>>.Clear()
+        bool IDictionary<TKey, TValue>.Remove(TKey key)
         {
             throw new NotSupportedException(mutateException);
         }
@@ -92,6 +87,11 @@ namespace CodeOnlyStoredProcedure
         {
             throw new NotSupportedException(mutateException);
         } 
+
+        void ICollection<KeyValuePair<TKey, TValue>>.Clear()
+        {
+            throw new NotSupportedException(mutateException);
+        }
         #endregion
 
         public ReadOnlyDictionary(IDictionary<TKey, TValue> toWrap)

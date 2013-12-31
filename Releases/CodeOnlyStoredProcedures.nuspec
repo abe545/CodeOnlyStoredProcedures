@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+    <metadata>
+        <id>CodeOnlyStoredProcedures</id>
+        <version>0.0.5</version>
+        <title>Code Only Stored Proecedures</title>
+        <authors>Abraham Heidebrecht</authors>
+        <projectUrl>https://codeonlystoredprocedures.codeplex.com/</projectUrl>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <description>A library for easily calling Stored Procedures in .NET. Works great with Entity Framework Code First models. 
+Code Only Stored Procedures will not create any Stored Procedures on your database. Instead, its aim is to make it easy to call your existing stored procedures by writing simple code.</description>
+        <releaseNotes>Added support for .NET 4.0 (with a dependency on EF).
+Fixed critical bugs with (now removed) release 0.0.4</releaseNotes>
+        <tags>StoredProcedure EntityFramework EF</tags>
+        <dependencies>
+            <group targetFramework=".NETFramework4.5">
+                <dependency id="Microsoft.Bcl.Immutable" version="1.0.30" />
+            </group>
+            <group targetFramework=".NETFramework4.0">
+                <dependency id="EntityFramework" version="6.0.2" />
+            </group>
+        </dependencies>
+    </metadata>
+    <files>
+        <file src="..\CodeOnlyStoredProcedure-NET40\bin\Release\CodeOnlyStoredProcedure.dll" target="lib\net40\CodeOnlyStoredProcedure.dll" />
+        <file src="..\CodeOnlyStoredProcedure\bin\Release\CodeOnlyStoredProcedure.dll" target="lib\net45\CodeOnlyStoredProcedure.dll" />
+    </files>
+</package>
