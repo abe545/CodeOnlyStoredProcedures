@@ -41,7 +41,7 @@ namespace CodeOnlyStoredProcedure
                 new SqlParameter
                 {
                     ParameterName = name,
-                    Direction = ParameterDirection.Output
+                    Direction     = ParameterDirection.Output
                 }.AddPrecisison(size, scale, precision), 
                 o => setter((TValue)o));
         }
@@ -59,8 +59,8 @@ namespace CodeOnlyStoredProcedure
                 new SqlParameter
                 {
                     ParameterName = name,
-                    Direction = ParameterDirection.Output,
-                    SqlDbType = dbType
+                    Direction     = ParameterDirection.Output,
+                    SqlDbType     = dbType
                 }.AddPrecisison(size, scale, precision), 
                 o => setter((TValue)o));
         }
@@ -111,7 +111,7 @@ namespace CodeOnlyStoredProcedure
             return (TSP)sp.CloneWith(new SqlParameter
                 {
                     ParameterName = "_Code_Only_Stored_Procedures_Auto_Generated_Return_Value_",
-                    Direction = ParameterDirection.ReturnValue
+                    Direction     = ParameterDirection.ReturnValue
                 }, 
                 o => returnValue((int)o));
         }
@@ -189,9 +189,9 @@ namespace CodeOnlyStoredProcedure
             var p = new SqlParameter
             {
                 ParameterName = name,
-                SqlDbType = SqlDbType.Structured,
-                TypeName = "[dbo].[" + tableTypeName + "]",
-                Value = table.ToTableValuedParameter(typeof(TRow))
+                SqlDbType     = SqlDbType.Structured,
+                TypeName      = "[dbo].[" + tableTypeName + "]",
+                Value         = table.ToTableValuedParameter(typeof(TRow))
             };
 
             return (TSP)sp.CloneWith(p);
@@ -207,9 +207,9 @@ namespace CodeOnlyStoredProcedure
             var p = new SqlParameter
             {
                 ParameterName = name,
-                SqlDbType = SqlDbType.Structured,
-                TypeName = tableTypeName,
-                Value = table.ToTableValuedParameter(typeof(TRow))
+                SqlDbType     = SqlDbType.Structured,
+                TypeName      = tableTypeName,
+                Value         = table.ToTableValuedParameter(typeof(TRow))
             };
 
             return (TSP)sp.CloneWith(p);
@@ -235,8 +235,8 @@ namespace CodeOnlyStoredProcedure
                 connection.Open();
                 using (var cmd = connection.CreateCommand())
                 {
-                    cmd.CommandText = procName;
-                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.CommandText    = procName;
+                    cmd.CommandType    = CommandType.StoredProcedure;
                     cmd.CommandTimeout = commandTimeout ?? 10;
 
                     // move parameters to command object
@@ -272,12 +272,9 @@ namespace CodeOnlyStoredProcedure
             byte? scale,
             byte? precision)
         {
-            if (size.HasValue)
-                parameter.Size = size.Value;
-            if (scale.HasValue)
-                parameter.Scale = scale.Value;
-            if (precision.HasValue)
-                parameter.Precision = precision.Value;
+            if (size.HasValue)      parameter.Size      = size.Value;
+            if (scale.HasValue)     parameter.Scale     = scale.Value;
+            if (precision.HasValue) parameter.Precision = precision.Value;
 
             return parameter;
         }
@@ -322,7 +319,7 @@ namespace CodeOnlyStoredProcedure
         static Type GetEnumeratedType(this Type t)
         {
             return t.GetInterfaces()
-                    .Where(i => i.GetGenericTypeDefinition().Equals(typeof(IEnumerable<>)))
+                    .Where (i => i.GetGenericTypeDefinition().Equals(typeof(IEnumerable<>)))
                     .Select(i => i.GetGenericArguments().First())
                     .FirstOrDefault();
         }
@@ -337,7 +334,7 @@ namespace CodeOnlyStoredProcedure
 
             foreach (var pi in props)
             {
-                var attr = pi.GetCustomAttributes(typeof(StoredProcedureParameterAttribute), false)
+                var attr = pi.GetCustomAttributes(false)
                              .OfType<StoredProcedureParameterAttribute>()
                              .FirstOrDefault();
                 if (attr != null && !string.IsNullOrWhiteSpace(attr.Name))
@@ -372,12 +369,10 @@ namespace CodeOnlyStoredProcedure
                         byte precision = 10;
                         byte scale = 2;
 
-                        if(attr != null)
+                        if (attr != null)
                         {
-                            if (attr.Precision.HasValue)
-                                precision = attr.Precision.Value;
-                            if (attr.Scale.HasValue)
-                                scale = attr.Scale.Value;
+                            if (attr.Precision.HasValue) precision = attr.Precision.Value;
+                            if (attr.Scale.HasValue)     scale     = attr.Scale.Value;
                         }
                         column = new SqlMetaData(name, coltype, precision, scale);
                         break;
@@ -472,17 +467,17 @@ namespace CodeOnlyStoredProcedure
             {
                 // process results - repeat this loop for each result set returned
                 // by the stored proc for which we have a result type specified
-                var props = currentType.GetMappedPropertiesBySqlName();
+                var props      = currentType.GetMappedPropertiesBySqlName();
                 var foundProps = new HashSet<string>();
-                var values = new object[reader.FieldCount];
-                var output = (IList)Activator.CreateInstance(
-                    typeof(List<>).MakeGenericType(currentType));
+                var values     = new object[reader.FieldCount];
+                var output     = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(currentType));
 
                 // process the result set
                 while (reader.Read())
                 {
-                    token.ThrowIfCancellationRequested();
+                    token .ThrowIfCancellationRequested();
                     reader.GetValues(values);
+
                     var row = Activator.CreateInstance(currentType);
 
                     for (int i = 0; i < reader.FieldCount; i++)
