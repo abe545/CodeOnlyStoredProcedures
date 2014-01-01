@@ -3,6 +3,7 @@ using System.Text;
 
 namespace CodeOnlyStoredProcedure
 {
+    [Serializable]
     public class StoredProcedureResultsException : Exception
     {
         public StoredProcedureResultsException(Type resultType, params string[] propertyNames)

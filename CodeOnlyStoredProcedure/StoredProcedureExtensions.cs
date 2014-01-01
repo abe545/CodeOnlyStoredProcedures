@@ -216,6 +216,8 @@ namespace CodeOnlyStoredProcedure
         }
         #endregion
 
+        // Suppress this message, because the procName is never set via user input
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2100:Review SQL queries for security vulnerabilities")]
         internal static IDictionary<Type, IList> Execute(this IDbConnection connection,
             string procName,
             CancellationToken token,

@@ -5,6 +5,7 @@ using CodeOnlyStoredProcedure;
 using System.Data;
 using System.Collections.Generic;
 using Microsoft.SqlServer.Server;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace CodeOnlyTests
 {
@@ -687,9 +688,9 @@ namespace CodeOnlyTests
 
         private class TVPHelper
         {
-            public string Name { get; set; }
-            public int Foo { get; set; }
-            public decimal Bar { get; set; }
+            public string  Name { get; set; }
+            public int     Foo  { get; set; }
+            public decimal Bar  { get; set; }
         }
     }
 }
