@@ -4,7 +4,7 @@ using System.Diagnostics.Contracts;
 
 namespace CodeOnlyStoredProcedure
 {
-    public class ReadOnlyDictionary<TKey, TValue> : IDictionary<TKey, TValue>
+    public sealed class ReadOnlyDictionary<TKey, TValue> : IDictionary<TKey, TValue>
     {
         private const string mutateException = "Can not modify a ReadOnlyDictionary";
         private readonly IDictionary<TKey, TValue> internalCollection;
@@ -73,17 +73,12 @@ namespace CodeOnlyStoredProcedure
             throw new NotSupportedException(mutateException);
         }
 
-        bool IDictionary<TKey, TValue>.Remove(TKey key)
-        {
-            throw new NotSupportedException(mutateException);
-        }
-
         void ICollection<KeyValuePair<TKey, TValue>>.Add(KeyValuePair<TKey, TValue> item)
         {
             throw new NotSupportedException(mutateException);
         }
 
-        void ICollection<KeyValuePair<TKey, TValue>>.Clear()
+        bool IDictionary<TKey, TValue>.Remove(TKey key)
         {
             throw new NotSupportedException(mutateException);
         }
@@ -92,6 +87,11 @@ namespace CodeOnlyStoredProcedure
         {
             throw new NotSupportedException(mutateException);
         } 
+
+        void ICollection<KeyValuePair<TKey, TValue>>.Clear()
+        {
+            throw new NotSupportedException(mutateException);
+        }
         #endregion
 
         public ReadOnlyDictionary(IDictionary<TKey, TValue> toWrap)

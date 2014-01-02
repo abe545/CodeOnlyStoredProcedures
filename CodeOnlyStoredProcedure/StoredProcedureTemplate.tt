@@ -110,19 +110,7 @@ public class StoredProcedureTemplate : Template
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<<#+ GetResults(); #>>() != null);
 
-			return Execute(connection, CancellationToken.None, timeout);
-		}
-
-		<#+ GetResults(); #> Execute(IDbConnection connection, CancellationToken token, int? timeout = null)
-		{
-			Contract.Requires(connection != null);
-			Contract.Ensures(Contract.Result<<#+ GetResults(); #>>() != null);
-
-			var results = connection.Execute(FullName,
-				token, 
-				timeout,
-				Parameters,
-				new[] { <#+ GetCachedFields(); #> });
+			var results = Execute(connection, CancellationToken.None, timeout);
 			TransferOutputParameters();
 
 			return <#+ ParseResults(); #> 
@@ -141,7 +129,14 @@ public class StoredProcedureTemplate : Template
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Task<<#+ GetResults(); #>>>() != null);
 
-			return Task.Factory.StartNew(() => Execute(connection, token, timeout));
+			return Task.Factory.StartNew(
+				() => 
+				{
+					var results = Execute(connection, token, timeout);
+					TransferOutputParameters();
+
+					return <#+ ParseResults(); #> 
+				}, token);
 		}
 
 		protected override StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,

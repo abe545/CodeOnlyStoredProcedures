@@ -23,6 +23,9 @@ public class StoredProcedureExtensionsWithResultsTemplate : Template
 
 		public static StoredProcedure<#+ GetTypes(TypeCount); #> WithResults<#+ GetTypes(TypeCount); #>(this StoredProcedure sp)
 		{
+			Contract.Requires(sp.GetType() == typeof(StoredProcedure));
+			Contract.Ensures(Contract.Result<StoredProcedure<#+ GetTypes(TypeCount); #>>() != null);
+
 			return new StoredProcedure<#+ GetTypes(TypeCount); #>(sp);
 		}
 

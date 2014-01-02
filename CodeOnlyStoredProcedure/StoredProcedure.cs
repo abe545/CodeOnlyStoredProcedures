@@ -1,7 +1,7 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.Common;
 using System.Data.SqlClient;
 using System.Diagnostics.Contracts;
 using System.Linq;
@@ -20,11 +20,12 @@ namespace CodeOnlyStoredProcedure
         #region Private Fields
         private readonly string schema;
         private readonly string name;
+
 #if NET40
-        private readonly IEnumerable<SqlParameter> parameters;
+        private readonly IEnumerable<SqlParameter>                  parameters;
         private readonly ReadOnlyDictionary<string, Action<object>> outputParameterSetters;
 #else
-        private readonly ImmutableList<SqlParameter> parameters;
+        private readonly ImmutableList<SqlParameter>                 parameters;
         private readonly ImmutableDictionary<string, Action<object>> outputParameterSetters; 
 #endif
         #endregion
@@ -35,6 +36,7 @@ namespace CodeOnlyStoredProcedure
             get
             {
                 Contract.Ensures(!string.IsNullOrWhiteSpace(Contract.Result<string>())); 
+
                 return schema;
             }
         }
@@ -44,6 +46,7 @@ namespace CodeOnlyStoredProcedure
             get
             {
                 Contract.Ensures(!string.IsNullOrWhiteSpace(Contract.Result<string>())); 
+
                 return name;
             }
         }
@@ -53,6 +56,7 @@ namespace CodeOnlyStoredProcedure
             get
             {
                 Contract.Ensures(!string.IsNullOrWhiteSpace(Contract.Result<string>()));
+
                 return string.Format("[{0}].[{1}]", schema, name); 
             }
         }
@@ -62,6 +66,7 @@ namespace CodeOnlyStoredProcedure
             get
             {
                 Contract.Ensures(Contract.Result<IEnumerable<SqlParameter>>() != null);
+
                 return parameters;
             }
         }
@@ -71,6 +76,7 @@ namespace CodeOnlyStoredProcedure
             get
             {
                 Contract.Ensures(Contract.Result<IDictionary<string, Action<object>>>() != null);
+
                 return outputParameterSetters;
             }
         }
@@ -105,22 +111,22 @@ namespace CodeOnlyStoredProcedure
 #endif
 
         protected StoredProcedure(string schema,
-            string name,
-            IEnumerable<SqlParameter> parameters,
-            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
+                                  string name,
+                                  IEnumerable<SqlParameter> parameters,
+                                  IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
             Contract.Requires(parameters != null);
             Contract.Requires(outputParameterSetters != null);
 
-            this.schema = schema;
-            this.name = name;
+            this.schema                 = schema;
+            this.name                   = name;
 #if NET40
-            this.parameters = new ReadOnlyCollection<SqlParameter>(parameters.ToArray());
+            this.parameters             = new ReadOnlyCollection<SqlParameter>(parameters.ToArray());
             this.outputParameterSetters = new ReadOnlyDictionary<string, Action<object>>(outputParameterSetters.ToArray());
 #else
-            this.parameters = (ImmutableList<SqlParameter>)parameters;
+            this.parameters             = (ImmutableList<SqlParameter>)parameters;
             this.outputParameterSetters = (ImmutableDictionary<string, Action<object>>)outputParameterSetters;
 #endif
         } 
@@ -130,6 +136,7 @@ namespace CodeOnlyStoredProcedure
         public static StoredProcedure Create(string name)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
+
             return new StoredProcedure(name);
         }
 
@@ -137,10 +144,12 @@ namespace CodeOnlyStoredProcedure
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
+
             return new StoredProcedure(schema, name);
         } 
         #endregion
 
+        #region Cloning
         protected internal StoredProcedure CloneWith(SqlParameter parameter)
         {
 #if NET40
@@ -153,23 +162,24 @@ namespace CodeOnlyStoredProcedure
         protected internal StoredProcedure CloneWith(SqlParameter parameter, Action<object> setter)
         {
 #if NET40
-            return CloneCore(parameters.Concat(new[] { parameter }),
-                outputParameterSetters.Concat(new[] 
-                    {
-                        new KeyValuePair<string, Action<object>>(parameter.ParameterName, setter) 
-                    }));
+            return CloneCore(parameters            .Concat(new[] { parameter }),
+                             outputParameterSetters.Concat(new[] 
+                                                          {
+                                                              new KeyValuePair<string, Action<object>>(parameter.ParameterName, setter) 
+                                                          }));
 
 #else
-            return CloneCore(parameters.Add(parameter), 
-                outputParameterSetters.Add(parameter.ParameterName, setter));
+            return CloneCore(parameters.Add(parameter),
+                             outputParameterSetters.Add(parameter.ParameterName, setter));
 #endif
-        }
+        } 
 
         protected virtual StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,
             IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
         {
             return new StoredProcedure(schema, name, parameters, outputParameterSetters);
         }
+        #endregion
 
         #region Execute
         public void Execute(IDbConnection connection, int? timeout = null)
@@ -177,18 +187,6 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(connection != null);
 
             Execute(connection, CancellationToken.None, timeout);
-        }
-
-        void Execute(IDbConnection connection, CancellationToken token, int? timeout = null)
-        {
-            Contract.Requires(connection != null);
-
-            connection.Execute(FullName,
-                token,
-                timeout,
-                parameters,
-                Enumerable.Empty<Type>());
-
             TransferOutputParameters();
         }
         #endregion
@@ -197,7 +195,7 @@ namespace CodeOnlyStoredProcedure
         public Task ExecuteAsync(IDbConnection connection, int? timeout = null)
         {
             Contract.Requires(connection != null);
-            Contract.Ensures(Contract.Result<Task>() != null);
+            Contract.Ensures (Contract.Result<Task>() != null);
 
             return ExecuteAsync(connection, CancellationToken.None, timeout);
         }
@@ -205,9 +203,14 @@ namespace CodeOnlyStoredProcedure
         public Task ExecuteAsync(IDbConnection connection, CancellationToken token, int? timeout = null)
         {
             Contract.Requires(connection != null);
-            Contract.Ensures(Contract.Result<Task>() != null);
+            Contract.Ensures (Contract.Result<Task>() != null);
 
-            return Task.Factory.StartNew(() => Execute(connection, token, timeout));
+            return Task.Factory.StartNew(
+                () =>
+                {
+                    Execute(connection, token, timeout);
+                    TransferOutputParameters();
+                }, token);
         }
         #endregion
 
@@ -217,12 +220,63 @@ namespace CodeOnlyStoredProcedure
                 outputParameterSetters[parm.ParameterName](parm.Value);
         }
 
+        // Suppress this message, because the sp name is never set via user input
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2100:Review SQL queries for security vulnerabilities")]
+        protected IDictionary<Type, IList> Execute(
+            IDbConnection     connection,
+            CancellationToken token,
+            int?              commandTimeout = null,
+            IEnumerable<Type> outputTypes    = null)
+        {
+            Contract.Requires(connection != null);
+
+            try
+            {
+                // if we don't create a new connection, connection.Open may throw
+                // an exception in multi-threaded scenarios. If we don't Open it first,
+                // then the connection may be closed, and it will throw an exception. 
+                // We could track the connection state ourselves, but if any other code
+                // uses the connection (like an EF DbSet), we could possibly close
+                // the connection while a transaction is in process.
+                connection = new SqlConnection(connection.ConnectionString);
+                connection.Open();
+                using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = FullName;
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.CommandTimeout = commandTimeout ?? 10;
+
+                    // move parameters to command object
+                    foreach (var p in parameters)
+                        cmd.Parameters.Add(p);
+
+                    token.ThrowIfCancellationRequested();
+
+                    if (outputTypes != null && outputTypes.Any())
+                        return cmd.Execute(token, outputTypes);
+                    else
+                    {
+                        cmd.ExecuteNonQuery();
+                        return null;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error reading from stored proc " + FullName + ":" + Environment.NewLine + ex.Message, ex);
+            }
+            finally
+            {
+                connection.Close();
+            }
+        }
+
         [ContractInvariantMethod]
         private void Invariants()
         {
             Contract.Invariant(!string.IsNullOrWhiteSpace(schema));
             Contract.Invariant(!string.IsNullOrWhiteSpace(name));
-            Contract.Invariant(parameters != null);
+            Contract.Invariant(parameters             != null);
             Contract.Invariant(outputParameterSetters != null);
         }
     }

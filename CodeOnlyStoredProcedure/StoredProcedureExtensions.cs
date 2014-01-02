@@ -41,7 +41,7 @@ namespace CodeOnlyStoredProcedure
                 new SqlParameter
                 {
                     ParameterName = name,
-                    Direction = ParameterDirection.Output
+                    Direction     = ParameterDirection.Output
                 }.AddPrecisison(size, scale, precision), 
                 o => setter((TValue)o));
         }
@@ -59,8 +59,8 @@ namespace CodeOnlyStoredProcedure
                 new SqlParameter
                 {
                     ParameterName = name,
-                    Direction = ParameterDirection.Output,
-                    SqlDbType = dbType
+                    Direction     = ParameterDirection.Output,
+                    SqlDbType     = dbType
                 }.AddPrecisison(size, scale, precision), 
                 o => setter((TValue)o));
         }
@@ -111,7 +111,7 @@ namespace CodeOnlyStoredProcedure
             return (TSP)sp.CloneWith(new SqlParameter
                 {
                     ParameterName = "_Code_Only_Stored_Procedures_Auto_Generated_Return_Value_",
-                    Direction = ParameterDirection.ReturnValue
+                    Direction     = ParameterDirection.ReturnValue
                 }, 
                 o => returnValue((int)o));
         }
@@ -149,14 +149,6 @@ namespace CodeOnlyStoredProcedure
                         throw new InvalidCastException(string.Format("{0} must be an IEnumerable type to be used as a Table-Valued Parameter", pi.Name));
 
                     var baseType = value.GetType().GetEnumeratedType();
-                    if (tableAttr == null)
-                    {
-                        tableAttr = baseType.GetCustomAttributes(typeof(TableValuedParameterAttribute), false)
-                                            .OfType<TableValuedParameterAttribute>()
-                                            .FirstOrDefault();
-                        if (tableAttr != null)
-                            parameter = tableAttr.CreateSqlParameter(pi.Name);
-                    }
 
                     // generate table valued parameter
                     parameter.Value = ((IEnumerable)value).ToTableValuedParameter(baseType);
@@ -190,68 +182,134 @@ namespace CodeOnlyStoredProcedure
         #region WithTableValuedParameter
         public static TSP WithTableValuedParameter<TSP, TRow>(this TSP sp, 
             string name,
-            IEnumerable<TRow> table)
+            IEnumerable<TRow> table,
+            string tableTypeName)
             where TSP : StoredProcedure
         {
             var p = new SqlParameter
             {
                 ParameterName = name,
-                SqlDbType = SqlDbType.Structured,
-                Value = table.ToTableValuedParameter(typeof(TRow))
+                SqlDbType     = SqlDbType.Structured,
+                TypeName      = "[dbo].[" + tableTypeName + "]",
+                Value         = table.ToTableValuedParameter(typeof(TRow))
+            };
+
+            return (TSP)sp.CloneWith(p);
+        }
+
+        public static TSP WithTableValuedParameter<TSP, TRow>(this TSP sp,
+            string name,
+            IEnumerable<TRow> table,
+            string tableTypeSchema,
+            string tableTypeName)
+            where TSP : StoredProcedure
+        {
+            var p = new SqlParameter
+            {
+                ParameterName = name,
+                SqlDbType     = SqlDbType.Structured,
+                TypeName      = string.Format("[{0}].[{1}]", tableTypeSchema, tableTypeName),
+                Value         = table.ToTableValuedParameter(typeof(TRow))
             };
 
             return (TSP)sp.CloneWith(p);
         }
         #endregion
 
-        internal static IDictionary<Type, IList> Execute(this IDbConnection connection,
-            string procName,
+        internal static IDictionary<Type, IList> Execute(this IDbCommand cmd,
             CancellationToken token,
-            int? commandTimeout = null,
-            IEnumerable<SqlParameter> parms = null,
-            IEnumerable<Type> outputTypes = null)
+            IEnumerable<Type> outputTypes)
         {
-            try
+            PropertyInfo pi;
+            var results = new Dictionary<Type, IList>();
+            var reader  = CreateDataReader(cmd, token);
+
+            token.ThrowIfCancellationRequested();
+
+            var first = true;
+            foreach (var currentType in outputTypes)
             {
-                // if we don't create a new connection, connection.Open may throw
-                // an exception in multi-threaded scenarios. If we don't Open it first,
-                // then the connection may be closed, and it will throw an exception. 
-                // We could track the connection state ourselves, but if any other code
-                // uses the connection (like an EF DbSet), we could possibly close
-                // the connection while a transaction is in process.
-                connection = new SqlConnection(connection.ConnectionString);
-                connection.Open();
-                using (var cmd = connection.CreateCommand())
+                if (first)
+                    first = false;
+                else if (!reader.NextResult())
+                    throw new InvalidOperationException("The StoredProcedure returned a different number of result sets than expected. Expected results of type " + outputTypes.Select(t => t.Name).Aggregate((s1, s2) => s1 + ", " + s2));
+                
+                // process results - repeat this loop for each result set returned
+                // by the stored proc for which we have a result type specified
+                var props      = currentType.GetMappedPropertiesBySqlName();
+                var foundProps = new HashSet<string>();
+                var values     = new object[reader.FieldCount];
+                var output     = (IList)Activator.CreateInstance (typeof(List<>)
+                                                 .MakeGenericType(currentType));
+
+                // process the result set
+                while (reader.Read())
                 {
-                    cmd.CommandText = procName;
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.CommandTimeout = commandTimeout ?? 10;
+                    token.ThrowIfCancellationRequested();
+                    reader.GetValues(values);
 
-                    // move parameters to command object
-                    if (parms != null)
+                    var row = Activator.CreateInstance(currentType);
+
+                    for (int i = 0; i < reader.FieldCount; i++)
                     {
-                        foreach (var p in parms)
-                            cmd.Parameters.Add(p);
+                        var name = reader.GetName(i);
+                        if (props.TryGetValue(name, out pi))
+                        {
+                            var value = values[i];
+                            if (DBNull.Value.Equals(value))
+                                value = null;
+
+                            pi.SetValue(row, value, null);
+                            foundProps.Add(name);
+                        }
                     }
 
-                    if (outputTypes != null && outputTypes.Any())
-                        return cmd.Execute(token, outputTypes);
-                    else
-                    {
-                        token.ThrowIfCancellationRequested();
-                        cmd.ExecuteNonQuery();
-                        return null;
-                    }
+                    output.Add(row);
+                }
+
+                // throw an exception if the result set didn't include a mapped property
+                var unused = props.Keys.Except(foundProps).ToArray();
+                if (unused.Length > 0)
+                    throw new StoredProcedureResultsException(currentType, unused);
+
+                results.Add(currentType, output);
+            }
+
+            reader.Close();
+            return results;
+        }
+
+        internal static IDataReader CreateDataReader(this IDbCommand cmd, CancellationToken token)
+        {
+            var readerTask = Task.Factory.StartNew(() => cmd.ExecuteReader(), token);
+
+            // execute in a background task, so we can cancel the command if the 
+            // CancellationToken is cancelled
+            var continueWaiting = true;
+            while (continueWaiting)
+            {
+                Thread.SpinWait(1);
+                switch (readerTask.Status)
+                {
+                    case TaskStatus.Faulted:
+                        throw readerTask.Exception.InnerException;
+
+                    case TaskStatus.Canceled:
+                    case TaskStatus.RanToCompletion:
+                        continueWaiting = false;
+                        break;
+                }
+
+                if (token.IsCancellationRequested)
+                {
+                    cmd.Cancel();
+                    continueWaiting = false;
                 }
             }
-            catch (Exception ex)
-            {
-                throw new Exception("Error reading from stored proc " + procName + ": " + ex.Message, ex);
-            }
-            finally
-            {
-                connection.Close();
-            }
+
+            token.ThrowIfCancellationRequested();
+
+            return readerTask.Result;
         }
 
         #region Private Helpers
@@ -260,12 +318,9 @@ namespace CodeOnlyStoredProcedure
             byte? scale,
             byte? precision)
         {
-            if (size.HasValue)
-                parameter.Size = size.Value;
-            if (scale.HasValue)
-                parameter.Scale = scale.Value;
-            if (precision.HasValue)
-                parameter.Precision = precision.Value;
+            if (size.HasValue)      parameter.Size      = size.Value;
+            if (scale.HasValue)     parameter.Scale     = scale.Value;
+            if (precision.HasValue) parameter.Precision = precision.Value;
 
             return parameter;
         }
@@ -310,7 +365,7 @@ namespace CodeOnlyStoredProcedure
         static Type GetEnumeratedType(this Type t)
         {
             return t.GetInterfaces()
-                    .Where(i => i.GetGenericTypeDefinition().Equals(typeof(IEnumerable<>)))
+                    .Where (i => i.GetGenericTypeDefinition().Equals(typeof(IEnumerable<>)))
                     .Select(i => i.GetGenericArguments().First())
                     .FirstOrDefault();
         }
@@ -319,22 +374,19 @@ namespace CodeOnlyStoredProcedure
         {
             var recordList = new List<SqlDataRecord>();
             var columnList = new List<SqlMetaData>();
-            var props = enumeratedType.GetMappedProperties();
-            var mapping = new Dictionary<string, string>();
+            var props = enumeratedType.GetMappedProperties().ToList();
             string name;
             SqlDbType coltype;
 
             foreach (var pi in props)
             {
-                var attr = pi.GetCustomAttributes(typeof(StoredProcedureParameterAttribute), false)
+                var attr = pi.GetCustomAttributes(false)
                              .OfType<StoredProcedureParameterAttribute>()
                              .FirstOrDefault();
                 if (attr != null && !string.IsNullOrWhiteSpace(attr.Name))
                     name = attr.Name;
                 else
                     name = pi.Name;
-
-                mapping.Add(name, pi.Name);
 
                 if (attr != null && attr.SqlDbType.HasValue)
                     coltype = attr.SqlDbType.Value;
@@ -363,12 +415,10 @@ namespace CodeOnlyStoredProcedure
                         byte precision = 10;
                         byte scale = 2;
 
-                        if(attr != null)
+                        if (attr != null)
                         {
-                            if (attr.Precision.HasValue)
-                                precision = attr.Precision.Value;
-                            if (attr.Scale.HasValue)
-                                scale = attr.Scale.Value;
+                            if (attr.Precision.HasValue) precision = attr.Precision.Value;
+                            if (attr.Scale.HasValue)     scale     = attr.Scale.Value;
                         }
                         column = new SqlMetaData(name, coltype, precision, scale);
                         break;
@@ -381,15 +431,14 @@ namespace CodeOnlyStoredProcedure
                 columnList.Add(column);
             }
 
-            var propMap = props.ToDictionary(p => p.Name);
-            // copy the input list into a list of SqlDataRecords return table.
+            // copy the input list into a list of SqlDataRecords
             foreach (var row in table)
             {
                 var record = new SqlDataRecord(columnList.ToArray());
                 for (int i = 0; i < columnList.Count; i++)
                 {
                     // locate the value of the matching property
-                    var value = propMap[mapping[columnList[i].Name]].GetValue(row, null);
+                    var value = props[i].GetValue(row, null);
                     record.SetValue(i, value);
                 }
 
@@ -425,81 +474,6 @@ namespace CodeOnlyStoredProcedure
                 return SqlDbType.UniqueIdentifier;
 
             throw new NotSupportedException("Unable to determine the SqlDbType for the property. You can specify it by using a StoredProcedureParameterAttribute. Or prevent it from being mapped with the NotMappedAttribute.");
-        }
-
-        static IDictionary<Type, IList> Execute(this IDbCommand cmd,
-            CancellationToken token,
-            IEnumerable<Type> outputTypes)
-        {
-            PropertyInfo pi;
-            token.ThrowIfCancellationRequested();
-            var results = new Dictionary<Type, IList>();
-            var readerTask = Task.Factory.StartNew(() => cmd.ExecuteReader());
-            
-            var continueWaiting = true;
-            while (continueWaiting)
-            {
-                Thread.SpinWait(1);
-                switch (readerTask.Status)
-                {
-                    case TaskStatus.Canceled:
-                    case TaskStatus.Faulted:
-                    case TaskStatus.RanToCompletion:
-                        continueWaiting = false;
-                        break;
-                }
-
-                if (token.IsCancellationRequested)
-                {
-                    cmd.Cancel();
-                    token.ThrowIfCancellationRequested();
-                }
-            }
-
-            var reader = readerTask.Result;
-
-            foreach (var currentType in outputTypes)
-            {
-                // process results - repeat this loop for each result set returned
-                // by the stored proc for which we have a result type specified
-                var props = currentType.GetMappedPropertiesBySqlName();
-                var foundProps = new HashSet<string>();
-                var values = new object[reader.FieldCount];
-                var output = (IList)Activator.CreateInstance(
-                    typeof(List<>).MakeGenericType(currentType));
-
-                // process the result set
-                while (reader.Read())
-                {
-                    token.ThrowIfCancellationRequested();
-                    reader.GetValues(values);
-                    var row = Activator.CreateInstance(currentType);
-
-                    for (int i = 0; i < reader.FieldCount; i++)
-                    {
-                        var name = reader.GetName(i);
-                        if (props.TryGetValue(name, out pi))
-                        {
-                            pi.SetValue(row, values[i], null);
-                            foundProps.Add(name);
-                        }
-                    }
-
-                    output.Add(row);
-                }
-
-                var unused = props.Keys.Except(foundProps).ToArray();
-                if (unused.Length > 0)
-                    throw new StoredProcedureResultsException(currentType, unused);
-
-                results.Add(currentType, output);
-
-                if (!reader.NextResult())
-                    break;
-            }
-
-            reader.Close();
-            return results;
         }
         #endregion
     }
