@@ -4,7 +4,7 @@ using System.Diagnostics.Contracts;
 
 namespace CodeOnlyStoredProcedure
 {
-    public class ReadOnlyDictionary<TKey, TValue> : IDictionary<TKey, TValue>
+    public sealed class ReadOnlyDictionary<TKey, TValue> : IDictionary<TKey, TValue>
     {
         private const string mutateException = "Can not modify a ReadOnlyDictionary";
         private readonly IDictionary<TKey, TValue> internalCollection;
