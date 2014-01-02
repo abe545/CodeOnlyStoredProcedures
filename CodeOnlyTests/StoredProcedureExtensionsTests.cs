@@ -6,6 +6,9 @@ using System.Data;
 using System.Collections.Generic;
 using Microsoft.SqlServer.Server;
 using System.ComponentModel.DataAnnotations.Schema;
+using Moq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace CodeOnlyTests
 {
@@ -654,8 +657,421 @@ namespace CodeOnlyTests
                 ++i;
             }
         }
+
+        [TestMethod]
+        public void TestWithTableValuedParameterWithSchemaAddsParameter()
+        {
+            var sp = new StoredProcedure("Test");
+
+            var tvp = new[]
+            {
+                new TVPHelper { Name = "Hello", Foo = 0, Bar = 100M },
+                new TVPHelper { Name = "World", Foo = 3, Bar = 331M }
+            };
+
+            var toTest = sp.WithTableValuedParameter("Bar", tvp, "TVP", "Table Type");
+
+            Assert.IsFalse(ReferenceEquals(sp, toTest));
+            Assert.AreEqual(0, sp.Parameters.Count());
+            Assert.AreEqual(0, sp.OutputParameterSetters.Count);
+
+            Assert.AreEqual(0, toTest.OutputParameterSetters.Count);
+            var p = toTest.Parameters.Single();
+            Assert.AreEqual(SqlDbType.Structured, p.SqlDbType);
+            Assert.AreEqual("Bar", p.ParameterName);
+            Assert.AreEqual("[TVP].[Table Type]", p.TypeName);
+
+            int i = 0;
+            foreach (var record in (IEnumerable<SqlDataRecord>)p.Value)
+            {
+                Assert.AreEqual("Name", record.GetName(0));
+                Assert.AreEqual(tvp[i].Name, record.GetString(0));
+
+                Assert.AreEqual("Foo", record.GetName(1));
+                Assert.AreEqual(tvp[i].Foo, record.GetInt32(1));
+
+                Assert.AreEqual("Bar", record.GetName(2));
+                Assert.AreEqual(tvp[i].Bar, record.GetDecimal(2));
+
+                ++i;
+            }
+        }
         #endregion
 
+        #region CreateDataReader Tests
+        [TestMethod]
+        public void TestCreateDataReaderReturnsReader()
+        {
+            var reader  = new Mock<IDataReader>().Object;
+            var command = new Mock<IDbCommand>();
+
+            command.Setup(d => d.ExecuteReader())
+                   .Returns(reader);
+
+            var toTest = command.Object.CreateDataReader(CancellationToken.None);
+
+            Assert.AreEqual(toTest, reader);
+        }
+
+        [TestMethod]
+        public void TestCreateataReaderCancelsWhenCanceledBeforeExecuting()
+        {
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            var command = new Mock<IDbCommand>();
+            command.Setup(d => d.ExecuteReader())
+                   .Throws(new Exception("ExecuteReader called after token was canceled"));
+
+            bool exceptionThrown = false;
+            try
+            {
+                command.Object.CreateDataReader(cts.Token);
+            }
+            catch(OperationCanceledException)
+            {
+                exceptionThrown = true;
+            }
+            
+            command.Verify(d => d.ExecuteReader(), Times.Never);
+            Assert.IsTrue(exceptionThrown, "No TaskCanceledException thrown when token is cancelled");
+        }
+
+        [TestMethod]
+        public void TestCreateDataReaderCancelsCommandWhenTokenCanceled()
+        {
+            var sema = new SemaphoreSlim(0, 1);
+            var command = new Mock<IDbCommand>();
+            command.Setup     (d => d.ExecuteReader())
+                   .Callback  (() =>
+                               {
+                                   sema.Release();
+                                   Thread.Sleep(100);
+                               })
+                   .Returns   (() => null);
+            command.Setup     (d => d.Cancel())
+                   .Verifiable();
+
+            var cts = new CancellationTokenSource();
+
+            var toTest = Task.Factory.StartNew(() => command.Object.CreateDataReader(cts.Token));
+            bool exceptionThrown = false;
+
+            var continuation = 
+                toTest.ContinueWith(t => exceptionThrown = t.Exception.InnerException is OperationCanceledException,
+                                    TaskContinuationOptions.OnlyOnFaulted);
+
+            sema.Wait();
+            cts.Cancel();
+
+            continuation.Wait();
+            command.Verify(d => d.Cancel(), Times.Once);
+            Assert.IsTrue(exceptionThrown, "No TaskCanceledException thrown when token is cancelled");
+        }
+
+        [TestMethod]
+        public void TestCreateDataReaderThrowsWhenExecuteReaderThrows()
+        {
+            var command = new Mock<IDbCommand>();
+            command.Setup (d => d.ExecuteReader())
+                   .Throws(new Exception("Test Exception"));
+
+            Exception ex = null;
+            try
+            {
+                var toTest = command.Object.CreateDataReader(CancellationToken.None);
+            }
+            catch(Exception e)
+            {
+                ex = e;
+            }
+
+            Assert.IsNotNull(ex);
+            Assert.AreEqual("Test Exception", ex.Message);
+        }
+        #endregion
+
+        #region Execute Tests
+        [TestMethod]
+        public void TestExecuteCancelsWhenTokenCanceledBeforeExecuting()
+        {
+            var reader  = new Mock<IDataReader>();
+            var command = new Mock<IDbCommand>();
+
+            command.Setup(c => c.ExecuteReader())
+                   .Returns(reader.Object);
+
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            bool exceptionThrown = false;
+            try
+            {
+                command.Object.Execute(cts.Token, Enumerable.Empty<Type>());
+            }
+            catch (OperationCanceledException)
+            {
+                exceptionThrown = true;
+            }
+
+            reader.Verify(d => d.Read(), Times.Never);
+            Assert.IsTrue(exceptionThrown, "No TaskCanceledException thrown when token is cancelled");
+        }
+
+        [TestMethod]
+        public void TestExecuteCancelsWhenTokenCanceled()
+        {
+            var sema    = new SemaphoreSlim(0, 1);
+            var reader  = new Mock<IDataReader>();
+            var command = new Mock<IDbCommand>();
+
+            reader.Setup(d => d.Read())
+                  .Callback(() =>
+                  {
+                      sema.Release();
+                      Thread.Sleep(100);
+                  })
+                  .Returns(true);
+
+            command.Setup(d => d.ExecuteReader())
+                   .Returns(reader.Object);
+
+            var cts = new CancellationTokenSource();
+
+            var toTest = Task.Factory.StartNew(() => command.Object.Execute(cts.Token, new[] { typeof(SingleResultSet) }));
+            bool exceptionThrown = false;
+
+            var continuation =
+                toTest.ContinueWith(t => exceptionThrown = t.Exception.InnerException is OperationCanceledException,
+                                    TaskContinuationOptions.OnlyOnFaulted);
+
+            sema.Wait();
+            cts.Cancel();
+
+            continuation.Wait();
+            Assert.IsTrue(exceptionThrown, "No TaskCanceledException thrown when token is cancelled");
+        }
+
+        [TestMethod]
+        public void TestExecuteReturnsSingleResultSetOneRow()
+        {
+            var values = new Dictionary<string, object>
+            {
+                { "String",  "Hello, World!"           },
+                { "Double",  42.0                      },
+                { "Decimal", 100M                      },
+                { "Int",     99                        },
+                { "Long",    1028130L                  },
+                { "Date",    new DateTime(1982, 1, 31) }
+            };
+
+            var keys = values.Keys.OrderBy(s => s).ToArray();
+            var vals = values.OrderBy(kv => kv.Key).Select(kv => kv.Value).ToArray();
+
+            var reader  = new Mock<IDataReader>();
+            var command = new Mock<IDbCommand>();
+
+            command.Setup(d => d.ExecuteReader())
+                   .Returns(reader.Object);
+
+            reader.SetupGet(r => r.FieldCount)
+                  .Returns(6);
+
+            var first = true;
+            reader.Setup(r => r.Read())
+                  .Returns(() =>
+                  {
+                      if(first)
+                      {
+                          first = false;
+                          return true;
+                      }
+
+                      return false;
+                  });
+
+            reader.Setup(r => r.GetName(It.IsAny<int>()))
+                  .Returns((int i) => keys[i]);
+            reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
+                  .Callback((object[] arr) => vals.CopyTo(arr, 0))
+                  .Returns(6);
+
+            var results = command.Object.Execute(CancellationToken.None, new[] { typeof(SingleResultSet) });
+
+            var toTest = (IList<SingleResultSet>)results[typeof(SingleResultSet)];
+
+            Assert.AreEqual(1, toTest.Count);
+            var item = toTest[0];
+
+            Assert.AreEqual("Hello, World!",           item.String);
+            Assert.AreEqual(42.0,                      item.Double);
+            Assert.AreEqual(100M,                      item.Decimal);
+            Assert.AreEqual(99,                        item.Int);
+            Assert.AreEqual(1028130L,                  item.Long);
+            Assert.AreEqual(new DateTime(1982, 1, 31), item.Date);
+        }
+
+        [TestMethod]
+        public void TestExecuteHandlesRenamedColumns()
+        {
+            var reader = new Mock<IDataReader>();
+            var command = new Mock<IDbCommand>();
+
+            command.Setup(d => d.ExecuteReader())
+                   .Returns(reader.Object);
+
+            reader.SetupGet(r => r.FieldCount)
+                  .Returns(1);
+
+            var first = true;
+            reader.Setup(r => r.Read())
+                  .Returns(() =>
+                  {
+                      if (first)
+                      {
+                          first = false;
+                          return true;
+                      }
+
+                      return false;
+                  });
+
+            reader.Setup(r => r.GetName(0))
+                  .Returns("MyRenamedColumn");
+            reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
+                  .Callback((object[] arr) => arr[0] = "Hello, World!")
+                  .Returns(1);
+
+            var results = command.Object.Execute(CancellationToken.None, new[] { typeof(RenamedColumn) });
+
+            var toTest = (IList<RenamedColumn>)results[typeof(RenamedColumn)];
+
+            Assert.AreEqual(1, toTest.Count);
+            var item = toTest[0];
+
+            Assert.AreEqual("Hello, World!", item.Column);
+        }
+
+        [TestMethod]
+        public void TestExecuteReturnsMultipleRowsInOneResultSet()
+        {
+            var reader = new Mock<IDataReader>();
+            var command = new Mock<IDbCommand>();
+
+            command.Setup(d => d.ExecuteReader())
+                   .Returns(reader.Object);
+
+            reader.SetupGet(r => r.FieldCount)
+                  .Returns(1);
+
+            var results = new[] { "Hello", ", ", "World!" };
+
+            int index = -1;
+            reader.Setup(r => r.Read())
+                  .Callback(() => ++index)
+                  .Returns(() => index < results.Length);
+
+            reader.Setup(r => r.GetName(0))
+                  .Returns("Column");
+            reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
+                  .Callback((object[] arr) => arr[0] = results[index])
+                  .Returns(1);
+
+            var res = command.Object.Execute(CancellationToken.None, new[] { typeof(SingleColumn) });
+
+            var toTest = (IList<SingleColumn>)res[typeof(SingleColumn)];
+
+            Assert.AreEqual(3, toTest.Count);
+
+            for (int i = 0; i < results.Length; i++)
+            {
+                var item = toTest[i];
+
+                Assert.AreEqual(results[i], item.Column);
+            }
+        }
+
+        [TestMethod]
+        public void TestExecuteConvertsDbNullToNullValues()
+        {
+            var keys = new[] { "Name", "NullableInt", "NullableDouble" };
+            var reader = new Mock<IDataReader>();
+            var command = new Mock<IDbCommand>();
+
+            command.Setup(d => d.ExecuteReader())
+                   .Returns(reader.Object);
+
+            reader.SetupGet(r => r.FieldCount)
+                  .Returns(3);
+
+            var first = true;
+            reader.Setup(r => r.Read())
+                  .Returns(() =>
+                  {
+                      if (first)
+                      {
+                          first = false;
+                          return true;
+                      }
+
+                      return false;
+                  });
+
+            reader.Setup(r => r.GetName(It.IsAny<int>()))
+                  .Returns((int i) => keys[i]);
+            reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
+                  .Callback((object[] arr) => arr[0] = arr[1] = arr[2] = DBNull.Value)
+                  .Returns(3);
+
+            var results = command.Object.Execute(CancellationToken.None, new[] { typeof(NullableColumns) });
+
+            var toTest = (IList<NullableColumns>)results[typeof(NullableColumns)];
+
+            Assert.AreEqual(1, toTest.Count);
+            var item = toTest[0];
+
+            Assert.IsNull(item.Name);
+            Assert.IsNull(item.NullableDouble);
+            Assert.IsNull(item.NullableInt);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(StoredProcedureResultsException))]
+        public void TestExecuteThrowsIfMappedColumnDoesNotExistInResultSet()
+        {
+            var reader = new Mock<IDataReader>();
+            var command = new Mock<IDbCommand>();
+
+            command.Setup(d => d.ExecuteReader())
+                   .Returns(reader.Object);
+
+            reader.SetupGet(r => r.FieldCount)
+                  .Returns(1);
+
+            var first = true;
+            reader.Setup(r => r.Read())
+                  .Returns(() =>
+                  {
+                      if (first)
+                      {
+                          first = false;
+                          return true;
+                      }
+
+                      return false;
+                  });
+
+            reader.Setup(r => r.GetName(It.IsAny<int>()))
+                  .Returns("OtherColumnName");
+            reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
+                  .Callback((object[] arr) => arr[0] = DBNull.Value)
+                  .Returns(1);
+
+            command.Object.Execute(CancellationToken.None, new[] { typeof(SingleColumn) });
+        }
+        #endregion
+
+        #region Dummy Data Classes
         private class WithNamedParameter
         {
             [StoredProcedureParameter(Name = "InputName")]
@@ -692,5 +1108,34 @@ namespace CodeOnlyTests
             public int     Foo  { get; set; }
             public decimal Bar  { get; set; }
         }
+
+        private class SingleResultSet
+        {
+            public String   String  { get; set; }
+            public Double   Double  { get; set; }
+            public Decimal  Decimal { get; set; }
+            public Int32    Int     { get; set; }
+            public Int64    Long    { get; set; }
+            public DateTime Date    { get; set; }
+        }
+
+        private class SingleColumn
+        {
+            public string Column { get; set; }
+        }
+
+        private class RenamedColumn
+        {
+            [Column("MyRenamedColumn")]
+            public string Column { get; set; }
+        }
+
+        private class NullableColumns
+        {
+            public string  Name           { get; set; }
+            public int?    NullableInt    { get; set; }
+            public double? NullableDouble { get; set; }
+        }
+        #endregion
     }
 }

@@ -48,19 +48,7 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<IEnumerable<T1>>() != null);
 
-			return Execute(connection, CancellationToken.None, timeout);
-		}
-
-		IEnumerable<T1> Execute(IDbConnection connection, CancellationToken token, int? timeout = null)
-		{
-			Contract.Requires(connection != null);
-			Contract.Ensures(Contract.Result<IEnumerable<T1>>() != null);
-
-			var results = connection.Execute(FullName,
-				token, 
-				timeout,
-				Parameters,
-				new[] { t1 });
+			var results = Execute(connection, CancellationToken.None, timeout);
 			TransferOutputParameters();
 
 			return (IEnumerable<T1>)results[t1]; 
@@ -79,7 +67,14 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Task<IEnumerable<T1>>>() != null);
 
-			return Task.Factory.StartNew(() => Execute(connection, token, timeout));
+			return Task.Factory.StartNew(
+				() => 
+				{
+					var results = Execute(connection, token, timeout);
+					TransferOutputParameters();
+
+					return (IEnumerable<T1>)results[t1]; 
+				}, token);
 		}
 
 		protected override StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,
@@ -126,19 +121,7 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Tuple<IEnumerable<T1>, IEnumerable<T2>>>() != null);
 
-			return Execute(connection, CancellationToken.None, timeout);
-		}
-
-		Tuple<IEnumerable<T1>, IEnumerable<T2>> Execute(IDbConnection connection, CancellationToken token, int? timeout = null)
-		{
-			Contract.Requires(connection != null);
-			Contract.Ensures(Contract.Result<Tuple<IEnumerable<T1>, IEnumerable<T2>>>() != null);
-
-			var results = connection.Execute(FullName,
-				token, 
-				timeout,
-				Parameters,
-				new[] { t1, t2 });
+			var results = Execute(connection, CancellationToken.None, timeout);
 			TransferOutputParameters();
 
 			return Tuple.Create((IEnumerable<T1>)results[t1], (IEnumerable<T2>)results[t2]); 
@@ -157,7 +140,14 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Task<Tuple<IEnumerable<T1>, IEnumerable<T2>>>>() != null);
 
-			return Task.Factory.StartNew(() => Execute(connection, token, timeout));
+			return Task.Factory.StartNew(
+				() => 
+				{
+					var results = Execute(connection, token, timeout);
+					TransferOutputParameters();
+
+					return Tuple.Create((IEnumerable<T1>)results[t1], (IEnumerable<T2>)results[t2]); 
+				}, token);
 		}
 
 		protected override StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,
@@ -205,19 +195,7 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>>>() != null);
 
-			return Execute(connection, CancellationToken.None, timeout);
-		}
-
-		Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>> Execute(IDbConnection connection, CancellationToken token, int? timeout = null)
-		{
-			Contract.Requires(connection != null);
-			Contract.Ensures(Contract.Result<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>>>() != null);
-
-			var results = connection.Execute(FullName,
-				token, 
-				timeout,
-				Parameters,
-				new[] { t1, t2, t3 });
+			var results = Execute(connection, CancellationToken.None, timeout);
 			TransferOutputParameters();
 
 			return Tuple.Create((IEnumerable<T1>)results[t1], (IEnumerable<T2>)results[t2], (IEnumerable<T3>)results[t3]); 
@@ -236,7 +214,14 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>>>>() != null);
 
-			return Task.Factory.StartNew(() => Execute(connection, token, timeout));
+			return Task.Factory.StartNew(
+				() => 
+				{
+					var results = Execute(connection, token, timeout);
+					TransferOutputParameters();
+
+					return Tuple.Create((IEnumerable<T1>)results[t1], (IEnumerable<T2>)results[t2], (IEnumerable<T3>)results[t3]); 
+				}, token);
 		}
 
 		protected override StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,
@@ -285,19 +270,7 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>>>() != null);
 
-			return Execute(connection, CancellationToken.None, timeout);
-		}
-
-		Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>> Execute(IDbConnection connection, CancellationToken token, int? timeout = null)
-		{
-			Contract.Requires(connection != null);
-			Contract.Ensures(Contract.Result<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>>>() != null);
-
-			var results = connection.Execute(FullName,
-				token, 
-				timeout,
-				Parameters,
-				new[] { t1, t2, t3, t4 });
+			var results = Execute(connection, CancellationToken.None, timeout);
 			TransferOutputParameters();
 
 			return Tuple.Create((IEnumerable<T1>)results[t1], (IEnumerable<T2>)results[t2], (IEnumerable<T3>)results[t3], (IEnumerable<T4>)results[t4]); 
@@ -316,7 +289,14 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>>>>() != null);
 
-			return Task.Factory.StartNew(() => Execute(connection, token, timeout));
+			return Task.Factory.StartNew(
+				() => 
+				{
+					var results = Execute(connection, token, timeout);
+					TransferOutputParameters();
+
+					return Tuple.Create((IEnumerable<T1>)results[t1], (IEnumerable<T2>)results[t2], (IEnumerable<T3>)results[t3], (IEnumerable<T4>)results[t4]); 
+				}, token);
 		}
 
 		protected override StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,
@@ -366,19 +346,7 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>>>() != null);
 
-			return Execute(connection, CancellationToken.None, timeout);
-		}
-
-		Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>> Execute(IDbConnection connection, CancellationToken token, int? timeout = null)
-		{
-			Contract.Requires(connection != null);
-			Contract.Ensures(Contract.Result<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>>>() != null);
-
-			var results = connection.Execute(FullName,
-				token, 
-				timeout,
-				Parameters,
-				new[] { t1, t2, t3, t4, t5 });
+			var results = Execute(connection, CancellationToken.None, timeout);
 			TransferOutputParameters();
 
 			return Tuple.Create((IEnumerable<T1>)results[t1], (IEnumerable<T2>)results[t2], (IEnumerable<T3>)results[t3], (IEnumerable<T4>)results[t4], (IEnumerable<T5>)results[t5]); 
@@ -397,7 +365,14 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>>>>() != null);
 
-			return Task.Factory.StartNew(() => Execute(connection, token, timeout));
+			return Task.Factory.StartNew(
+				() => 
+				{
+					var results = Execute(connection, token, timeout);
+					TransferOutputParameters();
+
+					return Tuple.Create((IEnumerable<T1>)results[t1], (IEnumerable<T2>)results[t2], (IEnumerable<T3>)results[t3], (IEnumerable<T4>)results[t4], (IEnumerable<T5>)results[t5]); 
+				}, token);
 		}
 
 		protected override StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,
@@ -448,19 +423,7 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>>>() != null);
 
-			return Execute(connection, CancellationToken.None, timeout);
-		}
-
-		Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>> Execute(IDbConnection connection, CancellationToken token, int? timeout = null)
-		{
-			Contract.Requires(connection != null);
-			Contract.Ensures(Contract.Result<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>>>() != null);
-
-			var results = connection.Execute(FullName,
-				token, 
-				timeout,
-				Parameters,
-				new[] { t1, t2, t3, t4, t5, t6 });
+			var results = Execute(connection, CancellationToken.None, timeout);
 			TransferOutputParameters();
 
 			return Tuple.Create((IEnumerable<T1>)results[t1], (IEnumerable<T2>)results[t2], (IEnumerable<T3>)results[t3], (IEnumerable<T4>)results[t4], (IEnumerable<T5>)results[t5], (IEnumerable<T6>)results[t6]); 
@@ -479,7 +442,14 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>>>>() != null);
 
-			return Task.Factory.StartNew(() => Execute(connection, token, timeout));
+			return Task.Factory.StartNew(
+				() => 
+				{
+					var results = Execute(connection, token, timeout);
+					TransferOutputParameters();
+
+					return Tuple.Create((IEnumerable<T1>)results[t1], (IEnumerable<T2>)results[t2], (IEnumerable<T3>)results[t3], (IEnumerable<T4>)results[t4], (IEnumerable<T5>)results[t5], (IEnumerable<T6>)results[t6]); 
+				}, token);
 		}
 
 		protected override StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,
@@ -531,19 +501,7 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>, IEnumerable<T7>>>() != null);
 
-			return Execute(connection, CancellationToken.None, timeout);
-		}
-
-		Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>, IEnumerable<T7>> Execute(IDbConnection connection, CancellationToken token, int? timeout = null)
-		{
-			Contract.Requires(connection != null);
-			Contract.Ensures(Contract.Result<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>, IEnumerable<T7>>>() != null);
-
-			var results = connection.Execute(FullName,
-				token, 
-				timeout,
-				Parameters,
-				new[] { t1, t2, t3, t4, t5, t6, t7 });
+			var results = Execute(connection, CancellationToken.None, timeout);
 			TransferOutputParameters();
 
 			return Tuple.Create((IEnumerable<T1>)results[t1], (IEnumerable<T2>)results[t2], (IEnumerable<T3>)results[t3], (IEnumerable<T4>)results[t4], (IEnumerable<T5>)results[t5], (IEnumerable<T6>)results[t6], (IEnumerable<T7>)results[t7]); 
@@ -562,7 +520,14 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>, IEnumerable<T7>>>>() != null);
 
-			return Task.Factory.StartNew(() => Execute(connection, token, timeout));
+			return Task.Factory.StartNew(
+				() => 
+				{
+					var results = Execute(connection, token, timeout);
+					TransferOutputParameters();
+
+					return Tuple.Create((IEnumerable<T1>)results[t1], (IEnumerable<T2>)results[t2], (IEnumerable<T3>)results[t3], (IEnumerable<T4>)results[t4], (IEnumerable<T5>)results[t5], (IEnumerable<T6>)results[t6], (IEnumerable<T7>)results[t7]); 
+				}, token);
 		}
 
 		protected override StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,

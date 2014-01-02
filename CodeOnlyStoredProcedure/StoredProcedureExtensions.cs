@@ -208,7 +208,7 @@ namespace CodeOnlyStoredProcedure
             {
                 ParameterName = name,
                 SqlDbType     = SqlDbType.Structured,
-                TypeName      = tableTypeName,
+                TypeName      = string.Format("[{0}].[{1}]", tableTypeSchema, tableTypeName),
                 Value         = table.ToTableValuedParameter(typeof(TRow))
             };
 
@@ -216,56 +216,100 @@ namespace CodeOnlyStoredProcedure
         }
         #endregion
 
-        // Suppress this message, because the procName is never set via user input
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2100:Review SQL queries for security vulnerabilities")]
-        internal static IDictionary<Type, IList> Execute(this IDbConnection connection,
-            string procName,
+        internal static IDictionary<Type, IList> Execute(this IDbCommand cmd,
             CancellationToken token,
-            int? commandTimeout = null,
-            IEnumerable<SqlParameter> parms = null,
-            IEnumerable<Type> outputTypes = null)
+            IEnumerable<Type> outputTypes)
         {
-            try
+            PropertyInfo pi;
+            var results = new Dictionary<Type, IList>();
+            var reader  = CreateDataReader(cmd, token);
+
+            token.ThrowIfCancellationRequested();
+
+            var first = true;
+            foreach (var currentType in outputTypes)
             {
-                // if we don't create a new connection, connection.Open may throw
-                // an exception in multi-threaded scenarios. If we don't Open it first,
-                // then the connection may be closed, and it will throw an exception. 
-                // We could track the connection state ourselves, but if any other code
-                // uses the connection (like an EF DbSet), we could possibly close
-                // the connection while a transaction is in process.
-                connection = new SqlConnection(connection.ConnectionString);
-                connection.Open();
-                using (var cmd = connection.CreateCommand())
+                if (first)
+                    first = false;
+                else if (!reader.NextResult())
+                    throw new InvalidOperationException("The StoredProcedure returned a different number of result sets than expected. Expected results of type " + outputTypes.Select(t => t.Name).Aggregate((s1, s2) => s1 + ", " + s2));
+                
+                // process results - repeat this loop for each result set returned
+                // by the stored proc for which we have a result type specified
+                var props      = currentType.GetMappedPropertiesBySqlName();
+                var foundProps = new HashSet<string>();
+                var values     = new object[reader.FieldCount];
+                var output     = (IList)Activator.CreateInstance (typeof(List<>)
+                                                 .MakeGenericType(currentType));
+
+                // process the result set
+                while (reader.Read())
                 {
-                    cmd.CommandText    = procName;
-                    cmd.CommandType    = CommandType.StoredProcedure;
-                    cmd.CommandTimeout = commandTimeout ?? 10;
+                    token.ThrowIfCancellationRequested();
+                    reader.GetValues(values);
 
-                    // move parameters to command object
-                    if (parms != null)
+                    var row = Activator.CreateInstance(currentType);
+
+                    for (int i = 0; i < reader.FieldCount; i++)
                     {
-                        foreach (var p in parms)
-                            cmd.Parameters.Add(p);
+                        var name = reader.GetName(i);
+                        if (props.TryGetValue(name, out pi))
+                        {
+                            var value = values[i];
+                            if (DBNull.Value.Equals(value))
+                                value = null;
+
+                            pi.SetValue(row, value, null);
+                            foundProps.Add(name);
+                        }
                     }
 
-                    if (outputTypes != null && outputTypes.Any())
-                        return cmd.Execute(token, outputTypes);
-                    else
-                    {
-                        token.ThrowIfCancellationRequested();
-                        cmd.ExecuteNonQuery();
-                        return null;
-                    }
+                    output.Add(row);
+                }
+
+                // throw an exception if the result set didn't include a mapped property
+                var unused = props.Keys.Except(foundProps).ToArray();
+                if (unused.Length > 0)
+                    throw new StoredProcedureResultsException(currentType, unused);
+
+                results.Add(currentType, output);
+            }
+
+            reader.Close();
+            return results;
+        }
+
+        internal static IDataReader CreateDataReader(this IDbCommand cmd, CancellationToken token)
+        {
+            var readerTask = Task.Factory.StartNew(() => cmd.ExecuteReader(), token);
+
+            // execute in a background task, so we can cancel the command if the 
+            // CancellationToken is cancelled
+            var continueWaiting = true;
+            while (continueWaiting)
+            {
+                Thread.SpinWait(1);
+                switch (readerTask.Status)
+                {
+                    case TaskStatus.Faulted:
+                        throw readerTask.Exception.InnerException;
+
+                    case TaskStatus.Canceled:
+                    case TaskStatus.RanToCompletion:
+                        continueWaiting = false;
+                        break;
+                }
+
+                if (token.IsCancellationRequested)
+                {
+                    cmd.Cancel();
+                    continueWaiting = false;
                 }
             }
-            catch (Exception ex)
-            {
-                throw new Exception("Error reading from stored proc " + procName + ": " + ex.Message, ex);
-            }
-            finally
-            {
-                connection.Close();
-            }
+
+            token.ThrowIfCancellationRequested();
+
+            return readerTask.Result;
         }
 
         #region Private Helpers
@@ -430,87 +474,6 @@ namespace CodeOnlyStoredProcedure
                 return SqlDbType.UniqueIdentifier;
 
             throw new NotSupportedException("Unable to determine the SqlDbType for the property. You can specify it by using a StoredProcedureParameterAttribute. Or prevent it from being mapped with the NotMappedAttribute.");
-        }
-
-        static IDictionary<Type, IList> Execute(this IDbCommand cmd,
-            CancellationToken token,
-            IEnumerable<Type> outputTypes)
-        {
-            PropertyInfo pi;
-            token.ThrowIfCancellationRequested();
-            var results = new Dictionary<Type, IList>();
-            var readerTask = Task.Factory.StartNew(() => cmd.ExecuteReader());
-            
-            var continueWaiting = true;
-            while (continueWaiting)
-            {
-                Thread.SpinWait(1);
-                switch (readerTask.Status)
-                {
-                    case TaskStatus.Canceled:
-                    case TaskStatus.Faulted:
-                    case TaskStatus.RanToCompletion:
-                        continueWaiting = false;
-                        break;
-                }
-
-                if (token.IsCancellationRequested)
-                {
-                    cmd.Cancel();
-                    continueWaiting = false;
-                }
-            }
-
-            token.ThrowIfCancellationRequested();
-
-            var reader = readerTask.Result;
-
-            foreach (var currentType in outputTypes)
-            {
-                // process results - repeat this loop for each result set returned
-                // by the stored proc for which we have a result type specified
-                var props      = currentType.GetMappedPropertiesBySqlName();
-                var foundProps = new HashSet<string>();
-                var values     = new object[reader.FieldCount];
-                var output     = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(currentType));
-
-                // process the result set
-                while (reader.Read())
-                {
-                    token .ThrowIfCancellationRequested();
-                    reader.GetValues(values);
-
-                    var row = Activator.CreateInstance(currentType);
-
-                    for (int i = 0; i < reader.FieldCount; i++)
-                    {
-                        var name = reader.GetName(i);
-                        if (props.TryGetValue(name, out pi))
-                        {
-                            var value = values[i];
-                            if (DBNull.Value.Equals(value))
-                                value = null;
-
-                            pi.SetValue(row, value, null);
-                            foundProps.Add(name);
-                        }
-                    }
-
-                    output.Add(row);
-                }
-
-                var unused = props.Keys.Except(foundProps).ToArray();
-                if (unused.Length > 0)
-                    throw new StoredProcedureResultsException(currentType, unused);
-
-                results.Add(currentType, output);
-
-                if (!reader.NextResult())
-                    break;
-            }
-
-            reader.Close();
-            return results;
         }
         #endregion
     }
