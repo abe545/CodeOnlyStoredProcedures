@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CodeOnlyStoredProcedure.DataTransformation;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
@@ -18,15 +19,22 @@ namespace CodeOnlyStoredProcedure
     public class StoredProcedure
     {
         #region Private Fields
+        private static readonly IList<IDataTransformer> globalTransformers = new List<IDataTransformer>
+        {
+            new EnumValueTransformer()
+        };
+
         private readonly string schema;
         private readonly string name;
 
 #if NET40
         private readonly IEnumerable<SqlParameter>                  parameters;
         private readonly ReadOnlyDictionary<string, Action<object>> outputParameterSetters;
+        private readonly IEnumerable<IDataTransformer>              dataTransformers;
 #else
         private readonly ImmutableList<SqlParameter>                 parameters;
         private readonly ImmutableDictionary<string, Action<object>> outputParameterSetters; 
+        private readonly ImmutableList<IDataTransformer>             dataTransformers;
 #endif
         #endregion
 
@@ -80,6 +88,16 @@ namespace CodeOnlyStoredProcedure
                 return outputParameterSetters;
             }
         }
+
+        protected internal IEnumerable<IDataTransformer> DataTransformers
+        {
+            get
+            {
+                Contract.Ensures(Contract.Result<IEnumerable<IDataTransformer>>() != null);
+
+                return dataTransformers;
+            }
+        }
         #endregion
 
         #region ctors
@@ -93,7 +111,8 @@ namespace CodeOnlyStoredProcedure
         public StoredProcedure(string schema, string name)
             : this(schema, name,
                    new SqlParameter[0],
-                   new Dictionary<string, Action<object>>())
+                   new Dictionary<string, Action<object>>(),
+                   new IDataTransformer[0])
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
@@ -103,7 +122,8 @@ namespace CodeOnlyStoredProcedure
         public StoredProcedure(string schema, string name)
             : this(schema, name,
                    ImmutableList<SqlParameter>.Empty,
-                   ImmutableDictionary<string, Action<object>>.Empty)
+                   ImmutableDictionary<string, Action<object>>.Empty,
+                   ImmutableList<IDataTransformer>.Empty)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
@@ -113,21 +133,25 @@ namespace CodeOnlyStoredProcedure
         protected StoredProcedure(string schema,
                                   string name,
                                   IEnumerable<SqlParameter> parameters,
-                                  IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
+                                  IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
+                                  IEnumerable<IDataTransformer> dataTransformers)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
             Contract.Requires(parameters != null);
             Contract.Requires(outputParameterSetters != null);
+            Contract.Requires(dataTransformers != null);
 
             this.schema                 = schema;
             this.name                   = name;
 #if NET40
             this.parameters             = new ReadOnlyCollection<SqlParameter>(parameters.ToArray());
             this.outputParameterSetters = new ReadOnlyDictionary<string, Action<object>>(outputParameterSetters.ToArray());
+            this.dataTransformers       = new ReadOnlyCollection<IDataTransformer>(dataTransformers.ToArray());
 #else
             this.parameters             = (ImmutableList<SqlParameter>)parameters;
             this.outputParameterSetters = (ImmutableDictionary<string, Action<object>>)outputParameterSetters;
+            this.dataTransformers       = (ImmutableList<IDataTransformer>)dataTransformers;
 #endif
         } 
         #endregion
@@ -158,9 +182,9 @@ namespace CodeOnlyStoredProcedure
             Contract.Ensures(Contract.Result<StoredProcedure>() != null);
 
 #if NET40
-            return CloneCore(parameters.Concat(new[] { parameter }), outputParameterSetters);
+            return CloneCore(parameters.Concat(new[] { parameter }), outputParameterSetters, dataTransformers);
 #else
-            return CloneCore(parameters.Add(parameter), outputParameterSetters);
+            return CloneCore(parameters.Add(parameter), outputParameterSetters, dataTransformers);
 #endif
         }
 
@@ -175,22 +199,43 @@ namespace CodeOnlyStoredProcedure
                              outputParameterSetters.Concat(new[] 
                                                           {
                                                               new KeyValuePair<string, Action<object>>(parameter.ParameterName, setter) 
-                                                          }));
+                                                          }), 
+                             dataTransformers);
 
 #else
             return CloneCore(parameters.Add(parameter),
-                             outputParameterSetters.Add(parameter.ParameterName, setter));
+                             outputParameterSetters.Add(parameter.ParameterName, setter), 
+                             dataTransformers);
 #endif
         } 
 
-        protected virtual StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,
-            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
+        protected internal StoredProcedure CloneWith(IDataTransformer transformer)
+        {
+            Contract.Requires(transformer != null);
+            Contract.Ensures(Contract.Result<StoredProcedure>() != null);
+
+#if NET40
+            return CloneCore(parameters,
+                             outputParameterSetters,
+                             dataTransformers.Concat(new[] { transformer }));
+#else
+            return CloneCore(parameters,
+                             outputParameterSetters,
+                             dataTransformers.Add(transformer));
+#endif
+        }
+
+        protected virtual StoredProcedure CloneCore(
+            IEnumerable<SqlParameter> parameters,
+            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
+            IEnumerable<IDataTransformer> dataTransformers)
         {
             Contract.Requires(parameters != null);
             Contract.Requires(outputParameterSetters != null);
+            Contract.Requires(dataTransformers != null);
             Contract.Ensures(Contract.Result<StoredProcedure>() != null);
 
-            return new StoredProcedure(schema, name, parameters, outputParameterSetters);
+            return new StoredProcedure(schema, name, parameters, outputParameterSetters, dataTransformers);
         }
         #endregion
 
@@ -262,7 +307,7 @@ namespace CodeOnlyStoredProcedure
 
                     IDictionary<Type, IList> results;
                     if (outputTypes != null && outputTypes.Any())
-                        results = cmd.Execute(token, outputTypes);
+                        results = cmd.Execute(token, outputTypes, globalTransformers.Concat(dataTransformers));
                     else
                     {
                         cmd.ExecuteNonQuery();
@@ -296,6 +341,7 @@ namespace CodeOnlyStoredProcedure
             Contract.Invariant(!string.IsNullOrWhiteSpace(name));
             Contract.Invariant(parameters             != null);
             Contract.Invariant(outputParameterSetters != null);
+            Contract.Invariant(dataTransformers       != null);
         }
     }
 }

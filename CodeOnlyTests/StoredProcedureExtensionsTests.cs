@@ -698,6 +698,34 @@ namespace CodeOnlyTests
         }
         #endregion
 
+        #region WithDataTransformerTests
+        [TestMethod]
+        public void TestWithDataTransformerStoresTransformer()
+        {
+            var orig = new StoredProcedure("Test");
+            var xform = new Mock<IDataTransformer>().Object;
+
+            var toTest = orig.WithDataTransformer(xform);
+
+            Assert.IsFalse(ReferenceEquals(orig, toTest));
+            Assert.AreEqual(xform, toTest.DataTransformers.Single());
+        }
+
+        [TestMethod]
+        public void TestWithDataTransformerAddsTransformersInOrder()
+        {
+            var orig = new StoredProcedure("Test");
+            var x1 = new Mock<IDataTransformer>().Object;
+            var x2 = new Mock<IDataTransformer>().Object;
+
+            var toTest = orig.WithDataTransformer(x1).WithDataTransformer(x2);
+
+            Assert.AreEqual(2, toTest.DataTransformers.Count());
+            Assert.AreEqual(x1, toTest.DataTransformers.First());
+            Assert.AreEqual(x2, toTest.DataTransformers.Last());
+        }
+        #endregion
+
         #region CreateDataReader Tests
         [TestMethod]
         public void TestCreateDataReaderReturnsReader()
@@ -807,7 +835,7 @@ namespace CodeOnlyTests
             bool exceptionThrown = false;
             try
             {
-                command.Object.Execute(cts.Token, Enumerable.Empty<Type>());
+                command.Object.Execute(cts.Token, Enumerable.Empty<Type>(), Enumerable.Empty<IDataTransformer>());
             }
             catch (OperationCanceledException)
             {
@@ -838,7 +866,7 @@ namespace CodeOnlyTests
 
             var cts = new CancellationTokenSource();
 
-            var toTest = Task.Factory.StartNew(() => command.Object.Execute(cts.Token, new[] { typeof(SingleResultSet) }));
+            var toTest = Task.Factory.StartNew(() => command.Object.Execute(cts.Token, new[] { typeof(SingleResultSet) }, Enumerable.Empty<IDataTransformer>()));
             bool exceptionThrown = false;
 
             var continuation =
@@ -896,7 +924,7 @@ namespace CodeOnlyTests
                   .Callback((object[] arr) => vals.CopyTo(arr, 0))
                   .Returns(6);
 
-            var results = command.Object.Execute(CancellationToken.None, new[] { typeof(SingleResultSet) });
+            var results = command.Object.Execute(CancellationToken.None, new[] { typeof(SingleResultSet) }, Enumerable.Empty<IDataTransformer>());
 
             var toTest = (IList<SingleResultSet>)results[typeof(SingleResultSet)];
 
@@ -942,7 +970,7 @@ namespace CodeOnlyTests
                   .Callback((object[] arr) => arr[0] = "Hello, World!")
                   .Returns(1);
 
-            var results = command.Object.Execute(CancellationToken.None, new[] { typeof(RenamedColumn) });
+            var results = command.Object.Execute(CancellationToken.None, new[] { typeof(RenamedColumn) }, Enumerable.Empty<IDataTransformer>());
 
             var toTest = (IList<RenamedColumn>)results[typeof(RenamedColumn)];
 
@@ -977,7 +1005,7 @@ namespace CodeOnlyTests
                   .Callback((object[] arr) => arr[0] = results[index])
                   .Returns(1);
 
-            var res = command.Object.Execute(CancellationToken.None, new[] { typeof(SingleColumn) });
+            var res = command.Object.Execute(CancellationToken.None, new[] { typeof(SingleColumn) }, Enumerable.Empty<IDataTransformer>());
 
             var toTest = (IList<SingleColumn>)res[typeof(SingleColumn)];
 
@@ -1023,7 +1051,7 @@ namespace CodeOnlyTests
                   .Callback((object[] arr) => arr[0] = arr[1] = arr[2] = DBNull.Value)
                   .Returns(3);
 
-            var results = command.Object.Execute(CancellationToken.None, new[] { typeof(NullableColumns) });
+            var results = command.Object.Execute(CancellationToken.None, new[] { typeof(NullableColumns) }, Enumerable.Empty<IDataTransformer>());
 
             var toTest = (IList<NullableColumns>)results[typeof(NullableColumns)];
 
@@ -1067,7 +1095,7 @@ namespace CodeOnlyTests
                   .Callback((object[] arr) => arr[0] = DBNull.Value)
                   .Returns(1);
 
-            command.Object.Execute(CancellationToken.None, new[] { typeof(SingleColumn) });
+            command.Object.Execute(CancellationToken.None, new[] { typeof(SingleColumn) }, Enumerable.Empty<IDataTransformer>());
         }
 
         [TestMethod]
@@ -1101,7 +1129,7 @@ namespace CodeOnlyTests
                   .Callback((object[] arr) => arr[0] = "Hello, World!")
                   .Returns(1);
 
-            var results = command.Object.Execute(CancellationToken.None, new[] { typeof(WithStaticValue) });
+            var results = command.Object.Execute(CancellationToken.None, new[] { typeof(WithStaticValue) }, Enumerable.Empty<IDataTransformer>());
 
             var toTest = (IList<WithStaticValue>)results[typeof(WithStaticValue)];
 
@@ -1142,7 +1170,7 @@ namespace CodeOnlyTests
                   .Callback((object[] arr) => arr[0] = DBNull.Value)
                   .Returns(1);
 
-            var results = command.Object.Execute(CancellationToken.None, new[] { typeof(WithStaticValue) });
+            var results = command.Object.Execute(CancellationToken.None, new[] { typeof(WithStaticValue) }, Enumerable.Empty<IDataTransformer>());
 
             var toTest = (IList<WithStaticValue>)results[typeof(WithStaticValue)];
 
@@ -1183,7 +1211,7 @@ namespace CodeOnlyTests
                   .Callback((object[] arr) => arr[0] = "Hello, World!")
                   .Returns(1);
 
-            var results = command.Object.Execute(CancellationToken.None, new[] { typeof(RenamedColumnWithStaticValue) });
+            var results = command.Object.Execute(CancellationToken.None, new[] { typeof(RenamedColumnWithStaticValue) }, Enumerable.Empty<IDataTransformer>());
 
             var toTest = (IList<RenamedColumnWithStaticValue>)results[typeof(RenamedColumnWithStaticValue)];
 
@@ -1224,7 +1252,7 @@ namespace CodeOnlyTests
                   .Callback((object[] arr) => arr[0] = "Hello, World!")
                   .Returns(1);
 
-            var results = command.Object.Execute(CancellationToken.None, new[] { typeof(WithStaticValueToUpper) });
+            var results = command.Object.Execute(CancellationToken.None, new[] { typeof(WithStaticValueToUpper) }, Enumerable.Empty<IDataTransformer>());
 
             var toTest = (IList<WithStaticValueToUpper>)results[typeof(WithStaticValueToUpper)];
 

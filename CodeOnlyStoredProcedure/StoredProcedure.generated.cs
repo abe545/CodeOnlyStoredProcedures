@@ -30,7 +30,7 @@ namespace CodeOnlyStoredProcedure
 		}
 		
 		internal StoredProcedure(StoredProcedure toClone)
-			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.OutputParameterSetters) 
+			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.OutputParameterSetters, toClone.DataTransformers) 
 		{ 
 			Contract.Requires(toClone != null);
 		}
@@ -38,13 +38,15 @@ namespace CodeOnlyStoredProcedure
 		protected StoredProcedure(string schema, 
             string name,
             IEnumerable<SqlParameter> parameters,
-            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
-			: base(schema, name, parameters, outputParameterSetters)
+            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
+			IEnumerable<IDataTransformer> dataTransformers)
+			: base(schema, name, parameters, outputParameterSetters, dataTransformers)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
 			Contract.Requires(parameters != null);
 			Contract.Requires(outputParameterSetters != null);
+			Contract.Requires(dataTransformers != null);
 		}
 		
 		public new IEnumerable<T1> Execute(IDbConnection connection, int? timeout = null)
@@ -79,10 +81,12 @@ namespace CodeOnlyStoredProcedure
 				}, token);
 		}
 
-		protected override StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,
-            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
+		protected override StoredProcedure CloneCore(
+			IEnumerable<SqlParameter> parameters,
+            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
+			IEnumerable<IDataTransformer> dataTransformers)
         {
-            return new StoredProcedure<T1>(Schema, Name, parameters, outputParameterSetters);
+            return new StoredProcedure<T1>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
         }
 	}
 	#endregion
@@ -105,7 +109,7 @@ namespace CodeOnlyStoredProcedure
 		}
 		
 		internal StoredProcedure(StoredProcedure toClone)
-			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.OutputParameterSetters) 
+			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.OutputParameterSetters, toClone.DataTransformers) 
 		{ 
 			Contract.Requires(toClone != null);
 		}
@@ -113,13 +117,15 @@ namespace CodeOnlyStoredProcedure
 		protected StoredProcedure(string schema, 
             string name,
             IEnumerable<SqlParameter> parameters,
-            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
-			: base(schema, name, parameters, outputParameterSetters)
+            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
+			IEnumerable<IDataTransformer> dataTransformers)
+			: base(schema, name, parameters, outputParameterSetters, dataTransformers)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
 			Contract.Requires(parameters != null);
 			Contract.Requires(outputParameterSetters != null);
+			Contract.Requires(dataTransformers != null);
 		}
 		
 		public new Tuple<IEnumerable<T1>, IEnumerable<T2>> Execute(IDbConnection connection, int? timeout = null)
@@ -154,10 +160,12 @@ namespace CodeOnlyStoredProcedure
 				}, token);
 		}
 
-		protected override StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,
-            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
+		protected override StoredProcedure CloneCore(
+			IEnumerable<SqlParameter> parameters,
+            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
+			IEnumerable<IDataTransformer> dataTransformers)
         {
-            return new StoredProcedure<T1, T2>(Schema, Name, parameters, outputParameterSetters);
+            return new StoredProcedure<T1, T2>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
         }
 	}
 	#endregion
@@ -181,7 +189,7 @@ namespace CodeOnlyStoredProcedure
 		}
 		
 		internal StoredProcedure(StoredProcedure toClone)
-			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.OutputParameterSetters) 
+			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.OutputParameterSetters, toClone.DataTransformers) 
 		{ 
 			Contract.Requires(toClone != null);
 		}
@@ -189,13 +197,15 @@ namespace CodeOnlyStoredProcedure
 		protected StoredProcedure(string schema, 
             string name,
             IEnumerable<SqlParameter> parameters,
-            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
-			: base(schema, name, parameters, outputParameterSetters)
+            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
+			IEnumerable<IDataTransformer> dataTransformers)
+			: base(schema, name, parameters, outputParameterSetters, dataTransformers)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
 			Contract.Requires(parameters != null);
 			Contract.Requires(outputParameterSetters != null);
+			Contract.Requires(dataTransformers != null);
 		}
 		
 		public new Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>> Execute(IDbConnection connection, int? timeout = null)
@@ -230,10 +240,12 @@ namespace CodeOnlyStoredProcedure
 				}, token);
 		}
 
-		protected override StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,
-            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
+		protected override StoredProcedure CloneCore(
+			IEnumerable<SqlParameter> parameters,
+            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
+			IEnumerable<IDataTransformer> dataTransformers)
         {
-            return new StoredProcedure<T1, T2, T3>(Schema, Name, parameters, outputParameterSetters);
+            return new StoredProcedure<T1, T2, T3>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
         }
 	}
 	#endregion
@@ -258,7 +270,7 @@ namespace CodeOnlyStoredProcedure
 		}
 		
 		internal StoredProcedure(StoredProcedure toClone)
-			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.OutputParameterSetters) 
+			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.OutputParameterSetters, toClone.DataTransformers) 
 		{ 
 			Contract.Requires(toClone != null);
 		}
@@ -266,13 +278,15 @@ namespace CodeOnlyStoredProcedure
 		protected StoredProcedure(string schema, 
             string name,
             IEnumerable<SqlParameter> parameters,
-            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
-			: base(schema, name, parameters, outputParameterSetters)
+            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
+			IEnumerable<IDataTransformer> dataTransformers)
+			: base(schema, name, parameters, outputParameterSetters, dataTransformers)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
 			Contract.Requires(parameters != null);
 			Contract.Requires(outputParameterSetters != null);
+			Contract.Requires(dataTransformers != null);
 		}
 		
 		public new Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>> Execute(IDbConnection connection, int? timeout = null)
@@ -307,10 +321,12 @@ namespace CodeOnlyStoredProcedure
 				}, token);
 		}
 
-		protected override StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,
-            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
+		protected override StoredProcedure CloneCore(
+			IEnumerable<SqlParameter> parameters,
+            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
+			IEnumerable<IDataTransformer> dataTransformers)
         {
-            return new StoredProcedure<T1, T2, T3, T4>(Schema, Name, parameters, outputParameterSetters);
+            return new StoredProcedure<T1, T2, T3, T4>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
         }
 	}
 	#endregion
@@ -336,7 +352,7 @@ namespace CodeOnlyStoredProcedure
 		}
 		
 		internal StoredProcedure(StoredProcedure toClone)
-			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.OutputParameterSetters) 
+			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.OutputParameterSetters, toClone.DataTransformers) 
 		{ 
 			Contract.Requires(toClone != null);
 		}
@@ -344,13 +360,15 @@ namespace CodeOnlyStoredProcedure
 		protected StoredProcedure(string schema, 
             string name,
             IEnumerable<SqlParameter> parameters,
-            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
-			: base(schema, name, parameters, outputParameterSetters)
+            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
+			IEnumerable<IDataTransformer> dataTransformers)
+			: base(schema, name, parameters, outputParameterSetters, dataTransformers)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
 			Contract.Requires(parameters != null);
 			Contract.Requires(outputParameterSetters != null);
+			Contract.Requires(dataTransformers != null);
 		}
 		
 		public new Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>> Execute(IDbConnection connection, int? timeout = null)
@@ -385,10 +403,12 @@ namespace CodeOnlyStoredProcedure
 				}, token);
 		}
 
-		protected override StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,
-            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
+		protected override StoredProcedure CloneCore(
+			IEnumerable<SqlParameter> parameters,
+            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
+			IEnumerable<IDataTransformer> dataTransformers)
         {
-            return new StoredProcedure<T1, T2, T3, T4, T5>(Schema, Name, parameters, outputParameterSetters);
+            return new StoredProcedure<T1, T2, T3, T4, T5>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
         }
 	}
 	#endregion
@@ -415,7 +435,7 @@ namespace CodeOnlyStoredProcedure
 		}
 		
 		internal StoredProcedure(StoredProcedure toClone)
-			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.OutputParameterSetters) 
+			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.OutputParameterSetters, toClone.DataTransformers) 
 		{ 
 			Contract.Requires(toClone != null);
 		}
@@ -423,13 +443,15 @@ namespace CodeOnlyStoredProcedure
 		protected StoredProcedure(string schema, 
             string name,
             IEnumerable<SqlParameter> parameters,
-            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
-			: base(schema, name, parameters, outputParameterSetters)
+            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
+			IEnumerable<IDataTransformer> dataTransformers)
+			: base(schema, name, parameters, outputParameterSetters, dataTransformers)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
 			Contract.Requires(parameters != null);
 			Contract.Requires(outputParameterSetters != null);
+			Contract.Requires(dataTransformers != null);
 		}
 		
 		public new Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>> Execute(IDbConnection connection, int? timeout = null)
@@ -464,10 +486,12 @@ namespace CodeOnlyStoredProcedure
 				}, token);
 		}
 
-		protected override StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,
-            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
+		protected override StoredProcedure CloneCore(
+			IEnumerable<SqlParameter> parameters,
+            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
+			IEnumerable<IDataTransformer> dataTransformers)
         {
-            return new StoredProcedure<T1, T2, T3, T4, T5, T6>(Schema, Name, parameters, outputParameterSetters);
+            return new StoredProcedure<T1, T2, T3, T4, T5, T6>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
         }
 	}
 	#endregion
@@ -495,7 +519,7 @@ namespace CodeOnlyStoredProcedure
 		}
 		
 		internal StoredProcedure(StoredProcedure toClone)
-			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.OutputParameterSetters) 
+			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.OutputParameterSetters, toClone.DataTransformers) 
 		{ 
 			Contract.Requires(toClone != null);
 		}
@@ -503,13 +527,15 @@ namespace CodeOnlyStoredProcedure
 		protected StoredProcedure(string schema, 
             string name,
             IEnumerable<SqlParameter> parameters,
-            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
-			: base(schema, name, parameters, outputParameterSetters)
+            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
+			IEnumerable<IDataTransformer> dataTransformers)
+			: base(schema, name, parameters, outputParameterSetters, dataTransformers)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
 			Contract.Requires(parameters != null);
 			Contract.Requires(outputParameterSetters != null);
+			Contract.Requires(dataTransformers != null);
 		}
 		
 		public new Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>, IEnumerable<T7>> Execute(IDbConnection connection, int? timeout = null)
@@ -544,10 +570,12 @@ namespace CodeOnlyStoredProcedure
 				}, token);
 		}
 
-		protected override StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,
-            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
+		protected override StoredProcedure CloneCore(
+			IEnumerable<SqlParameter> parameters,
+            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
+			IEnumerable<IDataTransformer> dataTransformers)
         {
-            return new StoredProcedure<T1, T2, T3, T4, T5, T6, T7>(Schema, Name, parameters, outputParameterSetters);
+            return new StoredProcedure<T1, T2, T3, T4, T5, T6, T7>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
         }
 	}
 	#endregion

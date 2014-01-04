@@ -4,6 +4,14 @@ using System.Diagnostics.Contracts;
 
 namespace CodeOnlyStoredProcedure
 {
+    /// <summary>
+    /// A read-only implementation of IDictionary$lt;TKey, TValue$gt;
+    /// </summary>
+    /// <remarks>This is needed for the 4.0 version of CodeONlyStoredProcedure because
+    /// the Immutable Collection project only works on 4.5 and above. Ironically, .NET 4.5
+    /// ships with a ReadOnlyDictionary implementation</remarks>
+    /// <typeparam name="TKey">The type to use as the key of the dictionary</typeparam>
+    /// <typeparam name="TValue">The type of values stored in the dictionary</typeparam>
     public sealed class ReadOnlyDictionary<TKey, TValue> : IDictionary<TKey, TValue>
     {
         private const string mutateException = "Can not modify a ReadOnlyDictionary";
@@ -94,6 +102,12 @@ namespace CodeOnlyStoredProcedure
         }
         #endregion
 
+        /// <summary>
+        /// Creates a ReadOnlyDictionary that provides read-only access to the given
+        /// IDictionary. If the given dictionary is mutated after constructing this
+        /// ReadOnlyDictionary, the ReadOnlyDictionary will reflect those changes.
+        /// </summary>
+        /// <param name="toWrap">The dictionary to provide read-only access to.</param>
         public ReadOnlyDictionary(IDictionary<TKey, TValue> toWrap)
         {
             Contract.Requires(toWrap != null);
@@ -101,6 +115,11 @@ namespace CodeOnlyStoredProcedure
             internalCollection = toWrap;
         }
 
+        /// <summary>
+        /// Creates a ReadOnlyDictionary with the given KeyValuePairs.
+        /// </summary>
+        /// <param name="values">The KeyValuePairs that hold the only data this
+        /// ReadOnlyDictionary will ever provide access to.</param>
         public ReadOnlyDictionary(IEnumerable<KeyValuePair<TKey, TValue>> values)
         {
             Contract.Requires(values != null);

@@ -266,13 +266,26 @@ namespace CodeOnlyStoredProcedure
         }
         #endregion
 
+        #region WithDataTransformer
+        public static TSP WithDataTransformer<TSP>(this TSP sp, IDataTransformer transformer)
+            where TSP : StoredProcedure
+        {
+            Contract.Requires(sp != null);
+            Contract.Requires(transformer != null);
+            Contract.Ensures(Contract.Result<TSP>() != null);
+
+            return (TSP)sp.CloneWith(transformer);
+        }
+        #endregion
+
         internal static IDictionary<Type, IList> Execute(this IDbCommand cmd,
             CancellationToken token,
             IEnumerable<Type> outputTypes,
-            IEnumerable<IDataTransformer> transformers = null)
+            IEnumerable<IDataTransformer> transformers)
         {
             Contract.Requires(cmd != null);
             Contract.Requires(outputTypes != null);
+            Contract.Requires(transformers != null);
             Contract.Ensures(Contract.Result<IDictionary<Type, IList>>() != null);
 
             PropertyInfo pi;
@@ -315,13 +328,10 @@ namespace CodeOnlyStoredProcedure
                                 value = null;
 
                             var attrs = pi.GetCustomAttributes(false).Cast<Attribute>().ToArray();
-                            if (transformers != null)
+                            foreach (var xform in transformers)
                             {
-                                foreach (var xform in transformers)
-                                {
-                                    if (xform.CanTransform(value, pi.PropertyType, attrs))
-                                        value = xform.Transform(value, pi.PropertyType, attrs);
-                                }
+                                if (xform.CanTransform(value, pi.PropertyType, attrs))
+                                    value = xform.Transform(value, pi.PropertyType, attrs);
                             }
 
                             var propTransformers = attrs.OfType<DataTransformerAttributeBase>()

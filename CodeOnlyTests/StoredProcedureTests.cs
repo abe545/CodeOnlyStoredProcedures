@@ -3,6 +3,7 @@ using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using CodeOnlyStoredProcedure;
 using System.Data.SqlClient;
+using Moq;
 
 namespace CodeOnlyTests
 {
@@ -105,6 +106,7 @@ namespace CodeOnlyTests
             Assert.AreEqual("[test].[proc]", sp.FullName);
             Assert.AreEqual(0, sp.Parameters.Count());
             Assert.AreEqual(0, sp.OutputParameterSetters.Count());
+            Assert.AreEqual(0, sp.DataTransformers.Count());
         }
 
         [TestMethod]
@@ -119,6 +121,22 @@ namespace CodeOnlyTests
             Assert.AreEqual("[test].[proc]", sp.FullName);
             Assert.AreEqual(0, sp.Parameters.Count());
             Assert.AreEqual(0, sp.OutputParameterSetters.Count());
+            Assert.AreEqual(0, sp.DataTransformers.Count());
+        }
+
+        [TestMethod]
+        public void TestCloneWithTransformerDoesNotAlterOriginalProcedure()
+        {
+            var sp = new StoredProcedure("test", "proc");
+
+            var toTest = sp.CloneWith(new Mock<IDataTransformer>().Object);
+
+            Assert.AreEqual("test", sp.Schema);
+            Assert.AreEqual("proc", sp.Name);
+            Assert.AreEqual("[test].[proc]", sp.FullName);
+            Assert.AreEqual(0, sp.Parameters.Count());
+            Assert.AreEqual(0, sp.OutputParameterSetters.Count());
+            Assert.AreEqual(0, sp.DataTransformers.Count());
         }
 
         [TestMethod]
@@ -133,6 +151,7 @@ namespace CodeOnlyTests
             Assert.AreEqual("[dbo].[test_proc]", toTest.FullName);
             Assert.AreEqual(1, toTest.Parameters.Count());
             Assert.AreEqual(0, toTest.OutputParameterSetters.Count());
+            Assert.AreEqual(0, toTest.DataTransformers.Count());
         }
 
         [TestMethod]
@@ -147,6 +166,7 @@ namespace CodeOnlyTests
             Assert.AreEqual("[test].[proc]", toTest.FullName);
             Assert.AreEqual(1, toTest.Parameters.Count());
             Assert.AreEqual(0, toTest.OutputParameterSetters.Count());
+            Assert.AreEqual(0, toTest.DataTransformers.Count());
         }
 
         [TestMethod]
@@ -161,6 +181,7 @@ namespace CodeOnlyTests
             Assert.AreEqual("[dbo].[test_proc]", toTest.FullName);
             Assert.AreEqual(1, toTest.Parameters.Count());
             Assert.AreEqual(1, toTest.OutputParameterSetters.Count());
+            Assert.AreEqual(0, toTest.DataTransformers.Count());
         }
 
         [TestMethod]
@@ -175,6 +196,37 @@ namespace CodeOnlyTests
             Assert.AreEqual("[test].[proc]", toTest.FullName);
             Assert.AreEqual(1, toTest.Parameters.Count());
             Assert.AreEqual(1, toTest.OutputParameterSetters.Count());
+            Assert.AreEqual(0, toTest.DataTransformers.Count());
+        }
+
+        [TestMethod]
+        public void TestCloneWithTransformerRetainsNameAndDefaultSchema()
+        {
+            var sp = new StoredProcedure("test_proc");
+
+            var toTest = sp.CloneWith(new Mock<IDataTransformer>().Object);
+
+            Assert.AreEqual("dbo", toTest.Schema);
+            Assert.AreEqual("test_proc", toTest.Name);
+            Assert.AreEqual("[dbo].[test_proc]", toTest.FullName);
+            Assert.AreEqual(0, toTest.Parameters.Count());
+            Assert.AreEqual(0, toTest.OutputParameterSetters.Count());
+            Assert.AreEqual(1, toTest.DataTransformers.Count());
+        }
+
+        [TestMethod]
+        public void TestCloneWithTransformerRetainsNameAndSchema()
+        {
+            var sp = new StoredProcedure("test", "proc");
+
+            var toTest = sp.CloneWith(new Mock<IDataTransformer>().Object);
+
+            Assert.AreEqual("test", toTest.Schema);
+            Assert.AreEqual("proc", toTest.Name);
+            Assert.AreEqual("[test].[proc]", toTest.FullName);
+            Assert.AreEqual(0, toTest.Parameters.Count());
+            Assert.AreEqual(0, toTest.OutputParameterSetters.Count());
+            Assert.AreEqual(1, toTest.DataTransformers.Count());
         }
 
         [TestMethod]
@@ -199,6 +251,16 @@ namespace CodeOnlyTests
             var kv = toTest.OutputParameterSetters.Single();
             Assert.AreEqual("Parm", kv.Key);
             Assert.AreEqual(a, kv.Value);
+        }
+
+        [TestMethod]
+        public void TestCloneWithTransformerStoresTransformer()
+        {
+            var x = new Mock<IDataTransformer>().Object;
+
+            var toTest = new StoredProcedure("Test").CloneWith(x);
+
+            Assert.AreEqual(x, toTest.DataTransformers.Single());
         }
         #endregion
 
