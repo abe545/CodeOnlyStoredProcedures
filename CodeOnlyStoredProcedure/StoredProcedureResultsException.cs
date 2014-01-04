@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.Contracts;
 using System.Text;
 
 namespace CodeOnlyStoredProcedure
@@ -9,10 +10,15 @@ namespace CodeOnlyStoredProcedure
         public StoredProcedureResultsException(Type resultType, params string[] propertyNames)
             : base(BuildMessage(resultType, propertyNames))
         {
+            Contract.Requires(resultType != null);
+            Contract.Requires(propertyNames != null && propertyNames.Length > 0);
         }
 
         private static string BuildMessage(Type resultType, string[] propertyNames)
         {
+            Contract.Requires(resultType != null);
+            Contract.Requires(propertyNames != null && propertyNames.Length > 0);
+
             string props, cols = "columns", were = "were";
             if (propertyNames.Length == 1)
             {
