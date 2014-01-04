@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Data;
 using System.Data.SqlClient;
+using System.Diagnostics.Contracts;
 
 namespace CodeOnlyStoredProcedure
 {
@@ -46,6 +47,9 @@ namespace CodeOnlyStoredProcedure
 
         public virtual SqlParameter CreateSqlParameter(string propertyName)
         {
+            Contract.Requires(!string.IsNullOrWhiteSpace(propertyName));
+            Contract.Ensures(Contract.Result<SqlParameter>() != null);
+
             var res = new SqlParameter
             {
                 ParameterName = Name ?? propertyName,

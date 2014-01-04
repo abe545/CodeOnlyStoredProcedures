@@ -103,6 +103,10 @@ public class StoredProcedureTemplate : Template
             IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
 			: base(schema, name, parameters, outputParameterSetters)
         {
+            Contract.Requires(!string.IsNullOrWhiteSpace(schema));
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+			Contract.Requires(parameters != null);
+			Contract.Requires(outputParameterSetters != null);
 		}
 		
 		public new <#+ GetResults(); #> Execute(IDbConnection connection, int? timeout = null)
@@ -110,8 +114,7 @@ public class StoredProcedureTemplate : Template
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<<#+ GetResults(); #>>() != null);
 
-			var results = Execute(connection, CancellationToken.None, timeout);
-			TransferOutputParameters();
+			var results = Execute(connection, CancellationToken.None, timeout, new[] { <#+ GetCachedFields(); #> });
 
 			return <#+ ParseResults(); #> 
 		}
@@ -132,8 +135,7 @@ public class StoredProcedureTemplate : Template
 			return Task.Factory.StartNew(
 				() => 
 				{
-					var results = Execute(connection, token, timeout);
-					TransferOutputParameters();
+					var results = Execute(connection, token, timeout, new[] { <#+ GetCachedFields(); #> });
 
 					return <#+ ParseResults(); #> 
 				}, token);

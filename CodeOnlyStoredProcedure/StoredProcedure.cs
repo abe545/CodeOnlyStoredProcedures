@@ -136,6 +136,7 @@ namespace CodeOnlyStoredProcedure
         public static StoredProcedure Create(string name)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Ensures(Contract.Result<StoredProcedure>() != null);
 
             return new StoredProcedure(name);
         }
@@ -144,6 +145,7 @@ namespace CodeOnlyStoredProcedure
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Ensures(Contract.Result<StoredProcedure>() != null);
 
             return new StoredProcedure(schema, name);
         } 
@@ -152,6 +154,9 @@ namespace CodeOnlyStoredProcedure
         #region Cloning
         protected internal StoredProcedure CloneWith(SqlParameter parameter)
         {
+            Contract.Requires(parameter != null);
+            Contract.Ensures(Contract.Result<StoredProcedure>() != null);
+
 #if NET40
             return CloneCore(parameters.Concat(new[] { parameter }), outputParameterSetters);
 #else
@@ -161,6 +166,10 @@ namespace CodeOnlyStoredProcedure
 
         protected internal StoredProcedure CloneWith(SqlParameter parameter, Action<object> setter)
         {
+            Contract.Requires(parameter != null);
+            Contract.Requires(setter != null);
+            Contract.Ensures(Contract.Result<StoredProcedure>() != null);
+
 #if NET40
             return CloneCore(parameters            .Concat(new[] { parameter }),
                              outputParameterSetters.Concat(new[] 
@@ -177,6 +186,10 @@ namespace CodeOnlyStoredProcedure
         protected virtual StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,
             IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
         {
+            Contract.Requires(parameters != null);
+            Contract.Requires(outputParameterSetters != null);
+            Contract.Ensures(Contract.Result<StoredProcedure>() != null);
+
             return new StoredProcedure(schema, name, parameters, outputParameterSetters);
         }
         #endregion
@@ -214,12 +227,6 @@ namespace CodeOnlyStoredProcedure
         }
         #endregion
 
-        protected void TransferOutputParameters()
-        {
-            foreach (var parm in parameters.Where(p => p.Direction != ParameterDirection.Input))
-                outputParameterSetters[parm.ParameterName](parm.Value);
-        }
-
         // Suppress this message, because the sp name is never set via user input
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2100:Review SQL queries for security vulnerabilities")]
         protected IDictionary<Type, IList> Execute(
@@ -229,6 +236,7 @@ namespace CodeOnlyStoredProcedure
             IEnumerable<Type> outputTypes    = null)
         {
             Contract.Requires(connection != null);
+            Contract.Ensures(Contract.Result<IDictionary<Type, IList>>() != null);
 
             try
             {
@@ -252,13 +260,17 @@ namespace CodeOnlyStoredProcedure
 
                     token.ThrowIfCancellationRequested();
 
+                    IDictionary<Type, IList> results;
                     if (outputTypes != null && outputTypes.Any())
-                        return cmd.Execute(token, outputTypes);
+                        results = cmd.Execute(token, outputTypes);
                     else
                     {
                         cmd.ExecuteNonQuery();
-                        return null;
+                        results = new Dictionary<Type, IList>();
                     }
+
+                    TransferOutputParameters();
+                    return results;
                 }
             }
             catch (Exception ex)
@@ -269,6 +281,12 @@ namespace CodeOnlyStoredProcedure
             {
                 connection.Close();
             }
+        }
+
+        private void TransferOutputParameters()
+        {
+            foreach (var parm in parameters.Where(p => p.Direction != ParameterDirection.Input))
+                outputParameterSetters[parm.ParameterName](parm.Value);
         }
 
         [ContractInvariantMethod]
