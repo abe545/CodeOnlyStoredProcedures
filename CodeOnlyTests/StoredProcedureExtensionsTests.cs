@@ -774,7 +774,10 @@ namespace CodeOnlyTests
                    .Callback  (() =>
                                {
                                    sema.Release();
-                                   Thread.Sleep(100);
+                                   do
+                                   {
+                                       Thread.Sleep(100);
+                                   } while (sema.Wait(100));
                                })
                    .Returns   (() => null);
             command.Setup     (d => d.Cancel())
@@ -793,6 +796,7 @@ namespace CodeOnlyTests
             cts.Cancel();
 
             continuation.Wait();
+            sema.Release();
             command.Verify(d => d.Cancel(), Times.Once);
             Assert.IsTrue(exceptionThrown, "No TaskCanceledException thrown when token is cancelled");
         }
