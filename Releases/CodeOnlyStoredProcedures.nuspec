@@ -2,14 +2,18 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
     <metadata>
         <id>CodeOnlyStoredProcedures</id>
-        <version>0.0.6</version>
+        <version>0.0.7</version>
         <title>Code Only Stored Proecedures</title>
         <authors>Abraham Heidebrecht</authors>
         <projectUrl>https://codeonlystoredprocedures.codeplex.com/</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>A library for easily calling Stored Procedures in .NET. Works great with Entity Framework Code First models. 
 Code Only Stored Procedures will not create any Stored Procedures on your database. Instead, its aim is to make it easy to call your existing stored procedures by writing simple code.</description>
-        <releaseNotes>0.0.6
+        <releaseNotes>0.0.7
+Added support for altering the results from the database to make data models simpler.
+Added code contracts to all methods.
+          
+0.0.6
 Added support for DBNull values.
 Bug fixes.
 
