@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Data.SqlClient;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -18,12 +19,20 @@ namespace CodeOnlyStoredProcedure
         public static TSP WithParameter<TSP, TValue>(this TSP sp, string name, TValue value)
             where TSP : StoredProcedure
         {
+            Contract.Requires(sp != null);
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Ensures(Contract.Result<TSP>() != null);
+
             return (TSP)sp.CloneWith(new SqlParameter(name, value));
         }
 
         public static TSP WithParameter<TSP, TValue>(this TSP sp, string name, TValue value, SqlDbType dbType)
             where TSP : StoredProcedure
         {
+            Contract.Requires(sp != null);
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Ensures(Contract.Result<TSP>() != null);
+
             return (TSP)sp.CloneWith(new SqlParameter(name, value) { SqlDbType = dbType } );
         }
         #endregion
@@ -37,6 +46,11 @@ namespace CodeOnlyStoredProcedure
             byte? precision = null)
             where TSP : StoredProcedure
         {
+            Contract.Requires(sp != null);
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Requires(setter != null);
+            Contract.Ensures(Contract.Result<TSP>() != null);
+
             return (TSP)sp.CloneWith(
                 new SqlParameter
                 {
@@ -55,6 +69,11 @@ namespace CodeOnlyStoredProcedure
             byte? precision = null)
             where TSP : StoredProcedure
         {
+            Contract.Requires(sp != null);
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Requires(setter != null);
+            Contract.Ensures(Contract.Result<TSP>() != null);
+
             return (TSP)sp.CloneWith(
                 new SqlParameter
                 {
@@ -76,6 +95,11 @@ namespace CodeOnlyStoredProcedure
             byte? precision = null)
             where TSP : StoredProcedure
         {
+            Contract.Requires(sp != null);
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Requires(setter != null);
+            Contract.Ensures(Contract.Result<TSP>() != null);
+
             return (TSP)sp.CloneWith(
                 new SqlParameter(name, value)
                 {
@@ -94,6 +118,11 @@ namespace CodeOnlyStoredProcedure
             byte? precision = null)
             where TSP : StoredProcedure
         {
+            Contract.Requires(sp != null);
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Requires(setter != null);
+            Contract.Ensures(Contract.Result<TSP>() != null);
+
             return (TSP)sp.CloneWith(
                 new SqlParameter(name, value)
                 {
@@ -108,6 +137,10 @@ namespace CodeOnlyStoredProcedure
         public static TSP WithReturnValue<TSP>(this TSP sp, Action<int> returnValue)
             where TSP : StoredProcedure
         {
+            Contract.Requires(sp != null);
+            Contract.Requires(returnValue != null);
+            Contract.Ensures(Contract.Result<TSP>() != null);
+
             return (TSP)sp.CloneWith(new SqlParameter
                 {
                     ParameterName = "_Code_Only_Stored_Procedures_Auto_Generated_Return_Value_",
@@ -121,6 +154,10 @@ namespace CodeOnlyStoredProcedure
         public static TSP WithInput<TSP, TInput>(this TSP sp, TInput input)
             where TSP : StoredProcedure
         {
+            Contract.Requires(sp != null);
+            Contract.Requires(input != null);
+            Contract.Ensures(Contract.Result<TSP>() != null);
+
             foreach (var pi in typeof(TInput).GetMappedProperties())
             {
                 SqlParameter parameter;
@@ -186,6 +223,12 @@ namespace CodeOnlyStoredProcedure
             string tableTypeName)
             where TSP : StoredProcedure
         {
+            Contract.Requires(sp != null);
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Requires(table != null);
+            Contract.Requires(!string.IsNullOrWhiteSpace(tableTypeName));
+            Contract.Ensures(Contract.Result<TSP>() != null);
+
             var p = new SqlParameter
             {
                 ParameterName = name,
@@ -204,6 +247,13 @@ namespace CodeOnlyStoredProcedure
             string tableTypeName)
             where TSP : StoredProcedure
         {
+            Contract.Requires(sp != null);
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Requires(table != null);
+            Contract.Requires(!string.IsNullOrWhiteSpace(tableTypeSchema));
+            Contract.Requires(!string.IsNullOrWhiteSpace(tableTypeName));
+            Contract.Ensures(Contract.Result<TSP>() != null);
+
             var p = new SqlParameter
             {
                 ParameterName = name,
@@ -216,10 +266,28 @@ namespace CodeOnlyStoredProcedure
         }
         #endregion
 
+        #region WithDataTransformer
+        public static TSP WithDataTransformer<TSP>(this TSP sp, IDataTransformer transformer)
+            where TSP : StoredProcedure
+        {
+            Contract.Requires(sp != null);
+            Contract.Requires(transformer != null);
+            Contract.Ensures(Contract.Result<TSP>() != null);
+
+            return (TSP)sp.CloneWith(transformer);
+        }
+        #endregion
+
         internal static IDictionary<Type, IList> Execute(this IDbCommand cmd,
             CancellationToken token,
-            IEnumerable<Type> outputTypes)
+            IEnumerable<Type> outputTypes,
+            IEnumerable<IDataTransformer> transformers)
         {
+            Contract.Requires(cmd != null);
+            Contract.Requires(outputTypes != null);
+            Contract.Requires(transformers != null);
+            Contract.Ensures(Contract.Result<IDictionary<Type, IList>>() != null);
+
             PropertyInfo pi;
             var results = new Dictionary<Type, IList>();
             var reader  = CreateDataReader(cmd, token);
@@ -259,6 +327,18 @@ namespace CodeOnlyStoredProcedure
                             if (DBNull.Value.Equals(value))
                                 value = null;
 
+                            var attrs = pi.GetCustomAttributes(false).Cast<Attribute>().ToArray();
+                            foreach (var xform in transformers)
+                            {
+                                if (xform.CanTransform(value, pi.PropertyType, attrs))
+                                    value = xform.Transform(value, pi.PropertyType, attrs);
+                            }
+
+                            var propTransformers = attrs.OfType<DataTransformerAttributeBase>()
+                                                        .OrderBy(a => a.Order);
+                            foreach (var xform in propTransformers)
+                                value = xform.Transform(value, pi.PropertyType);
+
                             pi.SetValue(row, value, null);
                             foundProps.Add(name);
                         }
@@ -281,6 +361,9 @@ namespace CodeOnlyStoredProcedure
 
         internal static IDataReader CreateDataReader(this IDbCommand cmd, CancellationToken token)
         {
+            Contract.Requires(cmd != null);
+            Contract.Ensures(Contract.Result<IDataReader>() != null);
+
             var readerTask = Task.Factory.StartNew(() => cmd.ExecuteReader(), token);
 
             // execute in a background task, so we can cancel the command if the 
@@ -318,6 +401,8 @@ namespace CodeOnlyStoredProcedure
             byte? scale,
             byte? precision)
         {
+            Contract.Requires(parameter != null);
+
             if (size.HasValue)      parameter.Size      = size.Value;
             if (scale.HasValue)     parameter.Scale     = scale.Value;
             if (precision.HasValue) parameter.Precision = precision.Value;
@@ -327,6 +412,9 @@ namespace CodeOnlyStoredProcedure
 
         private static IDictionary<string, PropertyInfo> GetMappedPropertiesBySqlName(this Type t)
         {
+            Contract.Requires(t != null);
+            Contract.Ensures(Contract.Result<IDictionary<string, PropertyInfo>>() != null);
+
             var mappedProperties = new Dictionary<string, PropertyInfo>();
 
             foreach (var pi in t.GetMappedProperties())
@@ -357,6 +445,9 @@ namespace CodeOnlyStoredProcedure
 
         static IEnumerable<PropertyInfo> GetMappedProperties(this Type t)
         {
+            Contract.Requires(t != null);
+            Contract.Ensures(Contract.Result<IEnumerable<PropertyInfo>>() != null);
+
             return t.GetProperties()
                     .Where(p => !p.GetCustomAttributes(typeof(NotMappedAttribute), false).Any())
                     .ToArray();
@@ -364,6 +455,8 @@ namespace CodeOnlyStoredProcedure
 
         static Type GetEnumeratedType(this Type t)
         {
+            Contract.Requires(t != null);
+
             return t.GetInterfaces()
                     .Where (i => i.GetGenericTypeDefinition().Equals(typeof(IEnumerable<>)))
                     .Select(i => i.GetGenericArguments().First())
@@ -372,6 +465,10 @@ namespace CodeOnlyStoredProcedure
 
         static IEnumerable<SqlDataRecord> ToTableValuedParameter(this IEnumerable table, Type enumeratedType)
         {
+            Contract.Requires(table != null);
+            Contract.Requires(enumeratedType != null);
+            Contract.Ensures(Contract.Result<IEnumerable<SqlDataRecord>>() != null);
+
             var recordList = new List<SqlDataRecord>();
             var columnList = new List<SqlMetaData>();
             var props = enumeratedType.GetMappedProperties().ToList();
@@ -450,6 +547,8 @@ namespace CodeOnlyStoredProcedure
 
         static SqlDbType InferSqlType(this Type type)
         {
+            Contract.Requires(type != null);
+
             if (type == typeof(Int32))
                 return SqlDbType.Int;
             if (type == typeof(Double))

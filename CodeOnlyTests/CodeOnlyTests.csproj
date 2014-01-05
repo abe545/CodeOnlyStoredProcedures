@@ -60,6 +60,7 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <Compile Include="DataTransformation\EnumValueTransformerTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StoredProcedureTests.cs" />
     <Compile Include="StoredProcedureExtensionsTests.cs" />

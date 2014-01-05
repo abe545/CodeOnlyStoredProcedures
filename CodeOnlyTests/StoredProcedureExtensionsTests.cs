@@ -1,12 +1,12 @@
-﻿using System;
-using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using CodeOnlyStoredProcedure;
-using System.Data;
-using System.Collections.Generic;
+﻿using CodeOnlyStoredProcedure;
 using Microsoft.SqlServer.Server;
-using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Data;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -698,6 +698,34 @@ namespace CodeOnlyTests
         }
         #endregion
 
+        #region WithDataTransformerTests
+        [TestMethod]
+        public void TestWithDataTransformerStoresTransformer()
+        {
+            var orig = new StoredProcedure("Test");
+            var xform = new Mock<IDataTransformer>().Object;
+
+            var toTest = orig.WithDataTransformer(xform);
+
+            Assert.IsFalse(ReferenceEquals(orig, toTest));
+            Assert.AreEqual(xform, toTest.DataTransformers.Single());
+        }
+
+        [TestMethod]
+        public void TestWithDataTransformerAddsTransformersInOrder()
+        {
+            var orig = new StoredProcedure("Test");
+            var x1 = new Mock<IDataTransformer>().Object;
+            var x2 = new Mock<IDataTransformer>().Object;
+
+            var toTest = orig.WithDataTransformer(x1).WithDataTransformer(x2);
+
+            Assert.AreEqual(2, toTest.DataTransformers.Count());
+            Assert.AreEqual(x1, toTest.DataTransformers.First());
+            Assert.AreEqual(x2, toTest.DataTransformers.Last());
+        }
+        #endregion
+
         #region CreateDataReader Tests
         [TestMethod]
         public void TestCreateDataReaderReturnsReader()
@@ -807,7 +835,7 @@ namespace CodeOnlyTests
             bool exceptionThrown = false;
             try
             {
-                command.Object.Execute(cts.Token, Enumerable.Empty<Type>());
+                command.Object.Execute(cts.Token, Enumerable.Empty<Type>(), Enumerable.Empty<IDataTransformer>());
             }
             catch (OperationCanceledException)
             {
@@ -838,7 +866,7 @@ namespace CodeOnlyTests
 
             var cts = new CancellationTokenSource();
 
-            var toTest = Task.Factory.StartNew(() => command.Object.Execute(cts.Token, new[] { typeof(SingleResultSet) }));
+            var toTest = Task.Factory.StartNew(() => command.Object.Execute(cts.Token, new[] { typeof(SingleResultSet) }, Enumerable.Empty<IDataTransformer>()));
             bool exceptionThrown = false;
 
             var continuation =
@@ -896,7 +924,7 @@ namespace CodeOnlyTests
                   .Callback((object[] arr) => vals.CopyTo(arr, 0))
                   .Returns(6);
 
-            var results = command.Object.Execute(CancellationToken.None, new[] { typeof(SingleResultSet) });
+            var results = command.Object.Execute(CancellationToken.None, new[] { typeof(SingleResultSet) }, Enumerable.Empty<IDataTransformer>());
 
             var toTest = (IList<SingleResultSet>)results[typeof(SingleResultSet)];
 
@@ -942,7 +970,7 @@ namespace CodeOnlyTests
                   .Callback((object[] arr) => arr[0] = "Hello, World!")
                   .Returns(1);
 
-            var results = command.Object.Execute(CancellationToken.None, new[] { typeof(RenamedColumn) });
+            var results = command.Object.Execute(CancellationToken.None, new[] { typeof(RenamedColumn) }, Enumerable.Empty<IDataTransformer>());
 
             var toTest = (IList<RenamedColumn>)results[typeof(RenamedColumn)];
 
@@ -977,7 +1005,7 @@ namespace CodeOnlyTests
                   .Callback((object[] arr) => arr[0] = results[index])
                   .Returns(1);
 
-            var res = command.Object.Execute(CancellationToken.None, new[] { typeof(SingleColumn) });
+            var res = command.Object.Execute(CancellationToken.None, new[] { typeof(SingleColumn) }, Enumerable.Empty<IDataTransformer>());
 
             var toTest = (IList<SingleColumn>)res[typeof(SingleColumn)];
 
@@ -1023,7 +1051,7 @@ namespace CodeOnlyTests
                   .Callback((object[] arr) => arr[0] = arr[1] = arr[2] = DBNull.Value)
                   .Returns(3);
 
-            var results = command.Object.Execute(CancellationToken.None, new[] { typeof(NullableColumns) });
+            var results = command.Object.Execute(CancellationToken.None, new[] { typeof(NullableColumns) }, Enumerable.Empty<IDataTransformer>());
 
             var toTest = (IList<NullableColumns>)results[typeof(NullableColumns)];
 
@@ -1067,11 +1095,433 @@ namespace CodeOnlyTests
                   .Callback((object[] arr) => arr[0] = DBNull.Value)
                   .Returns(1);
 
-            command.Object.Execute(CancellationToken.None, new[] { typeof(SingleColumn) });
+            command.Object.Execute(CancellationToken.None, new[] { typeof(SingleColumn) }, Enumerable.Empty<IDataTransformer>());
+        }
+
+        [TestMethod]
+        public void TestExecuteTransformsValueWhenPropertyDecoratedWithTransformer()
+        {
+            var reader = new Mock<IDataReader>();
+            var command = new Mock<IDbCommand>();
+
+            command.Setup(d => d.ExecuteReader())
+                   .Returns(reader.Object);
+
+            reader.SetupGet(r => r.FieldCount)
+                  .Returns(1);
+
+            var first = true;
+            reader.Setup(r => r.Read())
+                  .Returns(() =>
+                  {
+                      if (first)
+                      {
+                          first = false;
+                          return true;
+                      }
+
+                      return false;
+                  });
+
+            reader.Setup(r => r.GetName(0))
+                  .Returns("Name");
+            reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
+                  .Callback((object[] arr) => arr[0] = "Hello, World!")
+                  .Returns(1);
+
+            var results = command.Object.Execute(CancellationToken.None, new[] { typeof(WithStaticValue) }, Enumerable.Empty<IDataTransformer>());
+
+            var toTest = (IList<WithStaticValue>)results[typeof(WithStaticValue)];
+
+            Assert.AreEqual(1, toTest.Count);
+            var item = toTest[0];
+
+            Assert.AreEqual("Foobar", item.Name);
+        }
+
+        [TestMethod]
+        public void TestExecuteTransformsDBNullValueWhenPropertyDecoratedWithTransformer()
+        {
+            var reader = new Mock<IDataReader>();
+            var command = new Mock<IDbCommand>();
+
+            command.Setup(d => d.ExecuteReader())
+                   .Returns(reader.Object);
+
+            reader.SetupGet(r => r.FieldCount)
+                  .Returns(1);
+
+            var first = true;
+            reader.Setup(r => r.Read())
+                  .Returns(() =>
+                  {
+                      if (first)
+                      {
+                          first = false;
+                          return true;
+                      }
+
+                      return false;
+                  });
+
+            reader.Setup(r => r.GetName(0))
+                  .Returns("Name");
+            reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
+                  .Callback((object[] arr) => arr[0] = DBNull.Value)
+                  .Returns(1);
+
+            var results = command.Object.Execute(CancellationToken.None, new[] { typeof(WithStaticValue) }, Enumerable.Empty<IDataTransformer>());
+
+            var toTest = (IList<WithStaticValue>)results[typeof(WithStaticValue)];
+
+            Assert.AreEqual(1, toTest.Count);
+            var item = toTest[0];
+
+            Assert.AreEqual("Foobar", item.Name);
+        }
+
+        [TestMethod]
+        public void TestExecuteTransformsRenamedColumnWhenPropertyDecoratedWithTransformer()
+        {
+            var reader = new Mock<IDataReader>();
+            var command = new Mock<IDbCommand>();
+
+            command.Setup(d => d.ExecuteReader())
+                   .Returns(reader.Object);
+
+            reader.SetupGet(r => r.FieldCount)
+                  .Returns(1);
+
+            var first = true;
+            reader.Setup(r => r.Read())
+                  .Returns(() =>
+                  {
+                      if (first)
+                      {
+                          first = false;
+                          return true;
+                      }
+
+                      return false;
+                  });
+
+            reader.Setup(r => r.GetName(0))
+                  .Returns("MyRenamedColumn");
+            reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
+                  .Callback((object[] arr) => arr[0] = "Hello, World!")
+                  .Returns(1);
+
+            var results = command.Object.Execute(CancellationToken.None, new[] { typeof(RenamedColumnWithStaticValue) }, Enumerable.Empty<IDataTransformer>());
+
+            var toTest = (IList<RenamedColumnWithStaticValue>)results[typeof(RenamedColumnWithStaticValue)];
+
+            Assert.AreEqual(1, toTest.Count);
+            var item = toTest[0];
+
+            Assert.AreEqual("Foobar", item.Name);
+        }
+
+        [TestMethod]
+        public void TestExecuteChainsTransformPropertyDecoratedWithTransformerAttributesInOrder()
+        {
+            var reader = new Mock<IDataReader>();
+            var command = new Mock<IDbCommand>();
+
+            command.Setup(d => d.ExecuteReader())
+                   .Returns(reader.Object);
+
+            reader.SetupGet(r => r.FieldCount)
+                  .Returns(1);
+
+            var first = true;
+            reader.Setup(r => r.Read())
+                  .Returns(() =>
+                  {
+                      if (first)
+                      {
+                          first = false;
+                          return true;
+                      }
+
+                      return false;
+                  });
+
+            reader.Setup(r => r.GetName(0))
+                  .Returns("Name");
+            reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
+                  .Callback((object[] arr) => arr[0] = "Hello, World!")
+                  .Returns(1);
+
+            var results = command.Object.Execute(CancellationToken.None, new[] { typeof(WithStaticValueToUpper) }, Enumerable.Empty<IDataTransformer>());
+
+            var toTest = (IList<WithStaticValueToUpper>)results[typeof(WithStaticValueToUpper)];
+
+            Assert.AreEqual(1, toTest.Count);
+            var item = toTest[0];
+
+            Assert.AreEqual("IS UPPER?", item.Name);
+        }
+
+        [TestMethod]
+        public void TestGlobalDataTransformerTransformsData()
+        {
+            var reader = new Mock<IDataReader>();
+            var command = new Mock<IDbCommand>();
+
+            command.Setup(d => d.ExecuteReader())
+                   .Returns(reader.Object);
+
+            reader.SetupGet(r => r.FieldCount)
+                  .Returns(1);
+
+            var first = true;
+            reader.Setup(r => r.Read())
+                  .Returns(() =>
+                  {
+                      if (first)
+                      {
+                          first = false;
+                          return true;
+                      }
+
+                      return false;
+                  });
+
+            reader.Setup(r => r.GetName(0))
+                  .Returns("Column");
+            reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
+                  .Callback((object[] arr) => arr[0] = "Hello, World!")
+                  .Returns(1);
+
+            var results = command.Object.Execute(CancellationToken.None, 
+                                                 new[] { typeof(SingleColumn) },
+                                                 new IDataTransformer[] { new StaticTransformer { Result = "Foobar" } });
+
+            var toTest = (IList<SingleColumn>)results[typeof(SingleColumn)];
+
+            Assert.AreEqual(1, toTest.Count);
+            var item = toTest[0];
+
+            Assert.AreEqual("Foobar", item.Column);
+        }
+
+        [TestMethod]
+        public void TestGlobalDataTransformerTransformsDBNullValue()
+        {
+            var reader = new Mock<IDataReader>();
+            var command = new Mock<IDbCommand>();
+
+            command.Setup(d => d.ExecuteReader())
+                   .Returns(reader.Object);
+
+            reader.SetupGet(r => r.FieldCount)
+                  .Returns(1);
+
+            var first = true;
+            reader.Setup(r => r.Read())
+                  .Returns(() =>
+                  {
+                      if (first)
+                      {
+                          first = false;
+                          return true;
+                      }
+
+                      return false;
+                  });
+
+            reader.Setup(r => r.GetName(0))
+                  .Returns("Column");
+            reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
+                  .Callback((object[] arr) => arr[0] = DBNull.Value)
+                  .Returns(1);
+
+            var results = command.Object.Execute(CancellationToken.None,
+                                                 new[] { typeof(SingleColumn) },
+                                                 new IDataTransformer[] { new StaticTransformer { Result = "Foobar" } });
+
+            var toTest = (IList<SingleColumn>)results[typeof(SingleColumn)];
+
+            Assert.AreEqual(1, toTest.Count);
+            var item = toTest[0];
+
+            Assert.AreEqual("Foobar", item.Column);
+        }
+
+        [TestMethod]
+        public void TestGlobalDataTransformerTransformsDataWithRenamedColumn()
+        {
+            var reader = new Mock<IDataReader>();
+            var command = new Mock<IDbCommand>();
+
+            command.Setup(d => d.ExecuteReader())
+                   .Returns(reader.Object);
+
+            reader.SetupGet(r => r.FieldCount)
+                  .Returns(1);
+
+            var first = true;
+            reader.Setup(r => r.Read())
+                  .Returns(() =>
+                  {
+                      if (first)
+                      {
+                          first = false;
+                          return true;
+                      }
+
+                      return false;
+                  });
+
+            reader.Setup(r => r.GetName(0))
+                  .Returns("MyRenamedColumn");
+            reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
+                  .Callback((object[] arr) => arr[0] = "Hello, World!")
+                  .Returns(1);
+
+            var results = command.Object.Execute(CancellationToken.None,
+                                                 new[] { typeof(RenamedColumn) },
+                                                 new IDataTransformer[] { new StaticTransformer { Result = "Foobar" } });
+
+            var toTest = (IList<RenamedColumn>)results[typeof(RenamedColumn)];
+
+            Assert.AreEqual(1, toTest.Count);
+            var item = toTest[0];
+
+            Assert.AreEqual("Foobar", item.Column);
+        }
+
+        [TestMethod]
+        public void TestGlobalDataTransformerNotCalledWhenCanNotTransformValue()
+        {
+            var reader = new Mock<IDataReader>();
+            var command = new Mock<IDbCommand>();
+
+            command.Setup(d => d.ExecuteReader())
+                   .Returns(reader.Object);
+
+            reader.SetupGet(r => r.FieldCount)
+                  .Returns(1);
+
+            var first = true;
+            reader.Setup(r => r.Read())
+                  .Returns(() =>
+                  {
+                      if (first)
+                      {
+                          first = false;
+                          return true;
+                      }
+
+                      return false;
+                  });
+
+            reader.Setup(r => r.GetName(0))
+                  .Returns("Column");
+            reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
+                  .Callback((object[] arr) => arr[0] = "Hello, World!")
+                  .Returns(1);
+
+            var results = command.Object.Execute(CancellationToken.None,
+                                                 new[] { typeof(SingleColumn) },
+                                                 new IDataTransformer[] { new NeverTransformer() });
+
+            var toTest = (IList<SingleColumn>)results[typeof(SingleColumn)];
+
+            Assert.AreEqual(1, toTest.Count);
+            var item = toTest[0];
+
+            Assert.AreEqual("Hello, World!", item.Column);
+        }
+
+        [TestMethod]
+        public void TestGlobalDataTransformerNotCalledWhenCanNotTransformValueWithDBNullValue()
+        {
+            var reader = new Mock<IDataReader>();
+            var command = new Mock<IDbCommand>();
+
+            command.Setup(d => d.ExecuteReader())
+                   .Returns(reader.Object);
+
+            reader.SetupGet(r => r.FieldCount)
+                  .Returns(1);
+
+            var first = true;
+            reader.Setup(r => r.Read())
+                  .Returns(() =>
+                  {
+                      if (first)
+                      {
+                          first = false;
+                          return true;
+                      }
+
+                      return false;
+                  });
+
+            reader.Setup(r => r.GetName(0))
+                  .Returns("Column");
+            reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
+                  .Callback((object[] arr) => arr[0] = DBNull.Value)
+                  .Returns(1);
+
+            var results = command.Object.Execute(CancellationToken.None,
+                                                 new[] { typeof(SingleColumn) },
+                                                 new IDataTransformer[] { new NeverTransformer() });
+
+            var toTest = (IList<SingleColumn>)results[typeof(SingleColumn)];
+
+            Assert.AreEqual(1, toTest.Count);
+            var item = toTest[0];
+
+            Assert.IsNull(item.Column);
+        }
+
+        [TestMethod]
+        public void TestGlobalDataTransformerNotCalledWhenCanNotTransformValueWithRenamedColumn()
+        {
+            var reader = new Mock<IDataReader>();
+            var command = new Mock<IDbCommand>();
+
+            command.Setup(d => d.ExecuteReader())
+                   .Returns(reader.Object);
+
+            reader.SetupGet(r => r.FieldCount)
+                  .Returns(1);
+
+            var first = true;
+            reader.Setup(r => r.Read())
+                  .Returns(() =>
+                  {
+                      if (first)
+                      {
+                          first = false;
+                          return true;
+                      }
+
+                      return false;
+                  });
+
+            reader.Setup(r => r.GetName(0))
+                  .Returns("MyRenamedColumn");
+            reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
+                  .Callback((object[] arr) => arr[0] = "Hello, World!")
+                  .Returns(1);
+
+            var results = command.Object.Execute(CancellationToken.None,
+                                                 new[] { typeof(RenamedColumn) },
+                                                 new IDataTransformer[] { new NeverTransformer() });
+
+            var toTest = (IList<RenamedColumn>)results[typeof(RenamedColumn)];
+
+            Assert.AreEqual(1, toTest.Count);
+            var item = toTest[0];
+
+            Assert.AreEqual("Hello, World!", item.Column);
         }
         #endregion
 
-        #region Dummy Data Classes
+        #region Test Helper Classes
         private class WithNamedParameter
         {
             [StoredProcedureParameter(Name = "InputName")]
@@ -1135,6 +1585,85 @@ namespace CodeOnlyTests
             public string  Name           { get; set; }
             public int?    NullableInt    { get; set; }
             public double? NullableDouble { get; set; }
+        }
+
+        private class WithStaticValue
+        {
+            [StaticValue(Result = "Foobar")]
+            public string Name { get; set; }
+        }
+
+        private class RenamedColumnWithStaticValue
+        {
+            [Column("MyRenamedColumn")]
+            [StaticValue(Result = "Foobar")]
+            public string Name { get; set; }
+        }
+
+        private class WithStaticValueToUpper
+        {
+            [StaticValue(Result = "is upper?")]
+            [ToUpper(1)]
+            public string Name { get; set; }
+        }
+
+        private class WithInvalidTransformer
+        {
+            [ToUpper]
+            public double Value { get; set; }
+        }
+
+        private class StaticValueAttribute : DataTransformerAttributeBase
+        {
+            public object Result { get; set; }
+
+            public override object Transform(object value, Type targetType)
+            {
+                return Result;
+            }
+        }
+
+        private class ToUpperAttribute : DataTransformerAttributeBase
+        {
+            public ToUpperAttribute(int order = 0)
+                : base(order)
+            {
+
+            }
+
+            public override object Transform(object value, Type targetType)
+            {
+                return ((string)value).ToUpper();
+            }
+        }
+
+        private class StaticTransformer : IDataTransformer
+        {
+            public string Result { get; set; }
+
+            public bool CanTransform(object value, Type targetType, IEnumerable<Attribute> propertyAttributes)
+            {
+                return true;
+            }
+
+            public object Transform(object value, Type targetType, IEnumerable<Attribute> propertyAttributes)
+            {
+                return Result;
+            }
+        }
+
+        private class NeverTransformer : IDataTransformer
+        {
+            public bool CanTransform(object value, Type targetType, IEnumerable<Attribute> propertyAttributes)
+            {
+                return false;
+            }
+
+            public object Transform(object value, Type targetType, IEnumerable<Attribute> propertyAttributes)
+            {
+                Assert.Fail("Transform should not be called when an IDataTransformer returns false from CanTransform");
+                return null;
+            }
         }
         #endregion
     }

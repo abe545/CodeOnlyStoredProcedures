@@ -92,7 +92,7 @@ public class StoredProcedureTemplate : Template
 		}
 		
 		internal StoredProcedure(StoredProcedure toClone)
-			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.OutputParameterSetters) 
+			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.OutputParameterSetters, toClone.DataTransformers) 
 		{ 
 			Contract.Requires(toClone != null);
 		}
@@ -100,9 +100,15 @@ public class StoredProcedureTemplate : Template
 		protected StoredProcedure(string schema, 
             string name,
             IEnumerable<SqlParameter> parameters,
-            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
-			: base(schema, name, parameters, outputParameterSetters)
+            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
+			IEnumerable<IDataTransformer> dataTransformers)
+			: base(schema, name, parameters, outputParameterSetters, dataTransformers)
         {
+            Contract.Requires(!string.IsNullOrWhiteSpace(schema));
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+			Contract.Requires(parameters != null);
+			Contract.Requires(outputParameterSetters != null);
+			Contract.Requires(dataTransformers != null);
 		}
 		
 		public new <#+ GetResults(); #> Execute(IDbConnection connection, int? timeout = null)
@@ -110,8 +116,7 @@ public class StoredProcedureTemplate : Template
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<<#+ GetResults(); #>>() != null);
 
-			var results = Execute(connection, CancellationToken.None, timeout);
-			TransferOutputParameters();
+			var results = Execute(connection, CancellationToken.None, timeout, new[] { <#+ GetCachedFields(); #> });
 
 			return <#+ ParseResults(); #> 
 		}
@@ -132,17 +137,18 @@ public class StoredProcedureTemplate : Template
 			return Task.Factory.StartNew(
 				() => 
 				{
-					var results = Execute(connection, token, timeout);
-					TransferOutputParameters();
+					var results = Execute(connection, token, timeout, new[] { <#+ GetCachedFields(); #> });
 
 					return <#+ ParseResults(); #> 
 				}, token);
 		}
 
-		protected override StoredProcedure CloneCore(IEnumerable<SqlParameter> parameters,
-            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters)
+		protected override StoredProcedure CloneCore(
+			IEnumerable<SqlParameter> parameters,
+            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
+			IEnumerable<IDataTransformer> dataTransformers)
         {
-            return new StoredProcedure<#+ GetTypes(TypeCount); #>(Schema, Name, parameters, outputParameterSetters);
+            return new StoredProcedure<#+ GetTypes(TypeCount); #>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
         }
 	}
 	#endregion
