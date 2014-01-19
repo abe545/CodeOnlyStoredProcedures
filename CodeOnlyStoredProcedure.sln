@@ -7,55 +7,41 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeOnlyStoredProcedure", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeOnlyStoredProcedure-NET40", "CodeOnlyStoredProcedure-NET40\CodeOnlyStoredProcedure-NET40.csproj", "{31800E2D-04B0-4D10-A40F-D59ECD63933A}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{AAE11B69-1ED6-4FC3-9857-69A7B2B192C4}"
-	ProjectSection(SolutionItems) = preProject
-		.nuget\NuGet.Config = .nuget\NuGet.Config
-		.nuget\NuGet.exe = .nuget\NuGet.exe
-		.nuget\NuGet.targets = .nuget\NuGet.targets
-	EndProjectSection
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeOnlyTests", "CodeOnlyTests\CodeOnlyTests.csproj", "{7F68701D-19F3-482C-B3DE-91477DCA49DD}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeOnlyTests-NET40", "CodeOnlyTests-NET40\CodeOnlyTests-NET40.csproj", "{B036AF35-E4F4-4E7A-8D54-707EB4647F3F}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{537FD386-60ED-4D12-814E-350465CFEDD0}"
+	ProjectSection(SolutionItems) = preProject
+		.nuget\packages.config = .nuget\packages.config
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{E1002D45-1AC1-4D75-9BFE-5BB759C7CC89}"
+	ProjectSection(SolutionItems) = preProject
+		Build\CodeOnlyStoredProcedures.nuspec = Build\CodeOnlyStoredProcedures.nuspec
+		Build\Version.xml = Build\Version.xml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Continuous|Any CPU = Continuous|Any CPU
 		Debug|Any CPU = Debug|Any CPU
-		NuGet-Release|Any CPU = NuGet-Release|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{37762E7B-48CC-4001-B479-ECB1923AE2E0}.Continuous|Any CPU.ActiveCfg = Continuous|Any CPU
-		{37762E7B-48CC-4001-B479-ECB1923AE2E0}.Continuous|Any CPU.Build.0 = Continuous|Any CPU
 		{37762E7B-48CC-4001-B479-ECB1923AE2E0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{37762E7B-48CC-4001-B479-ECB1923AE2E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{37762E7B-48CC-4001-B479-ECB1923AE2E0}.NuGet-Release|Any CPU.ActiveCfg = NuGet-Release|Any CPU
-		{37762E7B-48CC-4001-B479-ECB1923AE2E0}.NuGet-Release|Any CPU.Build.0 = NuGet-Release|Any CPU
 		{37762E7B-48CC-4001-B479-ECB1923AE2E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{37762E7B-48CC-4001-B479-ECB1923AE2E0}.Release|Any CPU.Build.0 = Release|Any CPU
-		{31800E2D-04B0-4D10-A40F-D59ECD63933A}.Continuous|Any CPU.ActiveCfg = Continuous|Any CPU
-		{31800E2D-04B0-4D10-A40F-D59ECD63933A}.Continuous|Any CPU.Build.0 = Continuous|Any CPU
 		{31800E2D-04B0-4D10-A40F-D59ECD63933A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{31800E2D-04B0-4D10-A40F-D59ECD63933A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{31800E2D-04B0-4D10-A40F-D59ECD63933A}.NuGet-Release|Any CPU.ActiveCfg = NuGet-Release|Any CPU
-		{31800E2D-04B0-4D10-A40F-D59ECD63933A}.NuGet-Release|Any CPU.Build.0 = NuGet-Release|Any CPU
 		{31800E2D-04B0-4D10-A40F-D59ECD63933A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{31800E2D-04B0-4D10-A40F-D59ECD63933A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7F68701D-19F3-482C-B3DE-91477DCA49DD}.Continuous|Any CPU.ActiveCfg = Continuous|Any CPU
-		{7F68701D-19F3-482C-B3DE-91477DCA49DD}.Continuous|Any CPU.Build.0 = Continuous|Any CPU
 		{7F68701D-19F3-482C-B3DE-91477DCA49DD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{7F68701D-19F3-482C-B3DE-91477DCA49DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7F68701D-19F3-482C-B3DE-91477DCA49DD}.NuGet-Release|Any CPU.ActiveCfg = NuGet-Release|Any CPU
-		{7F68701D-19F3-482C-B3DE-91477DCA49DD}.NuGet-Release|Any CPU.Build.0 = NuGet-Release|Any CPU
 		{7F68701D-19F3-482C-B3DE-91477DCA49DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7F68701D-19F3-482C-B3DE-91477DCA49DD}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B036AF35-E4F4-4E7A-8D54-707EB4647F3F}.Continuous|Any CPU.ActiveCfg = Continuous|Any CPU
-		{B036AF35-E4F4-4E7A-8D54-707EB4647F3F}.Continuous|Any CPU.Build.0 = Continuous|Any CPU
 		{B036AF35-E4F4-4E7A-8D54-707EB4647F3F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B036AF35-E4F4-4E7A-8D54-707EB4647F3F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B036AF35-E4F4-4E7A-8D54-707EB4647F3F}.NuGet-Release|Any CPU.ActiveCfg = NuGet-Release|Any CPU
-		{B036AF35-E4F4-4E7A-8D54-707EB4647F3F}.NuGet-Release|Any CPU.Build.0 = NuGet-Release|Any CPU
 		{B036AF35-E4F4-4E7A-8D54-707EB4647F3F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B036AF35-E4F4-4E7A-8D54-707EB4647F3F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection

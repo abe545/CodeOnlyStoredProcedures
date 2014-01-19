@@ -9,8 +9,8 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyProduct("CodeOnlyStoredProcedure")]
 [assembly: AssemblyCopyright("Copyright © Abraham Heidebrecht 2013 - 2014")]
 [assembly: ComVisible(false)]
-[assembly: AssemblyVersion("0.0.7.0")]
-[assembly: AssemblyFileVersion("0.0.7.0")]
+[assembly: AssemblyVersion("0.1.0.0")]
+[assembly: AssemblyFileVersion("0.1.14019.0103")]
 
 #if NET40
 [assembly: InternalsVisibleTo("CodeOnlyTests-NET40")]
