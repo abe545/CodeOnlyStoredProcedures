@@ -7,16 +7,20 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeOnlyStoredProcedure", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeOnlyStoredProcedure-NET40", "CodeOnlyStoredProcedure-NET40\CodeOnlyStoredProcedure-NET40.csproj", "{31800E2D-04B0-4D10-A40F-D59ECD63933A}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{AAE11B69-1ED6-4FC3-9857-69A7B2B192C4}"
-	ProjectSection(SolutionItems) = preProject
-		.nuget\NuGet.Config = .nuget\NuGet.Config
-		.nuget\NuGet.exe = .nuget\NuGet.exe
-		.nuget\NuGet.targets = .nuget\NuGet.targets
-	EndProjectSection
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeOnlyTests", "CodeOnlyTests\CodeOnlyTests.csproj", "{7F68701D-19F3-482C-B3DE-91477DCA49DD}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeOnlyTests-NET40", "CodeOnlyTests-NET40\CodeOnlyTests-NET40.csproj", "{B036AF35-E4F4-4E7A-8D54-707EB4647F3F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{537FD386-60ED-4D12-814E-350465CFEDD0}"
+	ProjectSection(SolutionItems) = preProject
+		.nuget\packages.config = .nuget\packages.config
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{E1002D45-1AC1-4D75-9BFE-5BB759C7CC89}"
+	ProjectSection(SolutionItems) = preProject
+		Build\CodeOnlyStoredProcedures.nuspec = Build\CodeOnlyStoredProcedures.nuspec
+		Build\Version.xml = Build\Version.xml
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
