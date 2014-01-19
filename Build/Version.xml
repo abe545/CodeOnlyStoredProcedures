@@ -10,15 +10,25 @@
     <AssemblyRevisionType>NoIncrement</AssemblyRevisionType>
   </PropertyGroup>
 
-  <!-- Properties for controlling the Assembly File Version -->
   <PropertyGroup>
     <AssemblyFileMajorVersion>$(AssemblyMajorVersion)</AssemblyFileMajorVersion>
     <AssemblyFileMinorVersion>$(AssemblyMinorVersion)</AssemblyFileMinorVersion>
     <AssemblyFileBuildNumberType>Julian</AssemblyFileBuildNumberType>
     <AssemblyFileRevisionType>DateString</AssemblyFileRevisionType>
     <AssemblyFileRevisionFormat>HHmm</AssemblyFileRevisionFormat>
-    <AssemblyFileRevisionReset>True</AssemblyFileRevisionReset>
+    <AssemblyFileRevisionReset>True</AssemblyFileRevisionReset>  
+  </PropertyGroup>
   
-</PropertyGroup>
+  <!-- Report the version to TeamCity -->
+  <PropertyGroup>
+    <CoreCompileDependsOn>
+      $(CoreCompileDependsOn);
+      TeamCityProperties
+    </CoreCompileDependsOn>
+  </PropertyGroup>
+  
+  <Target Name="TeamCityProperties">
+    <Message Text="##teamcity[setParameter name='Version' value='$(AssemblyMajorVersion).$(AssemblyMinorVersion).$(AssemblyBuildNumber)']" Importance="high" />
+  </Target>
   
 </Project>
