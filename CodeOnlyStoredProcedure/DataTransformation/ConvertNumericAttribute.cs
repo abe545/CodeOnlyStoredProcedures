@@ -9,7 +9,7 @@ namespace CodeOnlyStoredProcedure.DataTransformation
     public class ConvertNumericAttribute : DataTransformerAttributeBase
     {
         /// <summary>
-        /// Transforms the database numeric type to the property's type. Uses <see cref="System.Convert.ChangeType"/> to convert the value.
+        /// Transforms the database numeric type to the property's type. Uses <see cref="Convert.ChangeType(object, Type)"/> to convert the value.
         /// </summary>
         /// <param name="value">The value to convert</param>
         /// <param name="targetType">The type of the property</param>
