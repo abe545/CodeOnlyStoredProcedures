@@ -122,6 +122,9 @@
     <Compile Include="..\CodeOnlyStoredProcedure\DataTransformation\EnumValueTransformer.cs">
       <Link>DataTransformation\EnumValueTransformer.cs</Link>
     </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\DataTransformation\TrimAttribute.cs">
+      <Link>DataTransformation\TrimAttribute.cs</Link>
+    </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\DataTransformerAttributeBase.cs">
       <Link>DataTransformerAttributeBase.cs</Link>
     </Compile>

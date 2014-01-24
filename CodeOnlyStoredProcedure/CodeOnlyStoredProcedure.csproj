@@ -112,6 +112,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DataTransformation\EnumValueTransformer.cs" />
+    <Compile Include="DataTransformation\TrimAttribute.cs" />
     <Compile Include="DataTransformerAttributeBase.cs" />
     <Compile Include="IDataTransformer.cs" />
     <Compile Include="StoredProcedure.cs" />

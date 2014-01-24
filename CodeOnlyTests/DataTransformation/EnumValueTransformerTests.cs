@@ -90,7 +90,21 @@ namespace CodeOnlyTests.DataTransformation
         public void TestCanTransformReturnsFalseWhenValueIsNull()
         {
             Assert.IsFalse(toTest.CanTransform(null, typeof(IntEnum), attrs));
-        } 
+        }
+
+        [TestMethod]
+        public void TestCanTransformReturnsTrueWhenTargetTypeIsNullableEnum()
+        {
+            Assert.IsTrue(toTest.CanTransform(1, typeof(IntEnum?), attrs));
+        }
+
+        [TestMethod]
+        public void TestCanTransformReturnsFalseWhenValueIsNullAndTargetTypeIsNullableEnum()
+        {
+            // this is false, as if the value is false, no conversion needs to take place to
+            // set a null enum.
+            Assert.IsFalse(toTest.CanTransform(null, typeof(IntEnum?), attrs));
+        }
         #endregion
 
         #region Transform Tests
@@ -162,6 +176,13 @@ namespace CodeOnlyTests.DataTransformation
         {
             var res = toTest.Transform(1U, typeof(SbyteEnum), attrs);
             Assert.AreEqual(SbyteEnum.One, res);
+        }
+
+        [TestMethod]
+        public void TestTransformNullableInt()
+        {
+            var res = toTest.Transform(1, typeof(IntEnum?), attrs);
+            Assert.AreEqual(IntEnum.One, res);
         }
         #endregion
 
