@@ -125,6 +125,15 @@
     <Compile Include="..\CodeOnlyStoredProcedure\DataTransformation\EnumValueTransformer.cs">
       <Link>DataTransformation\EnumValueTransformer.cs</Link>
     </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\DataTransformation\InternAllStringsTransformer.cs">
+      <Link>DataTransformation\InternAllStringsTransformer.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\DataTransformation\InternAttribute.cs">
+      <Link>DataTransformation\InternAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\DataTransformation\TrimAllStringsTransformer.cs">
+      <Link>DataTransformation\TrimAllStringsTransformer.cs</Link>
+    </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\DataTransformation\TrimAttribute.cs">
       <Link>DataTransformation\TrimAttribute.cs</Link>
     </Compile>

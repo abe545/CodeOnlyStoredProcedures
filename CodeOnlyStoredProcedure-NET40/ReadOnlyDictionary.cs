@@ -7,12 +7,12 @@ namespace CodeOnlyStoredProcedure
     /// <summary>
     /// A read-only implementation of IDictionary$lt;TKey, TValue$gt;
     /// </summary>
-    /// <remarks>This is needed for the 4.0 version of CodeONlyStoredProcedure because
+    /// <remarks>This is needed for the 4.0 version of CodeOnlyStoredProcedure because
     /// the Immutable Collection project only works on 4.5 and above. Ironically, .NET 4.5
     /// ships with a ReadOnlyDictionary implementation</remarks>
     /// <typeparam name="TKey">The type to use as the key of the dictionary</typeparam>
     /// <typeparam name="TValue">The type of values stored in the dictionary</typeparam>
-    public sealed class ReadOnlyDictionary<TKey, TValue> : IDictionary<TKey, TValue>
+    internal sealed class ReadOnlyDictionary<TKey, TValue> : IDictionary<TKey, TValue>
     {
         private const string mutateException = "Can not modify a ReadOnlyDictionary";
         private readonly IDictionary<TKey, TValue> internalCollection;
