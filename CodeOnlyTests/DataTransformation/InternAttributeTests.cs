@@ -3,7 +3,11 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Reflection;
 
+#if NET40
+namespace CodeOnlyTests.Net40.DataTransformation
+#else
 namespace CodeOnlyTests.DataTransformation
+#endif
 {
     [TestClass]
     public class InternAttributeTests
