@@ -4,7 +4,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using CodeOnlyStoredProcedure;
 using System.Collections.Generic;
 
-namespace CodeOnlyTests
+namespace CodeOnlyTests.Net40
 {
     [TestClass]
     public class ReadOnlyDictionaryTests

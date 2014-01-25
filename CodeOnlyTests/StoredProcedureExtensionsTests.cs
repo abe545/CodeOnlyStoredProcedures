@@ -10,7 +10,11 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
+#if NET40
+namespace CodeOnlyTests.Net40
+#else
 namespace CodeOnlyTests
+#endif
 {
     [TestClass]
     public class StoredProcedureExtensionsTests

@@ -2,7 +2,11 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using CodeOnlyStoredProcedure.DataTransformation;
 
+#if NET40
+namespace CodeOnlyTests.Net40.DataTransformation
+#else
 namespace CodeOnlyTests.DataTransformation
+#endif
 {
     [TestClass]
     public class TrimAttributeTests

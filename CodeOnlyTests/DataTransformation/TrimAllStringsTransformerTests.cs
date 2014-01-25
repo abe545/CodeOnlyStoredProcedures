@@ -3,7 +3,11 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using CodeOnlyStoredProcedure.DataTransformation;
 using System.Linq;
 
+#if NET40
+namespace CodeOnlyTests.Net40.DataTransformation
+#else
 namespace CodeOnlyTests.DataTransformation
+#endif
 {
     [TestClass]
     public class TrimAllStringsTransformerTests

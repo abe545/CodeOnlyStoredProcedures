@@ -1,11 +1,15 @@
-﻿using System;
-using System.Linq;
+﻿using CodeOnlyStoredProcedure;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using CodeOnlyStoredProcedure;
-using System.Data.SqlClient;
 using Moq;
+using System;
+using System.Data.SqlClient;
+using System.Linq;
 
+#if NET40
+namespace CodeOnlyTests.Net40
+#else
 namespace CodeOnlyTests
+#endif
 {
     [TestClass]
     public class StoredProcedureTests

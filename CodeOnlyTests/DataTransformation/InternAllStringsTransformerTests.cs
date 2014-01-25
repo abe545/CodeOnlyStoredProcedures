@@ -4,7 +4,11 @@ using System;
 using System.Linq;
 using System.Reflection;
 
+#if NET40
+namespace CodeOnlyTests.Net40.DataTransformation
+#else
 namespace CodeOnlyTests.DataTransformation
+#endif
 {
     [TestClass]
     public class InternAllStringsTransformerTests
