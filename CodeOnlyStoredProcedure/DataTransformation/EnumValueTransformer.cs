@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.Linq;
 
 namespace CodeOnlyStoredProcedure.DataTransformation
@@ -49,6 +50,9 @@ namespace CodeOnlyStoredProcedure.DataTransformation
         {
             if (targetType.IsGenericType && targetType.GetGenericTypeDefinition() == typeof(Nullable<>))
                 targetType = targetType.GetGenericArguments().Single();
+
+            // the interpreter doesn't realize that GetGenericArguments can't return a null value
+            Contract.Assume(targetType != null);
 
             var valueType = value.GetType();
 
