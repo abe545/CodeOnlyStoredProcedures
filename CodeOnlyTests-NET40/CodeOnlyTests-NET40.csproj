@@ -76,6 +76,9 @@
     <Compile Include="..\CodeOnlyTests\DataTransformation\InternAttributeTests.cs">
       <Link>DataTransformation\InternAttributeTests.cs</Link>
     </Compile>
+    <Compile Include="..\CodeOnlyTests\DataTransformation\TrimAllStringsTransformerTests.cs">
+      <Link>DataTransformation\TrimAllStringsTransformerTests.cs</Link>
+    </Compile>
     <Compile Include="..\CodeOnlyTests\DataTransformation\TrimAttributeTests.cs">
       <Link>DataTransformation\TrimAttributeTests.cs</Link>
     </Compile>

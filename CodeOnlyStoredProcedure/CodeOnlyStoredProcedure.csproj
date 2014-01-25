@@ -115,6 +115,7 @@
     <Compile Include="DataTransformation\EnumValueTransformer.cs" />
     <Compile Include="DataTransformation\InternAllStringsTransformer.cs" />
     <Compile Include="DataTransformation\InternAttribute.cs" />
+    <Compile Include="DataTransformation\TrimAllStringsTransformer.cs" />
     <Compile Include="DataTransformation\TrimAttribute.cs" />
     <Compile Include="DataTransformerAttributeBase.cs" />
     <Compile Include="IDataTransformer.cs" />
