@@ -70,6 +70,12 @@
     <Compile Include="..\CodeOnlyTests\DataTransformation\EnumValueTransformerTests.cs">
       <Link>DataTransformation\EnumValueTransformerTests.cs</Link>
     </Compile>
+    <Compile Include="..\CodeOnlyTests\DataTransformation\InternAllStringsTransformerTests.cs">
+      <Link>DataTransformation\InternAllStringsTransformerTests.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyTests\DataTransformation\InternAttributeTests.cs">
+      <Link>DataTransformation\InternAttributeTests.cs</Link>
+    </Compile>
     <Compile Include="..\CodeOnlyTests\DataTransformation\TrimAttributeTests.cs">
       <Link>DataTransformation\TrimAttributeTests.cs</Link>
     </Compile>
