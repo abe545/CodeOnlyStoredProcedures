@@ -457,6 +457,7 @@ namespace CodeOnlyTests
 
             var p = toTest.Parameters.Single();
             Assert.AreEqual(ParameterDirection.ReturnValue, p.Direction);
+            Assert.AreEqual(SqlDbType.Int, p.SqlDbType);
 
             var act = toTest.OutputParameterSetters.Single();
             act.Value(100);
@@ -731,32 +732,6 @@ namespace CodeOnlyTests
         #endregion
 
         #region DoExecute Tests
-        [TestMethod]
-        public void TestDoExecuteReturnsReader()
-        {
-            var reader  = new Mock<IDataReader>().Object;
-            var command = new Mock<IDbCommand>();
-
-            command.Setup(d => d.ExecuteReader()).Returns(() => reader);
-            command.SetupAllProperties();
-
-            var toTest = command.Object.DoExecute(c => c.ExecuteReader(), CancellationToken.None);
-
-            Assert.AreEqual(reader, toTest);
-        }
-
-        [TestMethod]
-        public void TestDoExecuteReturnsResult()
-        {
-            var cmd = new Mock<IDbCommand>();
-            cmd.Setup(c => c.ExecuteNonQuery()).Returns(3);
-            cmd.SetupAllProperties();
-
-            var toTest = cmd.Object.DoExecute(c => c.ExecuteNonQuery(), CancellationToken.None);
-
-            Assert.AreEqual(3, toTest);
-        }
-
         [TestMethod]
         public void TestCreateataReaderCancelsWhenCanceledBeforeExecuting()
         {

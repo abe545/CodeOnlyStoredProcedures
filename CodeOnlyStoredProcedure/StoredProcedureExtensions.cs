@@ -135,6 +135,13 @@ namespace CodeOnlyStoredProcedure
         #endregion
 
         #region WithReturnValue
+        /// <summary>
+        /// Adds an action to be called with the return value from the <see cref="StoredProcedure"/>.
+        /// </summary>
+        /// <typeparam name="TSP">The <see cref="StoredProcedure"/> type.</typeparam>
+        /// <param name="sp">The <see cref="StoredProcedure"/> to register for the return value.</param>
+        /// <param name="returnValue">The <see href="http://msdn.microsoft.com/en-us/library/018hxwa8.aspx" alt="Action"/> to call with the return value.</param>
+        /// <returns>A copy of the <see cref="StoredProcedure"/> with the return value associated.</returns>
         public static TSP WithReturnValue<TSP>(this TSP sp, Action<int> returnValue)
             where TSP : StoredProcedure
         {
@@ -145,7 +152,8 @@ namespace CodeOnlyStoredProcedure
             return (TSP)sp.CloneWith(new SqlParameter
                 {
                     ParameterName = "_Code_Only_Stored_Procedures_Auto_Generated_Return_Value_",
-                    Direction     = ParameterDirection.ReturnValue
+                    Direction     = ParameterDirection.ReturnValue,
+                    SqlDbType     = SqlDbType.Int
                 }, 
                 o => returnValue((int)o));
         }

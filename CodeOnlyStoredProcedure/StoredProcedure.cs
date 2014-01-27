@@ -331,7 +331,7 @@ namespace CodeOnlyStoredProcedure
                         results = new Dictionary<Type, IList>();
                     }
 
-                    foreach (var parm in parameters.Where(p => p.Direction != ParameterDirection.Input))
+                    foreach (var parm in cloned.Where(p => p.Direction != ParameterDirection.Input))
                         outputParameterSetters[parm.ParameterName](parm.Value);
 
                     return results;
@@ -358,6 +358,8 @@ namespace CodeOnlyStoredProcedure
 
         private SqlParameter Clone(SqlParameter p)
         {
+            Contract.Requires(p != null);
+
             return new SqlParameter(p.ParameterName, 
                                     p.SqlDbType,
                                     p.Size,
