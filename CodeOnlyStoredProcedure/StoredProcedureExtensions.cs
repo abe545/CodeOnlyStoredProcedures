@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Data.SqlClient;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Reflection;
@@ -290,7 +291,7 @@ namespace CodeOnlyStoredProcedure
 
             PropertyInfo pi;
             var results = new Dictionary<Type, IList>();
-            var reader  = CreateDataReader(cmd, token);
+            var reader  = cmd.DoExecute(c => c.ExecuteReader(), token);
 
             token.ThrowIfCancellationRequested();
 
@@ -359,15 +360,20 @@ namespace CodeOnlyStoredProcedure
             return results;
         }
 
-        internal static IDataReader CreateDataReader(this IDbCommand cmd, CancellationToken token)
+        internal static T DoExecute<T>(this IDbCommand cmd, Func<IDbCommand, T> exec, CancellationToken token)
         {
             Contract.Requires(cmd != null);
-            Contract.Ensures(Contract.Result<IDataReader>() != null);
-
-            var readerTask = Task.Factory.StartNew(() => cmd.ExecuteReader(), token);
+            Contract.Requires(exec != null);
+            Contract.Ensures(Contract.Result<T>() != null);
 
             // execute in a background task, so we can cancel the command if the 
-            // CancellationToken is cancelled
+            // CancellationToken is cancelled, or the command times out
+            var readerTask = Task.Factory.StartNew(() => exec(cmd), token);
+            
+            Stopwatch sw = null;
+            var timeout = cmd.CommandTimeout;
+            if (timeout > 0)
+                sw = Stopwatch.StartNew();
             var continueWaiting = true;
             while (continueWaiting)
             {
@@ -387,6 +393,11 @@ namespace CodeOnlyStoredProcedure
                 {
                     cmd.Cancel();
                     continueWaiting = false;
+                }
+                else if (timeout > 0 && sw.Elapsed.TotalSeconds > timeout)
+                {
+                    cmd.Cancel();
+                    throw new TimeoutException("The stored procedure " + cmd.CommandText + " has not returned after " + cmd.CommandTimeout + " seconds.");
                 }
             }
 

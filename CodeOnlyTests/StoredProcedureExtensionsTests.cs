@@ -730,19 +730,31 @@ namespace CodeOnlyTests
         }
         #endregion
 
-        #region CreateDataReader Tests
+        #region DoExecute Tests
         [TestMethod]
-        public void TestCreateDataReaderReturnsReader()
+        public void TestDoExecuteReturnsReader()
         {
             var reader  = new Mock<IDataReader>().Object;
             var command = new Mock<IDbCommand>();
 
-            command.Setup(d => d.ExecuteReader())
-                   .Returns(reader);
+            command.Setup(d => d.ExecuteReader()).Returns(() => reader);
+            command.SetupAllProperties();
 
-            var toTest = command.Object.CreateDataReader(CancellationToken.None);
+            var toTest = command.Object.DoExecute(c => c.ExecuteReader(), CancellationToken.None);
 
-            Assert.AreEqual(toTest, reader);
+            Assert.AreEqual(reader, toTest);
+        }
+
+        [TestMethod]
+        public void TestDoExecuteReturnsResult()
+        {
+            var cmd = new Mock<IDbCommand>();
+            cmd.Setup(c => c.ExecuteNonQuery()).Returns(3);
+            cmd.SetupAllProperties();
+
+            var toTest = cmd.Object.DoExecute(c => c.ExecuteNonQuery(), CancellationToken.None);
+
+            Assert.AreEqual(3, toTest);
         }
 
         [TestMethod]
@@ -754,11 +766,12 @@ namespace CodeOnlyTests
             var command = new Mock<IDbCommand>();
             command.Setup(d => d.ExecuteReader())
                    .Throws(new Exception("ExecuteReader called after token was canceled"));
+            command.SetupAllProperties();
 
             bool exceptionThrown = false;
             try
             {
-                command.Object.CreateDataReader(cts.Token);
+                command.Object.DoExecute(c => c.ExecuteReader(), cts.Token);
             }
             catch(OperationCanceledException)
             {
@@ -770,10 +783,12 @@ namespace CodeOnlyTests
         }
 
         [TestMethod]
-        public void TestCreateDataReaderCancelsCommandWhenTokenCanceled()
+        public void TestDoExecuteCancelsCommandWhenTokenCanceled()
         {
-            var sema = new SemaphoreSlim(0, 1);
+            var sema    = new SemaphoreSlim(0, 1);
             var command = new Mock<IDbCommand>();
+
+            command.SetupAllProperties();
             command.Setup     (d => d.ExecuteReader())
                    .Callback  (() =>
                                {
@@ -783,18 +798,18 @@ namespace CodeOnlyTests
                                        Thread.Sleep(100);
                                    } while (sema.Wait(100));
                                })
-                   .Returns   (() => null);
+                   .Returns   (() => new Mock<IDataReader>().Object);
             command.Setup     (d => d.Cancel())
                    .Verifiable();
 
             var cts = new CancellationTokenSource();
 
-            var toTest = Task.Factory.StartNew(() => command.Object.CreateDataReader(cts.Token));
-            bool exceptionThrown = false;
+            var toTest = Task.Factory.StartNew(() => command.Object.DoExecute(c => c.ExecuteReader(), cts.Token), cts.Token);
+            bool isCancelled = false;
 
             var continuation = 
-                toTest.ContinueWith(t => exceptionThrown = t.Exception.InnerException is OperationCanceledException,
-                                    TaskContinuationOptions.OnlyOnFaulted);
+                toTest.ContinueWith(t => isCancelled = true,
+                                    TaskContinuationOptions.OnlyOnCanceled);
 
             sema.Wait();
             cts.Cancel();
@@ -802,20 +817,21 @@ namespace CodeOnlyTests
             continuation.Wait();
             sema.Release();
             command.Verify(d => d.Cancel(), Times.Once);
-            Assert.IsTrue(exceptionThrown, "No TaskCanceledException thrown when token is cancelled");
+            Assert.IsTrue(isCancelled, "The cancellation was not processed properly");
         }
 
         [TestMethod]
-        public void TestCreateDataReaderThrowsWhenExecuteReaderThrows()
+        public void TestDoExecuteThrowsWhenExecuteReaderThrows()
         {
             var command = new Mock<IDbCommand>();
             command.Setup (d => d.ExecuteReader())
                    .Throws(new Exception("Test Exception"));
+            command.SetupAllProperties();
 
             Exception ex = null;
             try
             {
-                var toTest = command.Object.CreateDataReader(CancellationToken.None);
+                var toTest = command.Object.DoExecute(c => c.ExecuteReader(), CancellationToken.None);
             }
             catch(Exception e)
             {
@@ -824,6 +840,26 @@ namespace CodeOnlyTests
 
             Assert.IsNotNull(ex);
             Assert.AreEqual("Test Exception", ex.Message);
+        }
+
+        [TestMethod]
+        public void TestDoExecuteAbortsCommandAfterTimeoutPassed()
+        {
+            var cmd = new Mock<IDbCommand>();
+            cmd.Setup(c => c.ExecuteReader())
+               .Callback(() => Thread.Sleep(2000))
+               .Returns(() => new Mock<IDataReader>().Object);
+            cmd.SetupAllProperties();
+            cmd.Object.CommandTimeout = 1;
+
+            try
+            {
+                cmd.Object.DoExecute(c => c.ExecuteReader(), CancellationToken.None);
+                Assert.Fail("The command was not aborted with a TimeoutException.");
+            }
+            catch(TimeoutException) { }
+
+            cmd.Verify(c => c.Cancel(), Times.Once());
         }
         #endregion
 
