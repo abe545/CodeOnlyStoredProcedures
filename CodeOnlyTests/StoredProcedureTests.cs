@@ -2,8 +2,11 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using System;
+using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 #if NET40
 namespace CodeOnlyTests.Net40
@@ -265,6 +268,81 @@ namespace CodeOnlyTests
             var toTest = new StoredProcedure("Test").CloneWith(x);
 
             Assert.AreEqual(x, toTest.DataTransformers.Single());
+        }
+        #endregion
+
+        #region Execute Tests
+        [TestMethod]
+        public void TestExecuteProperlyCreatesAndExecutesCommand()
+        {
+            var cmd = new Mock<IDbCommand>();
+            cmd.SetupAllProperties();
+
+            var conn = new Mock<IDbConnection>();
+            conn.Setup(c => c.CreateCommand())
+                .Returns(cmd.Object);
+
+            var toTest = new StoredProcedure("foo", "bar");
+
+            var res = toTest.Execute(conn.Object, CancellationToken.None, 100);
+
+            Assert.AreEqual(0, res.Count);
+            Assert.AreEqual("[foo].[bar]", cmd.Object.CommandText);
+            Assert.AreEqual(CommandType.StoredProcedure, cmd.Object.CommandType);
+            Assert.AreEqual(100, cmd.Object.CommandTimeout);
+
+            cmd.Verify(c => c.ExecuteNonQuery(), Times.Once());
+        }
+
+        [TestMethod]
+        public void TestExecuteDoesNotExecuteCommandIfPassedCancelledToken()
+        {
+            var cmd = new Mock<IDbCommand>();
+            cmd.SetupAllProperties();
+
+            var conn = new Mock<IDbConnection>();
+            conn.Setup(c => c.CreateCommand())
+                .Returns(cmd.Object);
+
+            var cts = new CancellationTokenSource();
+            var toTest = new StoredProcedure("foo", "bar");
+
+            var token = cts.Token;
+            var task = new Task(() =>
+                {
+                    cts.Cancel();
+                    toTest.Execute(conn.Object, token);
+                }, token);
+
+            task.RunSynchronously();
+
+            cmd.Verify(c => c.ExecuteNonQuery(), Times.Never(), "StoredProcedure executed after the token was cancelled.");
+            Assert.IsTrue(task.IsCanceled, "Cancellation not processed successfully");
+        }
+
+        [TestMethod]
+        public void TestExecuteAbortsWhenTimeoutPasses()
+        {
+            var cmd = new Mock<IDbCommand>();
+            cmd.SetupAllProperties();
+            cmd.Setup(c => c.ExecuteNonQuery())
+               .Callback(() => Thread.Sleep(2000))
+               .Returns(2);
+
+            var conn = new Mock<IDbConnection>();
+            conn.Setup(c => c.CreateCommand())
+                .Returns(cmd.Object);
+
+            var toTest = new StoredProcedure("foo", "bar");
+
+            try
+            {
+                toTest.Execute(conn.Object, CancellationToken.None, 1);
+                Assert.Fail("Execute returned even though it should have timed out.");
+            }
+            catch (TimeoutException)
+            {
+            }
         }
         #endregion
 

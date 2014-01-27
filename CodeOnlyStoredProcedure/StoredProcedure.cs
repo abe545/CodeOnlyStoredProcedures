@@ -240,12 +240,22 @@ namespace CodeOnlyStoredProcedure
         #endregion
 
         #region Execute
+        /// <summary>
+        /// Executes the stored procedure.
+        /// </summary>
+        /// <param name="connection">The connection to use to execute the StoredProcedure.</param>
+        /// <param name="timeout">The number of seconds to wait before aborting the 
+        /// stored procedure's execution.</param>
+        /// <example>If using from an Entity Framework DbContext, the connection can be passed:
+        /// <code language='cs'>
+        /// storedProcedure.Execute(this.Database.Connection);
+        /// </code>
+        /// </example>
         public void Execute(IDbConnection connection, int? timeout = null)
         {
             Contract.Requires(connection != null);
 
             Execute(connection, CancellationToken.None, timeout);
-            TransferOutputParameters();
         }
         #endregion
 
@@ -264,17 +274,13 @@ namespace CodeOnlyStoredProcedure
             Contract.Ensures (Contract.Result<Task>() != null);
 
             return Task.Factory.StartNew(
-                () =>
-                {
-                    Execute(connection, token, timeout);
-                    TransferOutputParameters();
-                }, token);
+                () => Execute(connection, token, timeout), token);
         }
         #endregion
 
         // Suppress this message, because the sp name is never set via user input
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2100:Review SQL queries for security vulnerabilities")]
-        protected IDictionary<Type, IList> Execute(
+        internal IDictionary<Type, IList> Execute(
             IDbConnection     connection,
             CancellationToken token,
             int?              commandTimeout = null,
@@ -283,6 +289,7 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(connection != null);
             Contract.Ensures(Contract.Result<IDictionary<Type, IList>>() != null);
 
+            bool shouldClose = false;
             try
             {
                 // if we don't create a new connection, connection.Open may throw
@@ -291,16 +298,26 @@ namespace CodeOnlyStoredProcedure
                 // We could track the connection state ourselves, but if any other code
                 // uses the connection (like an EF DbSet), we could possibly close
                 // the connection while a transaction is in process.
-                connection = new SqlConnection(connection.ConnectionString);
-                connection.Open();
+                // By only opening a clone of the connection, we avoid this issue.
+                if (connection is ICloneable)
+                {
+                    connection = (IDbConnection)((ICloneable)connection).Clone();
+                    connection.Open();
+                    shouldClose = true;
+                }
+
                 using (var cmd = connection.CreateCommand())
                 {
-                    cmd.CommandText = FullName;
-                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.CommandText    = FullName;
+                    cmd.CommandType    = CommandType.StoredProcedure;
                     cmd.CommandTimeout = commandTimeout ?? 10;
 
                     // move parameters to command object
-                    foreach (var p in parameters)
+                    // we must clone them first because the framework
+                    // throws an exception if a parameter is passed to 
+                    // more than one IDbCommand
+                    var cloned = parameters.Select(Clone).ToArray();
+                    foreach (var p in cloned)
                         cmd.Parameters.Add(p);
 
                     token.ThrowIfCancellationRequested();
@@ -310,13 +327,23 @@ namespace CodeOnlyStoredProcedure
                         results = cmd.Execute(token, outputTypes, globalTransformers.Concat(dataTransformers));
                     else
                     {
-                        cmd.ExecuteNonQuery();
+                        cmd.DoExecute(c => c.ExecuteNonQuery(), token);
                         results = new Dictionary<Type, IList>();
                     }
 
-                    TransferOutputParameters();
+                    foreach (var parm in parameters.Where(p => p.Direction != ParameterDirection.Input))
+                        outputParameterSetters[parm.ParameterName](parm.Value);
+
                     return results;
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch(TimeoutException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
@@ -324,14 +351,26 @@ namespace CodeOnlyStoredProcedure
             }
             finally
             {
-                connection.Close();
+                if (shouldClose)
+                    connection.Close();
             }
         }
 
-        private void TransferOutputParameters()
+        private SqlParameter Clone(SqlParameter p)
         {
-            foreach (var parm in parameters.Where(p => p.Direction != ParameterDirection.Input))
-                outputParameterSetters[parm.ParameterName](parm.Value);
+            return new SqlParameter(p.ParameterName, 
+                                    p.SqlDbType,
+                                    p.Size,
+                                    p.Direction,
+                                    p.Precision,
+                                    p.Scale, 
+                                    p.SourceColumn, 
+                                    p.SourceVersion,
+                                    p.SourceColumnNullMapping, 
+                                    p.Value,
+                                    p.XmlSchemaCollectionDatabase,
+                                    p.XmlSchemaCollectionOwningSchema, 
+                                    p.XmlSchemaCollectionName);
         }
 
         [ContractInvariantMethod]
