@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace SmokeTests
@@ -12,18 +13,18 @@ namespace SmokeTests
 
         static bool DoReturnsOneTests(SmokeDb db)
         {
-            Console.Write("Calling usp_ReturnsOne synchronously - ");
+            Console.Write("Calling usp_ReturnsOne (WithInput) synchronously - ");
 
             var ro = new ReturnsOne();
             db.ReturnsOne.WithInput(ro).Execute(db.Database.Connection);
             if (ro.ReturnValue != 1)
             {
-                Console.ForegroundColor = ConsoleColor.DarkRed;
-                Console.WriteLine("Failed!");
-                Console.WriteLine("\tusp_ReturnsOne did not set the ReturnValue for WithInput");
-                Console.ResetColor();
+                WriteError("\tusp_ReturnsOne did not set the ReturnValue for WithInput");
                 return false;
             }
+
+            WriteSuccess();
+            Console.Write("Calling usp_ReturnsOne (WithReturnValue) synchronously - ");
 
             int res = -1;
 
@@ -31,18 +32,12 @@ namespace SmokeTests
                          .Execute(db.Database.Connection);
             if (res != 1)
             {
-                Console.ForegroundColor = ConsoleColor.DarkRed;
-                Console.WriteLine("Failed!");
-                Console.WriteLine("\tusp_ReturnsOne did not set the ReturnValue for WithReturnValue");
-                Console.ResetColor();
+                WriteError("\tusp_ReturnsOne did not set the ReturnValue for WithReturnValue");
                 return false;
             }
 
-            Console.ForegroundColor = ConsoleColor.DarkGreen;
-            Console.WriteLine("Success!");
-            Console.ResetColor();
-
-            Console.Write("Calling usp_ReturnsOne asynchronously - ");
+            WriteSuccess();
+            Console.Write("Calling usp_ReturnsOne (WithInput) asynchronously - ");
 
             ro = new ReturnsOne();
             db.ReturnsOne.WithInput(ro)
@@ -50,13 +45,12 @@ namespace SmokeTests
                          .Wait();
             if (ro.ReturnValue != 1)
             {
-                Console.ForegroundColor = ConsoleColor.DarkRed;
-                Console.WriteLine("Failed!");
-                Console.WriteLine("\tusp_ReturnsOne did not set the ReturnValue for WithInput");
-                Console.ResetColor();
-
+                WriteError("\tusp_ReturnsOne did not set the ReturnValue for WithInput");
                 return false;
             }
+
+            WriteSuccess();
+            Console.Write("Calling usp_ReturnsOne (WithReturnValue) asynchronously - ");
 
             res = -1;
 
@@ -65,19 +59,13 @@ namespace SmokeTests
                          .Wait();
             if (res != 1)
             {
-                Console.ForegroundColor = ConsoleColor.DarkRed;
-                Console.WriteLine("Failed!");
-                Console.WriteLine("usp_ReturnsOne did not set the ReturnValue for WithReturnValue");
-                Console.ResetColor();
-
+                WriteError("\tusp_ReturnsOne did not set the ReturnValue for WithReturnValue");
                 return false;
             }
 
-            Console.ForegroundColor = ConsoleColor.DarkGreen;
-            Console.WriteLine("Success!");
-            Console.ResetColor();
+            WriteSuccess();
 
-            Console.Write("Calling usp_ReturnsOne two times asynchronously simultaneously - ");
+            Console.Write("Calling usp_ReturnsOne (WithReturnValue) two times asynchronously simultaneously - ");
 
             var results = new List<int>();
             var sp = db.ReturnsOne.WithReturnValue(i => results.Add(i));
@@ -89,19 +77,15 @@ namespace SmokeTests
 
             if (results.Count != 2 || results.Any(i => i != 1))
             {
-                Console.ForegroundColor = ConsoleColor.DarkRed;
-                Console.WriteLine("Failed!");
-                Console.WriteLine("\tBoth stored procedures did not return 1.");
+                var err = new StringBuilder("\tBoth stored procedures did not return 1.");
                 for (int i = 0; i < results.Count; ++i)
-                    Console.WriteLine("\t\tResult {0} - {1}", i, results[i]);
-                Console.ResetColor();
+                    err.AppendFormat("\n\t\tResult {0} - {1}", i, results[i]);
 
+                WriteError(err.ToString());
                 return false;
             }
 
-            Console.ForegroundColor = ConsoleColor.DarkGreen;
-            Console.WriteLine("Success!");
-            Console.ResetColor();
+            WriteSuccess();
 
             return true;
         }
