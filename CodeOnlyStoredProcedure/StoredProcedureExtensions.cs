@@ -17,6 +17,16 @@ namespace CodeOnlyStoredProcedure
     public static partial class StoredProcedureExtensions
     {
         #region WithParameter
+        /// <summary>
+        /// Adds an input parameter to the stored procedure.
+        /// </summary>
+        /// <typeparam name="TSP">The type of StoredProcedure. Can be a StoredProcedure with or without results.</typeparam>
+        /// <typeparam name="TValue">The type of value to pass.</typeparam>
+        /// <param name="sp">The StoredProcedure to add the input parameter to</param>
+        /// <param name="name">The name that the StoredProcedure expects (without the @).</param>
+        /// <param name="value">The value to pass.</param>
+        /// <returns>A copy of the StoredProcedure with the input parameter passed.</returns>
+        /// <remarks>StoredProcedures are immutable, so all the Fluent API methods return copies.</remarks>
         public static TSP WithParameter<TSP, TValue>(this TSP sp, string name, TValue value)
             where TSP : StoredProcedure
         {
@@ -27,6 +37,17 @@ namespace CodeOnlyStoredProcedure
             return (TSP)sp.CloneWith(new SqlParameter(name, value));
         }
 
+        /// <summary>
+        /// Adds an input parameter to the stored procedure.
+        /// </summary>
+        /// <typeparam name="TSP">The type of StoredProcedure. Can be a StoredProcedure with or without results.</typeparam>
+        /// <typeparam name="TValue">The type of value to pass.</typeparam>
+        /// <param name="sp">The StoredProcedure to add the input parameter to</param>
+        /// <param name="name">The name that the StoredProcedure expects (without the @).</param>
+        /// <param name="value">The value to pass.</param>
+        /// <param name="dbType">The SqlDbType that the StoredProcedure expects.</param>
+        /// <returns>A copy of the StoredProcedure with the input parameter passed.</returns>
+        /// <remarks>StoredProcedures are immutable, so all the Fluent API methods return copies.</remarks>
         public static TSP WithParameter<TSP, TValue>(this TSP sp, string name, TValue value, SqlDbType dbType)
             where TSP : StoredProcedure
         {
@@ -377,36 +398,39 @@ namespace CodeOnlyStoredProcedure
             // execute in a background task, so we can cancel the command if the 
             // CancellationToken is cancelled, or the command times out
             var readerTask = Task.Factory.StartNew(() => exec(cmd), token);
-            
-            Stopwatch sw = null;
-            var timeout = cmd.CommandTimeout;
-            if (timeout > 0)
-                sw = Stopwatch.StartNew();
-            var continueWaiting = true;
-            while (continueWaiting)
+
+            try
             {
-                Thread.SpinWait(1);
-                switch (readerTask.Status)
+                var timeout = cmd.CommandTimeout;
+                if (timeout > 0)
                 {
-                    case TaskStatus.Faulted:
-                        throw readerTask.Exception.InnerException;
+                    if (!readerTask.Wait(timeout * 1000, token) && !readerTask.IsCompleted)
+                    {
+                        cmd.Cancel();
+                        throw new TimeoutException();
+                    }
 
-                    case TaskStatus.Canceled:
-                    case TaskStatus.RanToCompletion:
-                        continueWaiting = false;
-                        break;
+                    if (token.IsCancellationRequested && !readerTask.IsCompleted)
+                        cmd.Cancel();
                 }
-
-                if (token.IsCancellationRequested)
+                else
+                    readerTask.Wait(token);
+            }
+            catch (AggregateException ex)
+            {
+                if (ex.InnerExceptions.Count() == 1)
                 {
-                    cmd.Cancel();
-                    continueWaiting = false;
+                    if (!(ex.InnerException is OperationCanceledException))
+                        throw;
+                    else
+                        cmd.Cancel();
                 }
-                else if (timeout > 0 && sw.Elapsed.TotalSeconds > timeout)
-                {
-                    cmd.Cancel();
-                    throw new TimeoutException("The stored procedure " + cmd.CommandText + " has not returned after " + cmd.CommandTimeout + " seconds.");
-                }
+                else
+                    throw;
+            }
+            catch (OperationCanceledException)
+            {
+                cmd.Cancel();
             }
 
             token.ThrowIfCancellationRequested();

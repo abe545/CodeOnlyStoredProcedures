@@ -777,6 +777,8 @@ namespace CodeOnlyTests
             command.Setup     (d => d.Cancel())
                    .Verifiable();
 
+            command.Object.CommandTimeout = 30;
+
             var cts = new CancellationTokenSource();
 
             var toTest = Task.Factory.StartNew(() => command.Object.DoExecute(c => c.ExecuteReader(), cts.Token), cts.Token);
@@ -799,16 +801,20 @@ namespace CodeOnlyTests
         public void TestDoExecuteThrowsWhenExecuteReaderThrows()
         {
             var command = new Mock<IDbCommand>();
+            command.SetupAllProperties();
             command.Setup (d => d.ExecuteReader())
                    .Throws(new Exception("Test Exception"));
-            command.SetupAllProperties();
 
             Exception ex = null;
             try
             {
                 var toTest = command.Object.DoExecute(c => c.ExecuteReader(), CancellationToken.None);
             }
-            catch(Exception e)
+            catch (AggregateException a)
+            {
+                ex = a.InnerException;
+            }
+            catch (Exception e)
             {
                 ex = e;
             }
