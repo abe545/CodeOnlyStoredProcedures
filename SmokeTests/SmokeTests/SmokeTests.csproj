@@ -84,6 +84,9 @@
     <Compile Include="Program.GetItemTests.cs">
       <DependentUpon>Program.cs</DependentUpon>
     </Compile>
+    <Compile Include="Program.GetWidgetTests.cs">
+      <DependentUpon>Program.cs</DependentUpon>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SmokeDb.cs" />
   </ItemGroup>

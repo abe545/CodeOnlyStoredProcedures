@@ -12,9 +12,10 @@ namespace SmokeTests
 {
     public class SmokeDb : DbContext
     {
-        public StoredProcedure       ReturnsOne { get; private set; }
-        public StoredProcedure<Item> GetItems   { get; private set; }
-        public StoredProcedure<Item> GetItem    { get; private set; }
+        public StoredProcedure                          ReturnsOne { get; private set; }
+        public StoredProcedure<Item>                    GetItems   { get; private set; }
+        public StoredProcedure<Item>                    GetItem    { get; private set; }
+        public StoredProcedure<Widget, WidgetComponent> GetWidget  { get; private set; }
 
         static SmokeDb()
         {
@@ -23,16 +24,31 @@ namespace SmokeTests
 
         public SmokeDb()
         {
-            ReturnsOne = new StoredProcedure      ("usp_ReturnsOne");
-            GetItems   = new StoredProcedure<Item>("usp_GetItems");
-            GetItem    = new StoredProcedure<Item>("usp_GetItem");
+            ReturnsOne = new StoredProcedure                         ("usp_ReturnsOne");
+            GetItems   = new StoredProcedure<Item>                   ("usp_GetItems");
+            GetItem    = new StoredProcedure<Item>                   ("usp_GetItem");
+            GetWidget  = new StoredProcedure<Widget, WidgetComponent>("usp_GetWidget");
         }
     }
 
     public class Item
     {
-        [Key]
         public int    ItemId { get; set; }
         public string Name   { get; set; }
+    }
+
+    public class Widget
+    {
+        public int     WidgetId { get; set; }
+        public string  Name     { get; set; }
+        public bool?   IsNew    { get; set; }
+        public decimal Price    { get; set; }
+        public double  Weight   { get; set; }
+    }
+
+    public class WidgetComponent
+    {
+        public int    WidgetComponentId { get; set; }
+        public string Name              { get; set; }
     }
 }
