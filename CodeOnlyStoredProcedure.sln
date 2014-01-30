@@ -17,6 +17,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{E1002D45
 		Build\Version.xml = Build\Version.xml
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmokeTests", "SmokeTests\SmokeTests.csproj", "{4924DD1E-BE78-4254-AF20-C57077E61FA7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmokeTests-NET40", "SmokeTests-NET40\SmokeTests-NET40.csproj", "{1823FE39-EFB7-480A-881B-F204CC75543E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +43,14 @@ Global
 		{B036AF35-E4F4-4E7A-8D54-707EB4647F3F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B036AF35-E4F4-4E7A-8D54-707EB4647F3F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B036AF35-E4F4-4E7A-8D54-707EB4647F3F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4924DD1E-BE78-4254-AF20-C57077E61FA7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4924DD1E-BE78-4254-AF20-C57077E61FA7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4924DD1E-BE78-4254-AF20-C57077E61FA7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4924DD1E-BE78-4254-AF20-C57077E61FA7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1823FE39-EFB7-480A-881B-F204CC75543E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1823FE39-EFB7-480A-881B-F204CC75543E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1823FE39-EFB7-480A-881B-F204CC75543E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1823FE39-EFB7-480A-881B-F204CC75543E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
