@@ -21,6 +21,18 @@ namespace SmokeTests
                 return -1;
             }
 
+            if (!DoGetItemTests(toTest))
+            {
+                Exiting();
+                return -1;
+            }
+
+            if (!DoGetWidgetTests(toTest))
+            {
+                Exiting();
+                return -1;
+            }
+
             Console.ForegroundColor = ConsoleColor.DarkGreen;
             Console.WriteLine("All tests ran successfully!");
             Exiting();
@@ -32,6 +44,21 @@ namespace SmokeTests
         static void Exiting()
         {
             Console.ReadLine();
+        }
+
+        static void WriteSuccess()
+        {
+            Console.ForegroundColor = ConsoleColor.DarkGreen;
+            Console.WriteLine("Success!");
+            Console.ResetColor();
+        }
+
+        static void WriteError(string error)
+        {
+            Console.ForegroundColor = ConsoleColor.DarkRed;
+            Console.WriteLine("Failed!");
+            Console.WriteLine(error);
+            Console.ResetColor();
         }
     }
 }

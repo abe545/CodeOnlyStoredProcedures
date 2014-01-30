@@ -50,10 +50,6 @@
     <StartupObject>SmokeTests.Program</StartupObject>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="CodeOnlyStoredProcedure, Version=0.3.3.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\CodeOnlyStoredProcedures.0.3.3-alpha-14027-0451\lib\NET40\CodeOnlyStoredProcedure.dll</HintPath>
-    </Reference>
     <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\EntityFramework.6.0.2\lib\net40\EntityFramework.dll</HintPath>
@@ -76,6 +72,14 @@
     </Compile>
     <Compile Include="..\SmokeTests\Program.GetItemsTests.cs">
       <Link>Program.GetItemsTests.cs</Link>
+      <DependentUpon>Program.cs</DependentUpon>
+    </Compile>
+    <Compile Include="..\SmokeTests\Program.GetItemTests.cs">
+      <Link>Program.GetItemTests.cs</Link>
+      <DependentUpon>Program.cs</DependentUpon>
+    </Compile>
+    <Compile Include="..\SmokeTests\Program.GetWidgetTests.cs">
+      <Link>Program.GetWidgetTests.cs</Link>
       <DependentUpon>Program.cs</DependentUpon>
     </Compile>
     <Compile Include="..\SmokeTests\Program.ReturnsOneTests.cs">
@@ -123,6 +127,12 @@
       <ProductName>Windows Installer 4.5</ProductName>
       <Install>true</Install>
     </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CodeOnlyStoredProcedure-NET40\CodeOnlyStoredProcedure-NET40.csproj">
+      <Project>{31800e2d-04b0-4d10-a40f-d59ecd63933a}</Project>
+      <Name>CodeOnlyStoredProcedure-NET40</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
