@@ -1514,18 +1514,9 @@ namespace CodeOnlyTests
             reader.SetupGet(r => r.FieldCount)
                   .Returns(1);
 
-            var first = true;
-            reader.Setup(r => r.Read())
-                  .Returns(() =>
-                  {
-                      if (first)
-                      {
-                          first = false;
-                          return true;
-                      }
-
-                      return false;
-                  });
+            reader.SetupSequence(r => r.Read())
+                  .Returns(true)
+                  .Returns(false);
 
             reader.Setup(r => r.GetName(0))
                   .Returns("MyRenamedColumn");
@@ -1543,6 +1534,76 @@ namespace CodeOnlyTests
             var item = toTest[0];
 
             Assert.AreEqual("Hello, World!", item.Column);
+        }
+
+        [TestMethod]
+        public void TestExecute_ReturnsSingleColumnSetForString()
+        {
+            var reader = new Mock<IDataReader>();
+            var command = new Mock<IDbCommand>();
+
+            command.SetupAllProperties();
+            command.Setup(d => d.ExecuteReader())
+                   .Returns(reader.Object);
+
+            var res = new[] { "Hello", "World", "Foo", "Bar" };
+            int i = 0;
+            reader.SetupGet(r => r.FieldCount)
+                  .Returns(1);
+
+            reader.Setup(r => r.Read())
+                  .Returns(() => i < res.Length);
+
+            reader.Setup(r => r.GetName(0))
+                  .Returns("SHOULD_BE_IGNORED");
+            reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
+                  .Callback((object[] arr) => arr[0] = res[i++])
+                  .Returns(1);
+
+            var results = command.Object.Execute(CancellationToken.None,
+                                                 new[] { typeof(string) },
+                                                 Enumerable.Empty<IDataTransformer>());
+
+            var totest = (IEnumerable<string>)results[typeof(string)];
+            for (int j = 0; j < res.Length; j++)
+            {
+                Assert.AreEqual(res[j], totest.ElementAt(j));
+            }
+        }
+
+        [TestMethod]
+        public void TestExecute_ReturnsSingleColumnSetForEnum()
+        {
+            var reader = new Mock<IDataReader>();
+            var command = new Mock<IDbCommand>();
+
+            command.SetupAllProperties();
+            command.Setup(d => d.ExecuteReader())
+                   .Returns(reader.Object);
+
+            var res = new[] { AttributeTargets.Enum, AttributeTargets.Event, AttributeTargets.Field };
+            int i = 0;
+            reader.SetupGet(r => r.FieldCount)
+                  .Returns(1);
+
+            reader.Setup(r => r.Read())
+                  .Returns(() => i < res.Length);
+
+            reader.Setup(r => r.GetName(0))
+                  .Returns("SHOULD_BE_IGNORED");
+            reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
+                  .Callback((object[] arr) => arr[0] = (int)res[i++])
+                  .Returns(1);
+
+            var results = command.Object.Execute(CancellationToken.None,
+                                                 new[] { typeof(AttributeTargets) },
+                                                 Enumerable.Empty<IDataTransformer>());
+
+            var totest = (IEnumerable<AttributeTargets>)results[typeof(AttributeTargets)];
+            for (int j = 0; j < res.Length; j++)
+            {
+                Assert.AreEqual(res[j], totest.ElementAt(j));
+            }
         }
         #endregion
 

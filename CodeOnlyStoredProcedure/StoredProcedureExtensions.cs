@@ -16,6 +16,21 @@ namespace CodeOnlyStoredProcedure
 {
     public static partial class StoredProcedureExtensions
     {
+        private static readonly Type[] integralTpes = new[]
+            {
+                typeof(String),
+                typeof(Int16),
+                typeof(Int32),
+                typeof(Int64),
+                typeof(Decimal),
+                typeof(Double),
+                typeof(Single),
+                typeof(Boolean),
+                typeof(Byte),
+                typeof(DateTime),
+                typeof(Guid)
+            };
+
         #region WithParameter
         /// <summary>
         /// Adds an input parameter to the stored procedure.
@@ -341,46 +356,69 @@ namespace CodeOnlyStoredProcedure
                                                  .MakeGenericType(currentType));
 
                 // process the result set
-                while (reader.Read())
+                if (reader.FieldCount == 1 && (currentType.IsEnum || integralTpes.Contains(currentType)))
                 {
-                    token.ThrowIfCancellationRequested();
-                    reader.GetValues(values);
-
-                    var row = Activator.CreateInstance(currentType);
-
-                    for (int i = 0; i < reader.FieldCount; i++)
+                    while (reader.Read())
                     {
-                        var name = reader.GetName(i);
-                        if (props.TryGetValue(name, out pi))
+                        token.ThrowIfCancellationRequested();
+                        reader.GetValues(values);
+
+                        var value = values[0];
+                        if (DBNull.Value.Equals(value))
+                            value = null;
+
+                        foreach (var xform in transformers)
                         {
-                            var value = values[i];
-                            if (DBNull.Value.Equals(value))
-                                value = null;
-
-                            var attrs = pi.GetCustomAttributes(false).Cast<Attribute>().ToArray();
-                            foreach (var xform in transformers)
-                            {
-                                if (xform.CanTransform(value, pi.PropertyType, attrs))
-                                    value = xform.Transform(value, pi.PropertyType, attrs);
-                            }
-
-                            var propTransformers = attrs.OfType<DataTransformerAttributeBase>()
-                                                        .OrderBy(a => a.Order);
-                            foreach (var xform in propTransformers)
-                                value = xform.Transform(value, pi.PropertyType);
-
-                            pi.SetValue(row, value, null);
-                            foundProps.Add(name);
+                            if (xform.CanTransform(value, currentType, Enumerable.Empty<Attribute>()))
+                                value = xform.Transform(value, currentType, Enumerable.Empty<Attribute>());
                         }
+
+                        output.Add(value);
+                    }
+                }
+                else
+                {
+                    while (reader.Read())
+                    {
+                        token.ThrowIfCancellationRequested();
+                        reader.GetValues(values);
+
+                        var row = Activator.CreateInstance(currentType);
+
+                        for (int i = 0; i < reader.FieldCount; i++)
+                        {
+                            var name = reader.GetName(i);
+                            if (props.TryGetValue(name, out pi))
+                            {
+                                var value = values[i];
+                                if (DBNull.Value.Equals(value))
+                                    value = null;
+
+                                var attrs = pi.GetCustomAttributes(false).Cast<Attribute>().ToArray();
+                                foreach (var xform in transformers)
+                                {
+                                    if (xform.CanTransform(value, pi.PropertyType, attrs))
+                                        value = xform.Transform(value, pi.PropertyType, attrs);
+                                }
+
+                                var propTransformers = attrs.OfType<DataTransformerAttributeBase>()
+                                                            .OrderBy(a => a.Order);
+                                foreach (var xform in propTransformers)
+                                    value = xform.Transform(value, pi.PropertyType);
+
+                                pi.SetValue(row, value, null);
+                                foundProps.Add(name);
+                            }
+                        }
+
+                        output.Add(row);
                     }
 
-                    output.Add(row);
+                    // throw an exception if the result set didn't include a mapped property
+                    var unused = props.Keys.Except(foundProps).ToArray();
+                    if (unused.Length > 0)
+                        throw new StoredProcedureResultsException(currentType, unused);
                 }
-
-                // throw an exception if the result set didn't include a mapped property
-                var unused = props.Keys.Except(foundProps).ToArray();
-                if (unused.Length > 0)
-                    throw new StoredProcedureResultsException(currentType, unused);
 
                 results.Add(currentType, output);
             }
