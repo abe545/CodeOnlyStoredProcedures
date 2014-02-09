@@ -5,6 +5,10 @@ using System.Diagnostics.Contracts;
 
 namespace CodeOnlyStoredProcedure
 {
+    /// <summary>
+    /// Attribute to control parameters passed to a <see cref="StoredProcedure"/> using the <see cref="WithInput"/>
+    /// extension method.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Property)]
     public class StoredProcedureParameterAttribute : Attribute
     {
@@ -45,6 +49,11 @@ namespace CodeOnlyStoredProcedure
             Direction = ParameterDirection.Input;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="propertyName"></param>
+        /// <returns></returns>
         public virtual SqlParameter CreateSqlParameter(string propertyName)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(propertyName));

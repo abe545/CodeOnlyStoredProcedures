@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.21005.1
+VisualStudioVersion = 12.0.30110.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeOnlyStoredProcedure", "CodeOnlyStoredProcedure\CodeOnlyStoredProcedure.csproj", "{37762E7B-48CC-4001-B479-ECB1923AE2E0}"
 EndProject
@@ -20,6 +20,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmokeTests", "SmokeTests\SmokeTests.csproj", "{4924DD1E-BE78-4254-AF20-C57077E61FA7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmokeTests-NET40", "SmokeTests-NET40\SmokeTests-NET40.csproj", "{1823FE39-EFB7-480A-881B-F204CC75543E}"
+EndProject
+Project("{7CF6DF6D-3B04-46F8-A40B-537D21BCA0B4}") = "Documentation", "Documentation\Documentation.shfbproj", "{CFFB3E02-288C-4971-B373-3B7C812D35C1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -51,6 +53,10 @@ Global
 		{1823FE39-EFB7-480A-881B-F204CC75543E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1823FE39-EFB7-480A-881B-F204CC75543E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1823FE39-EFB7-480A-881B-F204CC75543E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CFFB3E02-288C-4971-B373-3B7C812D35C1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CFFB3E02-288C-4971-B373-3B7C812D35C1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CFFB3E02-288C-4971-B373-3B7C812D35C1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CFFB3E02-288C-4971-B373-3B7C812D35C1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

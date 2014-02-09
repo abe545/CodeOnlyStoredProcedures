@@ -12,12 +12,18 @@ namespace CodeOnlyStoredProcedure
     /// ships with a ReadOnlyDictionary implementation</remarks>
     /// <typeparam name="TKey">The type to use as the key of the dictionary</typeparam>
     /// <typeparam name="TValue">The type of values stored in the dictionary</typeparam>
+    /// <inheritdoc />
     internal sealed class ReadOnlyDictionary<TKey, TValue> : IDictionary<TKey, TValue>
     {
         private const string mutateException = "Can not modify a ReadOnlyDictionary";
         private readonly IDictionary<TKey, TValue> internalCollection;
 
         #region Non-Mutating Methods
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
         public bool ContainsKey(TKey key)
         {
             return internalCollection.ContainsKey(key);
