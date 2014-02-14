@@ -14,6 +14,9 @@ using System.Threading.Tasks;
 
 namespace CodeOnlyStoredProcedure
 {
+    /// <summary>
+    /// Defines extension methods on the <see cref="StoredProcedure"/> classes.
+    /// </summary>
     public static partial class StoredProcedureExtensions
     {
         private static readonly Type[] integralTpes = new[]
@@ -469,6 +472,7 @@ namespace CodeOnlyStoredProcedure
             catch (OperationCanceledException)
             {
                 cmd.Cancel();
+                throw;
             }
 
             token.ThrowIfCancellationRequested();
