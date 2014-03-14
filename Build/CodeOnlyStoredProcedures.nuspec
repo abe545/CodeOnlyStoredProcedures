@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
     <metadata>
         <id>CodeOnlyStoredProcedures</id>
-        <version>0.0.7</version>
+        <version>0.0.0</version>
         <title>Code Only Stored Proecedures</title>
         <authors>Abraham Heidebrecht</authors>
         <projectUrl>https://codeonlystoredprocedures.codeplex.com/</projectUrl>

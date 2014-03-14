@@ -30,6 +30,20 @@ namespace SmokeTests
             if (!TestGetItemResults(items))
                 return false;
 
+            Console.Write("Calling usp_GetItem synchronously (WithParameter expecting no results) - ");
+
+            items = db.GetItem
+                      .WithParameter("ItemId", 41)
+                      .Execute(db.Database.Connection);
+
+            if (items.Any())
+            {
+                WriteError("\t" + items.Count() + " items returned.");
+                return false;
+            }
+            else
+                WriteSuccess();
+
             Console.Write("Calling usp_GetItem asynchronously (WithParameter) - ");
 
             items = db.GetItem
