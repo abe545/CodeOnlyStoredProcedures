@@ -80,6 +80,9 @@
     <Compile Include="Program.GetItemTests.cs">
       <DependentUpon>Program.cs</DependentUpon>
     </Compile>
+    <Compile Include="Program.GetSpokesTests.cs">
+      <DependentUpon>Program.cs</DependentUpon>
+    </Compile>
     <Compile Include="Program.GetWidgetTests.cs">
       <DependentUpon>Program.cs</DependentUpon>
     </Compile>

@@ -78,6 +78,10 @@
       <Link>Program.GetItemTests.cs</Link>
       <DependentUpon>Program.cs</DependentUpon>
     </Compile>
+    <Compile Include="..\SmokeTests\Program.GetSpokesTests.cs">
+      <Link>Program.GetSpokesTests.cs</Link>
+      <DependentUpon>Program.cs</DependentUpon>
+    </Compile>
     <Compile Include="..\SmokeTests\Program.GetWidgetTests.cs">
       <Link>Program.GetWidgetTests.cs</Link>
       <DependentUpon>Program.cs</DependentUpon>

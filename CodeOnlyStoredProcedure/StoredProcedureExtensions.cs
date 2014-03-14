@@ -414,10 +414,13 @@ namespace CodeOnlyStoredProcedure
                         output.Add(row);
                     }
 
-                    // throw an exception if the result set didn't include a mapped property
-                    var unused = props.Keys.Except(foundProps).ToArray();
-                    if (unused.Length > 0)
-                        throw new StoredProcedureResultsException(currentType, unused);
+                    if (output.Count > 0)
+                    {
+                        // throw an exception if the result set didn't include a mapped property
+                        var unused = props.Keys.Except(foundProps).ToArray();
+                        if (unused.Length > 0)
+                            throw new StoredProcedureResultsException(currentType, unused);
+                    }
                 }
 
                 results.Add(currentType, output);
