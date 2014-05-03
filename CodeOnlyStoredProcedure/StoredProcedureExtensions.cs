@@ -14,6 +14,9 @@ using System.Threading.Tasks;
 
 namespace CodeOnlyStoredProcedure
 {
+    /// <summary>
+    /// Extension methods for common functionality on StoredProcedures.
+    /// </summary>
     public static partial class StoredProcedureExtensions
     {
         private static readonly Type[] integralTpes = new[]
@@ -323,23 +326,23 @@ namespace CodeOnlyStoredProcedure
         }
         #endregion
 
-        internal static IDictionary<Type, IList> Execute(this IDbCommand cmd,
-            CancellationToken token,
-            IEnumerable<Type> outputTypes,
+        internal static IDictionary<Type, IList> Execute(
+            this IDbCommand               cmd,
+            CancellationToken             token,
+            IEnumerable<Type>             outputTypes,
             IEnumerable<IDataTransformer> transformers)
         {
-            Contract.Requires(cmd != null);
-            Contract.Requires(outputTypes != null);
+            Contract.Requires(cmd          != null);
+            Contract.Requires(outputTypes  != null);
             Contract.Requires(transformers != null);
-            Contract.Ensures(Contract.Result<IDictionary<Type, IList>>() != null);
+            Contract.Ensures (Contract.Result<IDictionary<Type, IList>>() != null);
 
-            PropertyInfo pi;
+            var first   = true;
             var results = new Dictionary<Type, IList>();
             var reader  = cmd.DoExecute(c => c.ExecuteReader(), token);
 
             token.ThrowIfCancellationRequested();
 
-            var first = true;
             foreach (var currentType in outputTypes)
             {
                 if (first)
@@ -349,18 +352,15 @@ namespace CodeOnlyStoredProcedure
                 
                 // process results - repeat this loop for each result set returned
                 // by the stored proc for which we have a result type specified
-                var props      = currentType.GetMappedPropertiesBySqlName();
-                var foundProps = new HashSet<string>();
-                var values     = new object[reader.FieldCount];
-                var output     = (IList)Activator.CreateInstance (typeof(List<>)
-                                                 .MakeGenericType(currentType));
+                var values = new object[reader.FieldCount];
+                var output = (IList)Activator.CreateInstance (typeof(List<>).MakeGenericType(currentType));
 
                 // process the result set
                 if (reader.FieldCount == 1 && (currentType.IsEnum || integralTpes.Contains(currentType)))
                 {
                     while (reader.Read())
                     {
-                        token.ThrowIfCancellationRequested();
+                        token .ThrowIfCancellationRequested();
                         reader.GetValues(values);
 
                         var value = values[0];
@@ -378,48 +378,23 @@ namespace CodeOnlyStoredProcedure
                 }
                 else
                 {
+                    var row   = (IRow)Activator.CreateInstance(typeof(Row<>).MakeGenericType(currentType));
+                    var names = Enumerable.Range(0, reader.FieldCount)
+                                          .Select(i => reader.GetName(i))
+                                          .ToArray();
+
                     while (reader.Read())
                     {
-                        token.ThrowIfCancellationRequested();
+                        token .ThrowIfCancellationRequested();
                         reader.GetValues(values);
-
-                        var row = Activator.CreateInstance(currentType);
-
-                        for (int i = 0; i < reader.FieldCount; i++)
-                        {
-                            var name = reader.GetName(i);
-                            if (props.TryGetValue(name, out pi))
-                            {
-                                var value = values[i];
-                                if (DBNull.Value.Equals(value))
-                                    value = null;
-
-                                var attrs = pi.GetCustomAttributes(false).Cast<Attribute>().ToArray();
-                                foreach (var xform in transformers)
-                                {
-                                    if (xform.CanTransform(value, pi.PropertyType, attrs))
-                                        value = xform.Transform(value, pi.PropertyType, attrs);
-                                }
-
-                                var propTransformers = attrs.OfType<DataTransformerAttributeBase>()
-                                                            .OrderBy(a => a.Order);
-                                foreach (var xform in propTransformers)
-                                    value = xform.Transform(value, pi.PropertyType);
-
-                                pi.SetValue(row, value, null);
-                                foundProps.Add(name);
-                            }
-                        }
-
-                        output.Add(row);
+                        output.Add(row.Create(names, values, transformers));
                     }
 
                     if (output.Count > 0)
                     {
                         // throw an exception if the result set didn't include a mapped property
-                        var unused = props.Keys.Except(foundProps).ToArray();
-                        if (unused.Length > 0)
-                            throw new StoredProcedureResultsException(currentType, unused);
+                        if (row.UnfoundPropertyNames.Any())
+                            throw new StoredProcedureResultsException(currentType, row.UnfoundPropertyNames.ToArray());
                     }
                 }
 
@@ -432,9 +407,9 @@ namespace CodeOnlyStoredProcedure
 
         internal static T DoExecute<T>(this IDbCommand cmd, Func<IDbCommand, T> exec, CancellationToken token)
         {
-            Contract.Requires(cmd != null);
+            Contract.Requires(cmd  != null);
             Contract.Requires(exec != null);
-            Contract.Ensures(Contract.Result<T>() != null);
+            Contract.Ensures (Contract.Result<T>() != null);
 
             // execute in a background task, so we can cancel the command if the 
             // CancellationToken is cancelled, or the command times out
@@ -476,7 +451,11 @@ namespace CodeOnlyStoredProcedure
 
             token.ThrowIfCancellationRequested();
 
-            return readerTask.Result;
+            var res = readerTask.Result;
+            if (res == null)
+                throw new NotSupportedException("The stored procedure did not return any results.");
+
+            return res;
         }
 
         #region Private Helpers
@@ -657,6 +636,75 @@ namespace CodeOnlyStoredProcedure
                 return SqlDbType.UniqueIdentifier;
 
             throw new NotSupportedException("Unable to determine the SqlDbType for the property. You can specify it by using a StoredProcedureParameterAttribute. Or prevent it from being mapped with the NotMappedAttribute.");
+        }
+
+        private interface IRow
+        {
+            IEnumerable<string> UnfoundPropertyNames { get; }
+            object Create(string[] fieldNames, object[] values, IEnumerable<IDataTransformer> transformers);
+        }
+
+        private class Row<T> : IRow
+            where T : new()
+        {
+            private static   IDictionary<string, PropertyInfo>           props;
+            private static   IDictionary<string, IEnumerable<Attribute>> propertyAttributes;
+            private readonly HashSet<string>                             unfoundProps;
+
+            public IEnumerable<string> UnfoundPropertyNames { get { return unfoundProps; } }
+
+            static Row()
+            {
+                props = typeof(T).GetMappedPropertiesBySqlName();
+                propertyAttributes = props.ToDictionary(kv => kv.Key,
+                                                        kv => kv.Value
+                                                                .GetCustomAttributes(false)
+                                                                .Cast<Attribute>()
+                                                                .ToArray()
+                                                                .AsEnumerable());
+            }
+
+            public Row()
+            {
+                unfoundProps = new HashSet<string>(props.Keys);
+            }
+
+            public object Create(
+                string[]                      fieldNames, 
+                object[]                      values,
+                IEnumerable<IDataTransformer> transformers)
+            {
+                var row = new T();
+                PropertyInfo pi;
+
+                for (int i = 0; i < values.Length; i++)
+                {
+                    var name = fieldNames[i];
+                    if (props.TryGetValue(name, out pi))
+                    {
+                        var value = values[i];
+                        if (DBNull.Value.Equals(value))
+                            value = null;
+
+                        var attrs = propertyAttributes[name];
+                        foreach (var xform in transformers)
+                        {
+                            if (xform.CanTransform(value, pi.PropertyType, attrs))
+                                value = xform.Transform(value, pi.PropertyType, attrs);
+                        }
+
+                        var propTransformers = attrs.OfType<DataTransformerAttributeBase>()
+                                                    .OrderBy(a => a.Order);
+                        foreach (var xform in propTransformers)
+                            value = xform.Transform(value, pi.PropertyType);
+
+                        pi.SetValue(row, value, null);
+                        unfoundProps.Remove(name);
+                    }
+                }
+
+                return row;
+            }
         }
         #endregion
     }
