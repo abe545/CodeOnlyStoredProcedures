@@ -33,6 +33,12 @@ namespace SmokeTests
                 return -1;
             }
 
+            if (!DoGetSpokesTests(toTest))
+            {
+                Exiting();
+                return -1;
+            }
+
             Console.ForegroundColor = ConsoleColor.DarkGreen;
             Console.WriteLine("All tests ran successfully!");
             Exiting();

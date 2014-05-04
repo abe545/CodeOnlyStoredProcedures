@@ -2,14 +2,17 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
     <metadata>
         <id>CodeOnlyStoredProcedures</id>
-        <version>0.0.7</version>
+        <version>0.0.0</version>
         <title>Code Only Stored Proecedures</title>
         <authors>Abraham Heidebrecht</authors>
         <projectUrl>https://codeonlystoredprocedures.codeplex.com/</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>A library for easily calling Stored Procedures in .NET. Works great with Entity Framework Code First models. 
 Code Only Stored Procedures will not create any Stored Procedures on your database. Instead, its aim is to make it easy to call your existing stored procedures by writing simple code.</description>
-        <releaseNotes>0.5.0
+        <releaseNotes>0.6.0
+Significantly reduced reflection usage. Now, reflection happens once per result type, and is compiled into a lambda expression. This should help improve performance significantly.
+          
+0.5.0
 Added support for single column result sets without creating a result model. For instance, if your stored procedure returns one string column, you can retrieve the values with a StoredProcedure&lt;string&gt;        
 
 0.4.0

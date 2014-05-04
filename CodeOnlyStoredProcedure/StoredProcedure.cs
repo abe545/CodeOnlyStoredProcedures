@@ -493,6 +493,10 @@ namespace CodeOnlyStoredProcedure
             {
                 throw;
             }
+            catch (AggregateException ag)
+            {
+                throw new Exception("Error reading from stored proc " + FullName + ":" + Environment.NewLine + ag.InnerException.Message, ag.InnerException);
+            }
             catch (Exception ex)
             {
                 throw new Exception("Error reading from stored proc " + FullName + ":" + Environment.NewLine + ex.Message, ex);
