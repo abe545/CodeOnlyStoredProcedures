@@ -11,9 +11,13 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Linq.Expressions;
 
 namespace CodeOnlyStoredProcedure
 {
+    /// <summary>
+    /// Extension methods for common functionality on StoredProcedures.
+    /// </summary>
     public static partial class StoredProcedureExtensions
     {
         private static readonly Type[] integralTpes = new[]
@@ -323,23 +327,23 @@ namespace CodeOnlyStoredProcedure
         }
         #endregion
 
-        internal static IDictionary<Type, IList> Execute(this IDbCommand cmd,
-            CancellationToken token,
-            IEnumerable<Type> outputTypes,
+        internal static IDictionary<Type, IList> Execute(
+            this IDbCommand               cmd,
+            CancellationToken             token,
+            IEnumerable<Type>             outputTypes,
             IEnumerable<IDataTransformer> transformers)
         {
-            Contract.Requires(cmd != null);
-            Contract.Requires(outputTypes != null);
+            Contract.Requires(cmd          != null);
+            Contract.Requires(outputTypes  != null);
             Contract.Requires(transformers != null);
-            Contract.Ensures(Contract.Result<IDictionary<Type, IList>>() != null);
+            Contract.Ensures (Contract.Result<IDictionary<Type, IList>>() != null);
 
-            PropertyInfo pi;
+            var first   = true;
             var results = new Dictionary<Type, IList>();
             var reader  = cmd.DoExecute(c => c.ExecuteReader(), token);
 
             token.ThrowIfCancellationRequested();
 
-            var first = true;
             foreach (var currentType in outputTypes)
             {
                 if (first)
@@ -349,18 +353,15 @@ namespace CodeOnlyStoredProcedure
                 
                 // process results - repeat this loop for each result set returned
                 // by the stored proc for which we have a result type specified
-                var props      = currentType.GetMappedPropertiesBySqlName();
-                var foundProps = new HashSet<string>();
-                var values     = new object[reader.FieldCount];
-                var output     = (IList)Activator.CreateInstance (typeof(List<>)
-                                                 .MakeGenericType(currentType));
+                var values = new object[reader.FieldCount];
+                var output = (IList)Activator.CreateInstance (typeof(List<>).MakeGenericType(currentType));
 
                 // process the result set
                 if (reader.FieldCount == 1 && (currentType.IsEnum || integralTpes.Contains(currentType)))
                 {
                     while (reader.Read())
                     {
-                        token.ThrowIfCancellationRequested();
+                        token .ThrowIfCancellationRequested();
                         reader.GetValues(values);
 
                         var value = values[0];
@@ -378,48 +379,23 @@ namespace CodeOnlyStoredProcedure
                 }
                 else
                 {
+                    var row   = (IRowFactory)Activator.CreateInstance(typeof(RowFactory<>).MakeGenericType(currentType));
+                    var names = Enumerable.Range(0, reader.FieldCount)
+                                          .Select(i => reader.GetName(i))
+                                          .ToArray();
+
                     while (reader.Read())
                     {
-                        token.ThrowIfCancellationRequested();
+                        token .ThrowIfCancellationRequested();
                         reader.GetValues(values);
-
-                        var row = Activator.CreateInstance(currentType);
-
-                        for (int i = 0; i < reader.FieldCount; i++)
-                        {
-                            var name = reader.GetName(i);
-                            if (props.TryGetValue(name, out pi))
-                            {
-                                var value = values[i];
-                                if (DBNull.Value.Equals(value))
-                                    value = null;
-
-                                var attrs = pi.GetCustomAttributes(false).Cast<Attribute>().ToArray();
-                                foreach (var xform in transformers)
-                                {
-                                    if (xform.CanTransform(value, pi.PropertyType, attrs))
-                                        value = xform.Transform(value, pi.PropertyType, attrs);
-                                }
-
-                                var propTransformers = attrs.OfType<DataTransformerAttributeBase>()
-                                                            .OrderBy(a => a.Order);
-                                foreach (var xform in propTransformers)
-                                    value = xform.Transform(value, pi.PropertyType);
-
-                                pi.SetValue(row, value, null);
-                                foundProps.Add(name);
-                            }
-                        }
-
-                        output.Add(row);
+                        output.Add(row.CreateRow(names, values, transformers));
                     }
 
                     if (output.Count > 0)
                     {
                         // throw an exception if the result set didn't include a mapped property
-                        var unused = props.Keys.Except(foundProps).ToArray();
-                        if (unused.Length > 0)
-                            throw new StoredProcedureResultsException(currentType, unused);
+                        if (row.UnfoundPropertyNames.Any())
+                            throw new StoredProcedureResultsException(currentType, row.UnfoundPropertyNames.ToArray());
                     }
                 }
 
@@ -432,9 +408,9 @@ namespace CodeOnlyStoredProcedure
 
         internal static T DoExecute<T>(this IDbCommand cmd, Func<IDbCommand, T> exec, CancellationToken token)
         {
-            Contract.Requires(cmd != null);
+            Contract.Requires(cmd  != null);
             Contract.Requires(exec != null);
-            Contract.Ensures(Contract.Result<T>() != null);
+            Contract.Ensures (Contract.Result<T>() != null);
 
             // execute in a background task, so we can cancel the command if the 
             // CancellationToken is cancelled, or the command times out
@@ -476,7 +452,11 @@ namespace CodeOnlyStoredProcedure
 
             token.ThrowIfCancellationRequested();
 
-            return readerTask.Result;
+            var res = readerTask.Result;
+            if (res == null)
+                throw new NotSupportedException("The stored procedure did not return any results.");
+
+            return res;
         }
 
         #region Private Helpers
@@ -657,6 +637,120 @@ namespace CodeOnlyStoredProcedure
                 return SqlDbType.UniqueIdentifier;
 
             throw new NotSupportedException("Unable to determine the SqlDbType for the property. You can specify it by using a StoredProcedureParameterAttribute. Or prevent it from being mapped with the NotMappedAttribute.");
+        }
+
+        private interface IRowFactory
+        {
+            IEnumerable<string> UnfoundPropertyNames { get; }
+            object CreateRow(string[] fieldNames, object[] values, IEnumerable<IDataTransformer> transformers);
+        }
+
+        private class RowFactory<T> : IRowFactory
+            where T : new()
+        {
+            private static   IDictionary<string, Action<T, object, IEnumerable<IDataTransformer>>> setters = new Dictionary<string, Action<T, object, IEnumerable<IDataTransformer>>>();
+            private readonly HashSet<string>                                                       unfoundProps;
+
+            public IEnumerable<string> UnfoundPropertyNames { get { return unfoundProps; } }
+
+            static RowFactory()
+            {
+                var tType         = typeof(T);
+                var listType      = typeof(IEnumerable<IDataTransformer>);
+                var row           = Expression.Parameter(tType,          "row");
+                var val           = Expression.Parameter(typeof(object), "value");
+                var gts           = Expression.Parameter(listType,       "globalTransformers");
+                var xf            = typeof(DataTransformerAttributeBase).GetMethod("Transform");
+                var props         = tType.GetMappedPropertiesBySqlName();
+                var propertyAttrs = props.ToDictionary(kv => kv.Key,
+                                                       kv => kv.Value
+                                                               .GetCustomAttributes(false)
+                                                               .Cast<Attribute>()
+                                                               .ToArray()
+                                                               .AsEnumerable());
+                
+                foreach (var kv in props)
+                {
+                    var expressions = new List<Expression>();
+                    var iterType    = typeof(IEnumerator<IDataTransformer>);
+                    var iter        = Expression.Variable(iterType, "iter");
+
+                    IEnumerable<Attribute> attrs;
+                    if (propertyAttrs.TryGetValue(kv.Key, out attrs))
+                    {
+                        var propTransformers = attrs.OfType<DataTransformerAttributeBase>().OrderBy(a => a.Order);
+                        var propType         = Expression.Constant(kv.Value.PropertyType, typeof(Type));                        
+                        var xformType        = typeof(IDataTransformer);
+                        var attrsExpr        = Expression.Constant(attrs, typeof(IEnumerable<Attribute>));
+                        var transformer      = Expression.Variable(xformType, "transformer");
+                        var endFor           = Expression.Label("endForEach");
+
+                        var doTransform = Expression.IfThen(
+                            Expression.Call(transformer, xformType.GetMethod("CanTransform"), val, propType, attrsExpr),
+                            Expression.Assign(val,
+                                Expression.Call(transformer, xformType.GetMethod("Transform"), val, propType, attrsExpr)));
+
+                        expressions.Add(Expression.Assign(iter, Expression.Call(gts, listType.GetMethod("GetEnumerator"))));
+                        var loopBody = Expression.Block(
+                            new[] { transformer },
+                            Expression.Assign(transformer, Expression.Property(iter, iterType.GetProperty("Current"))),
+                            doTransform);
+
+                        expressions.Add(Expression.Loop(
+                            Expression.IfThenElse(Expression.Call(iter, typeof(IEnumerator).GetMethod("MoveNext")),
+                                                  loopBody,
+                                                  Expression.Break(endFor)),
+                            endFor));
+
+
+                        foreach (var xform in propTransformers)
+                            expressions.Add(Expression.Assign(val, Expression.Call(Expression.Constant(xform), xf, val, propType)));
+                    }
+
+                    Expression conv;
+                    if (kv.Value.PropertyType.IsValueType)
+                        conv = Expression.Unbox(val, kv.Value.PropertyType);
+                    else
+                        conv = Expression.Convert(val, kv.Value.PropertyType);
+
+                    expressions.Add(Expression.Assign(Expression.Property(row, kv.Value), conv));
+
+                    var body   = Expression.Block(new[] { iter }, expressions.ToArray());
+                    var lambda = Expression.Lambda<Action<T, object, IEnumerable<IDataTransformer>>>(body, row, val, gts);
+
+                    setters.Add(kv.Key, lambda.Compile());
+                }
+            }
+
+            public RowFactory()
+            {
+                unfoundProps = new HashSet<string>(setters.Keys);
+            }
+
+            public object CreateRow(
+                string[]                      fieldNames, 
+                object[]                      values,
+                IEnumerable<IDataTransformer> transformers)
+            {
+                var row = new T();
+                Action<T, object, IEnumerable<IDataTransformer>> set;
+
+                for (int i = 0; i < values.Length; i++)
+                {
+                    var name = fieldNames[i];
+                    if (setters.TryGetValue(name, out set))
+                    {
+                        var value = values[i];
+                        if (DBNull.Value.Equals(value))
+                            value = null;
+
+                        set(row, value, transformers);
+                        unfoundProps.Remove(name);
+                    }
+                }
+
+                return row;
+            }
         }
         #endregion
     }
