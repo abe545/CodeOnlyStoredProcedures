@@ -3,6 +3,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 
 #if NET40
 namespace CodeOnlyTests.Net40.DataTransformation
@@ -14,100 +15,74 @@ namespace CodeOnlyTests.DataTransformation
     public class EnumValueTransformerTests
     {
         private EnumValueTransformer toTest;
-        private IEnumerable<Attribute> attrs;
+        private ParameterExpression  input;
 
         [TestInitialize]
         public void TestIntitialize()
         {
             toTest = new EnumValueTransformer();
-            attrs = Enumerable.Empty<Attribute>();
+            input  = Expression.Parameter(typeof(object), "input");
         }
 
         #region CanTransform Tests
         [TestMethod]
         public void TestCanTransformReturnsTrueForValidIntInput()
         {
-            Assert.IsTrue(toTest.CanTransform(1, typeof(IntEnum), attrs));
+            Assert.IsTrue(toTest.CanTransform(typeof(IntEnum)));
         }
 
         [TestMethod]
         public void TestCanTransformReturnsTrueForValidUintInput()
         {
-            Assert.IsTrue(toTest.CanTransform(2U, typeof(UintEnum), attrs));
+            Assert.IsTrue(toTest.CanTransform(typeof(UintEnum)));
         }
 
         [TestMethod]
         public void TestCanTransformReturnsTrueForValidLongInput()
         {
-            Assert.IsTrue(toTest.CanTransform(0L, typeof(LongEnum), attrs));
+            Assert.IsTrue(toTest.CanTransform(typeof(LongEnum)));
         }
 
         [TestMethod]
         public void TestCanTransformReturnsTrueForValidUlongInput()
         {
-            Assert.IsTrue(toTest.CanTransform(3UL, typeof(UlongEnum), attrs));
+            Assert.IsTrue(toTest.CanTransform(typeof(UlongEnum)));
         }
 
         [TestMethod]
         public void TestCanTransformReturnsTrueForValidShortInput()
         {
-            Assert.IsTrue(toTest.CanTransform((short)1, typeof(ShortEnum), attrs));
+            Assert.IsTrue(toTest.CanTransform(typeof(ShortEnum)));
         }
 
         [TestMethod]
         public void TestCanTransformReturnsTrueForValidUshortInput()
         {
-            Assert.IsTrue(toTest.CanTransform((ushort)1, typeof(UshortEnum), attrs));
+            Assert.IsTrue(toTest.CanTransform(typeof(UshortEnum)));
         }
 
         [TestMethod]
         public void TestCanTransformReturnsTrueForValidByteInput()
         {
-            Assert.IsTrue(toTest.CanTransform((byte)1, typeof(ByteEnum), attrs));
+            Assert.IsTrue(toTest.CanTransform(typeof(ByteEnum)));
         }
 
         [TestMethod]
         public void TestCanTransformReturnsTrueForValidSbyteInput()
         {
-            Assert.IsTrue(toTest.CanTransform((sbyte)1, typeof(SbyteEnum), attrs));
-        }
-
-        [TestMethod]
-        public void TestCanTransformReturnsTrueForStringInput()
-        {
-            Assert.IsTrue(toTest.CanTransform("Hello", typeof(LongEnum), attrs));
-        }
-
-        [TestMethod]
-        public void TestCanTransformReturnsFalseWhenValueIsNotValid()
-        {
-            Assert.IsFalse(toTest.CanTransform(false, typeof(IntEnum), attrs));
+            Assert.IsTrue(toTest.CanTransform(typeof(SbyteEnum)));
         }
 
         [TestMethod]
         public void TestCanTransformReturnsFalseWhenTargetTypeIsNotEnum()
         {
-            Assert.IsFalse(toTest.CanTransform(1, typeof(string), attrs));
-        }
-
-        [TestMethod]
-        public void TestCanTransformReturnsFalseWhenValueIsNull()
-        {
-            Assert.IsFalse(toTest.CanTransform(null, typeof(IntEnum), attrs));
+            Assert.IsFalse(toTest.CanTransform(typeof(string)));
         }
 
         [TestMethod]
         public void TestCanTransformReturnsTrueWhenTargetTypeIsNullableEnum()
         {
-            Assert.IsTrue(toTest.CanTransform(1, typeof(IntEnum?), attrs));
-        }
-
-        [TestMethod]
-        public void TestCanTransformReturnsFalseWhenValueIsNullAndTargetTypeIsNullableEnum()
-        {
-            // this is false, as if the value is false, no conversion needs to take place to
-            // set a null enum.
-            Assert.IsFalse(toTest.CanTransform(null, typeof(IntEnum?), attrs));
+            Assert.IsTrue(toTest.CanTransform(typeof(IntEnum)));
         }
         #endregion
 
@@ -115,78 +90,102 @@ namespace CodeOnlyTests.DataTransformation
         [TestMethod]
         public void TestTransformTransformsStringToEnum()
         {
-            var res = toTest.Transform("Hello", typeof(LongEnum), attrs);
-            Assert.AreEqual(LongEnum.Hello, res);
+            var res  = toTest.CreateTransformation(typeof(LongEnum), input);
+            var func = CreateTestFunc(res);
+            Assert.AreEqual(LongEnum.Hello, func("Hello"));
         }
 
         [TestMethod]
-        [ExpectedException(typeof(ArgumentException))]
         public void TestTransformThrowsOnNotFoundString()
         {
-            toTest.Transform("None", typeof(LongEnum), attrs);
+            var res  = toTest.CreateTransformation(typeof(LongEnum), input);
+            var func = CreateTestFunc(res);
+
+            try
+            {
+                // this should throw an ArgumentException
+                func("None");
+                Assert.Fail("Should throw an ArgumentException when converting an invalid string value.");
+            }
+            catch (ArgumentException) { }
         }
 
         [TestMethod]
         public void TestTransformIntValue()
         {
-            var res = toTest.Transform(-1, typeof(IntEnum), attrs);
-            Assert.AreEqual(IntEnum.Negative, res);
+            var res  = toTest.CreateTransformation(typeof(IntEnum), input);
+            var func = CreateTestFunc(res);
+            Assert.AreEqual(IntEnum.Negative, func(-1));
         }
 
         [TestMethod]
         public void TestTransformUintValue()
         {
-            var res = toTest.Transform(1U, typeof(UintEnum), attrs);
-            Assert.AreEqual(UintEnum.One, res);
+            var res  = toTest.CreateTransformation(typeof(UintEnum), input);
+            var func = CreateTestFunc(res);
+            Assert.AreEqual(UintEnum.One, func(1U));
         }
 
         [TestMethod]
         public void TestTransformLongValue()
         {
-            var res = toTest.Transform(1L, typeof(LongEnum), attrs);
-            Assert.AreEqual(LongEnum.World, res);
+            var res  = toTest.CreateTransformation(typeof(LongEnum), input);
+            var func = CreateTestFunc(res);
+            Assert.AreEqual(LongEnum.World, func(1L));
         }
 
         [TestMethod]
         public void TestTransformUlongValue()
         {
-            var res = toTest.Transform(1U, typeof(UlongEnum), attrs);
-            Assert.AreEqual(UlongEnum.One, res);
+            var res  = toTest.CreateTransformation(typeof(UlongEnum), input);
+            var func = CreateTestFunc(res);
+            Assert.AreEqual(UlongEnum.One, func(1U));
         }
 
         [TestMethod]
         public void TestTransformShortValue()
         {
-            var res = toTest.Transform(1, typeof(ShortEnum), attrs);
-            Assert.AreEqual(ShortEnum.One, res);
+            var res  = toTest.CreateTransformation(typeof(ShortEnum), input);
+            var func = CreateTestFunc(res);
+            Assert.AreEqual(ShortEnum.One, func(1));
         }
 
         [TestMethod]
         public void TestTransformUshortValue()
         {
-            var res = toTest.Transform(1U, typeof(UshortEnum), attrs);
-            Assert.AreEqual(UshortEnum.One, res);
+            var res  = toTest.CreateTransformation(typeof(UshortEnum), input);
+            var func = CreateTestFunc(res);
+            Assert.AreEqual(UshortEnum.One, func(1U));
         }
 
         [TestMethod]
         public void TestTransformByteValue()
         {
-            var res = toTest.Transform(1, typeof(ByteEnum), attrs);
-            Assert.AreEqual(ByteEnum.One, res);
+            var res  = toTest.CreateTransformation(typeof(ByteEnum), input);
+            var func = CreateTestFunc(res);
+            Assert.AreEqual(ByteEnum.One, func(1));
         }
 
         [TestMethod]
         public void TestTransformSbyteValue()
         {
-            var res = toTest.Transform(1U, typeof(SbyteEnum), attrs);
-            Assert.AreEqual(SbyteEnum.One, res);
+            var res  = toTest.CreateTransformation(typeof(SbyteEnum), input);
+            var func = CreateTestFunc(res);
+            Assert.AreEqual(SbyteEnum.One, func(1U));
         }
 
         [TestMethod]
-        public void TestTransformNullableInt()
+        public void TestTransformNullValueThrowsException()
         {
-            var res = toTest.Transform(1, typeof(IntEnum?), attrs);
-            Assert.AreEqual(IntEnum.One, res);
+            var res  = toTest.CreateTransformation(typeof(IntEnum), input);
+            var func = CreateTestFunc(res);
+
+            try
+            {
+                func(null);
+                Assert.Fail("Should have failed with an ArgumentNullException.");
+            }
+            catch (ArgumentNullException) { }
         }
         #endregion
 
@@ -241,5 +240,14 @@ namespace CodeOnlyTests.DataTransformation
             Two = 2
         } 
         #endregion
+
+        private Func<object, object> CreateTestFunc(Expression toTest)
+        {
+            var exit = Expression.Label(typeof(object), "exit");
+            var expr = Expression.Block(typeof(object), toTest, Expression.Return(exit, input), Expression.Label(exit, Expression.Constant(null)));
+            var lambda = Expression.Lambda<Func<object, object>>(expr, input);
+
+            return lambda.Compile();
+        }
     }
 }

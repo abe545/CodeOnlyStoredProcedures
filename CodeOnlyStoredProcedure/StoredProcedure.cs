@@ -19,11 +19,6 @@ namespace CodeOnlyStoredProcedure
     public class StoredProcedure
     {
         #region Private Fields
-        private static readonly IList<IDataTransformer> globalTransformers = new List<IDataTransformer>
-        {
-            new EnumValueTransformer()
-        };
-
         private readonly string schema;
         private readonly string name;
 
@@ -324,7 +319,7 @@ namespace CodeOnlyStoredProcedure
 
                     IDictionary<Type, IList> results;
                     if (outputTypes != null && outputTypes.Any())
-                        results = cmd.Execute(token, outputTypes, globalTransformers.Concat(dataTransformers));
+                        results = cmd.Execute(token, outputTypes, dataTransformers);
                     else
                     {
                         cmd.DoExecute(c => c.ExecuteNonQuery(), token);

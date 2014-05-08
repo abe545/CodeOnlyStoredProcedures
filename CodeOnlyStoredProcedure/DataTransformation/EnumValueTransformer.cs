@@ -2,64 +2,43 @@
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection;
 
 namespace CodeOnlyStoredProcedure.DataTransformation
 {
     /// <summary>
     /// Transforms a value in the db to an Enumuerated value
     /// </summary>
-    class EnumValueTransformer : IDataTransformer
+    class EnumValueTransformer : IGlobalTransformer
     {
-        private static readonly Type[] validTypes = new[]
-            {
-                typeof(string),
-                typeof(int),
-                typeof(long),
-                typeof(uint),
-                typeof(ulong),
-                typeof(sbyte),
-                typeof(short),
-                typeof(byte),
-                typeof(ushort)
-            };
+        private static readonly MethodInfo parseMethod = typeof(Enum).GetMethod("Parse",    new[] { typeof(Type), typeof(string) });
+        private static readonly MethodInfo toObjMethod = typeof(Enum).GetMethod("ToObject", new[] { typeof(Type), typeof(object) });
 
         /// <summary>
-        /// Determines if the given value can be transformed.
+        /// Determines if the transformer knows how to transform an object to the <paramref name="targetType"/>.
         /// </summary>
-        /// <param name="value">The object to attempt to transform</param>
         /// <param name="targetType">The type of the property that is receiving the value</param>
-        /// <param name="propertyAttributes">All attributes applied to the property</param>
-        /// <returns>True if the value can be transformed to an Enum type, and the target property
-        /// is an Enum type.</returns>
-        public bool CanTransform(object value, Type targetType, IEnumerable<Attribute> propertyAttributes)
+        /// <returns>True if the <paramref name="targetType"/> is an Enum type; false otherwise.</returns>
+        public bool CanTransform(Type targetType)
         {
-            if (targetType.IsGenericType && targetType.GetGenericTypeDefinition() == typeof(Nullable<>))
-                targetType = targetType.GetGenericArguments().Single();
-
-            return value != null && targetType.IsEnum && validTypes.Contains(value.GetType());
+            return targetType.IsEnum;
         }
 
         /// <summary>
-        /// Transforms the value to an enum value
+        /// Creates an Expression that will take an object input, and convert it to an Enum of the <paramref name="targetType"/>.
         /// </summary>
-        /// <param name="value">The numeric (or string) value to transform</param>
-        /// <param name="targetType">The type of the enum</param>
-        /// <param name="propertyAttributes">The list of attributes applied to the property</param>
-        /// <returns>The converted enum value.</returns>
-        public object Transform(object value, Type targetType, IEnumerable<Attribute> propertyAttributes)
+        /// <param name="targetType">The type of the property that is receiving the value</param>
+        /// <param name="value">A <see cref="ParameterExpression"/> that is the value returned from the database to transform.</param>
+        /// <returns>An <see cref="Expression"/> that represents a conversion from value to the <paramref name="targetType"/>.</returns>
+        public Expression CreateTransformation(Type targetType, ParameterExpression value)
         {
-            if (targetType.IsGenericType && targetType.GetGenericTypeDefinition() == typeof(Nullable<>))
-                targetType = targetType.GetGenericArguments().Single();
+            var valType  = Expression.Variable(typeof(Type), "valueType");
+            var typeExpr = Expression.Constant(targetType);
 
-            // the interpreter doesn't realize that GetGenericArguments can't return a null value
-            Contract.Assume(targetType != null);
-
-            var valueType = value.GetType();
-
-            if (valueType == typeof(string))
-                return Enum.Parse(targetType, (string)value);
-
-            return Enum.ToObject(targetType, value);
+            return Expression.IfThenElse(Expression.TypeIs(value, typeof(string)),
+                                         Expression.Assign(value, Expression.Call(parseMethod, typeExpr, Expression.Convert(value, typeof(string)))),
+                                         Expression.Assign(value, Expression.Call(toObjMethod, typeExpr, value)));
         }
     }
 }
