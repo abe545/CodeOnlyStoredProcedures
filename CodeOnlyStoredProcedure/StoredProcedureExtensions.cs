@@ -16,7 +16,7 @@ using System.Linq.Expressions;
 namespace CodeOnlyStoredProcedure
 {
     /// <summary>
-    /// Extension methods for common functionality on StoredProcedures.
+    /// Defines extension methods on the <see cref="StoredProcedure"/> classes.
     /// </summary>
     public static partial class StoredProcedureExtensions
     {
@@ -392,12 +392,12 @@ namespace CodeOnlyStoredProcedure
                     }
 
                     if (output.Count > 0)
-                    {
+                        {
                         // throw an exception if the result set didn't include a mapped property
                         if (row.UnfoundPropertyNames.Any())
                             throw new StoredProcedureResultsException(currentType, row.UnfoundPropertyNames.ToArray());
-                    }
-                }
+                                }
+                            }
 
                 results.Add(currentType, output);
             }
@@ -448,6 +448,7 @@ namespace CodeOnlyStoredProcedure
             catch (OperationCanceledException)
             {
                 cmd.Cancel();
+                throw;
             }
 
             token.ThrowIfCancellationRequested();
