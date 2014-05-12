@@ -374,6 +374,9 @@ namespace CodeOnlyStoredProcedure
                                 value = xform.Transform(value, currentType, Enumerable.Empty<Attribute>());
                         }
 
+                        if (value is string && currentType.IsEnum)
+                            value = Enum.Parse(currentType, (string)value);
+
                         output.Add(value);
                     }
                 }
@@ -392,12 +395,12 @@ namespace CodeOnlyStoredProcedure
                     }
 
                     if (output.Count > 0)
-                        {
+                    {
                         // throw an exception if the result set didn't include a mapped property
                         if (row.UnfoundPropertyNames.Any())
                             throw new StoredProcedureResultsException(currentType, row.UnfoundPropertyNames.ToArray());
-                                }
-                            }
+                    }
+                }
 
                 results.Add(currentType, output);
             }
@@ -702,8 +705,16 @@ namespace CodeOnlyStoredProcedure
                                                   loopBody,
                                                   Expression.Break(endFor)),
                             endFor));
-
-
+                                                
+                        if (kv.Value.PropertyType.IsEnum)
+                        {
+                            // nulls are always false for a TypeIs operation, so no need to explicitly check for it
+                            expressions.Add(Expression.IfThen(Expression.TypeIs(val, typeof(string)),
+                                                              Expression.Assign(val, Expression.Call(typeof(Enum).GetMethod("Parse", new[] { typeof(Type), typeof(string) }),
+                                                                                                     propType,
+                                                                                                     Expression.Convert(val, typeof(string))))));
+                        }
+                        
                         foreach (var xform in propTransformers)
                             expressions.Add(Expression.Assign(val, Expression.Call(Expression.Constant(xform), xf, val, propType)));
                     }

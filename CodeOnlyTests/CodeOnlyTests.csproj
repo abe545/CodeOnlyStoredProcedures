@@ -60,7 +60,6 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
-    <Compile Include="DataTransformation\EnumValueTransformerTests.cs" />
     <Compile Include="DataTransformation\TrimAttributeTests.cs" />
     <Compile Include="DataTransformation\InternAttributeTests.cs" />
     <Compile Include="DataTransformation\InternAllStringsTransformerTests.cs" />
