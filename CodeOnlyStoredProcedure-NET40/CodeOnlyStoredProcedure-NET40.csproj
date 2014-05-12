@@ -122,9 +122,6 @@
     <Compile Include="..\CodeOnlyStoredProcedure\DataTransformation\ConvertNumericAttribute.cs">
       <Link>DataTransformation\ConvertNumericAttribute.cs</Link>
     </Compile>
-    <Compile Include="..\CodeOnlyStoredProcedure\DataTransformation\EnumValueTransformer.cs">
-      <Link>DataTransformation\EnumValueTransformer.cs</Link>
-    </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\DataTransformation\InternAllStringsTransformer.cs">
       <Link>DataTransformation\InternAllStringsTransformer.cs</Link>
     </Compile>

@@ -17,6 +17,7 @@ namespace SmokeTests
         public StoredProcedure<Item>                    GetItem    { get; private set; }
         public StoredProcedure<Widget, WidgetComponent> GetWidget  { get; private set; }
         public StoredProcedure<int>                     GetSpokes  { get; private set; }
+        public StoredProcedure<Spoke>                   GetSpokes2 { get; private set; }
 
         static SmokeDb()
         {
@@ -30,6 +31,7 @@ namespace SmokeTests
             GetItem    = new StoredProcedure<Item>                   ("usp_GetItem");
             GetWidget  = new StoredProcedure<Widget, WidgetComponent>("usp_GetWidget");
             GetSpokes  = new StoredProcedure<int>                    ("usp_GetSpokes");
+            GetSpokes2 = new StoredProcedure<Spoke>                  ("usp_GetSpokes");
         }
     }
 
@@ -52,5 +54,12 @@ namespace SmokeTests
     {
         public int    WidgetComponentId { get; set; }
         public string Name              { get; set; }
+    }
+
+    public enum Spoke
+    {
+        Four    = 4,
+        Eight   = 8,
+        Sixteen = 16
     }
 }

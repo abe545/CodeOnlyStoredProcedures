@@ -67,9 +67,6 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
-    <Compile Include="..\CodeOnlyTests\DataTransformation\EnumValueTransformerTests.cs">
-      <Link>DataTransformation\EnumValueTransformerTests.cs</Link>
-    </Compile>
     <Compile Include="..\CodeOnlyTests\DataTransformation\InternAllStringsTransformerTests.cs">
       <Link>DataTransformation\InternAllStringsTransformerTests.cs</Link>
     </Compile>

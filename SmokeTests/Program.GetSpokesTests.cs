@@ -95,6 +95,90 @@ namespace SmokeTests
                 WriteError("\t" + spokes.Count() + " spokes returned");
             }
 
+            Console.Write("Calling usp_GetSpokesTests (Enum result) synchronously (No parameters) - ");
+
+            var spokes2 = db.GetSpokes2
+                            .Execute(db.Database.Connection);
+
+            if (!spokes2.SequenceEqual(new[] { Spoke.Four, Spoke.Eight, Spoke.Sixteen }))
+            {
+                WriteError("\treturned the wrong data.");
+                return false;
+            }
+            else
+                WriteSuccess();
+
+            Console.Write("Calling usp_GetSpokesTests (Enum result) synchronously (WithParameter) - ");
+
+            spokes2 = db.GetSpokes2
+                        .WithParameter("minimumSpokes", 4)
+                        .Execute(db.Database.Connection);
+
+            if (!spokes2.SequenceEqual(new[] { Spoke.Four, Spoke.Eight, Spoke.Sixteen }))
+            {
+                WriteError("\treturned the wrong data.");
+                return false;
+            }
+            else
+                WriteSuccess();
+
+            Console.Write("Calling usp_GetSpokesTests (Enum result) synchronously (WithInput) - ");
+
+            spokes2 = db.GetSpokes2
+                        .WithInput(new { minimumSpokes = 6 })
+                        .Execute(db.Database.Connection);
+
+            if (!spokes2.SequenceEqual(new[] { Spoke.Eight, Spoke.Sixteen }))
+            {
+                WriteError("\treturned the wrong data.");
+                return false;
+            }
+            else
+                WriteSuccess();
+
+            Console.Write("Calling usp_GetSpokesTests (Enum result) asynchronously (WithParameter) - ");
+
+            spokes2 = db.GetSpokes2
+                        .WithParameter("minimumSpokes", 4)
+                        .ExecuteAsync(db.Database.Connection)
+                        .Result;
+
+            if (!spokes2.SequenceEqual(new[] { Spoke.Four, Spoke.Eight, Spoke.Sixteen }))
+            {
+                WriteError("\treturned the wrong data.");
+                return false;
+            }
+            else
+                WriteSuccess();
+
+            Console.Write("Calling usp_GetSpokesTests (Enum result) asynchronously (WithInput) - ");
+
+            spokes2 = db.GetSpokes2
+                        .WithInput(new { minimumSpokes = 6 })
+                        .ExecuteAsync(db.Database.Connection)
+                        .Result;
+
+            if (!spokes2.SequenceEqual(new[] { Spoke.Eight, Spoke.Sixteen }))
+            {
+                WriteError("\treturned the wrong data.");
+                return false;
+            }
+            else
+                WriteSuccess();
+
+            Console.Write("Calling usp_GetSpokesTests (Enum result) (WithParameter expecting no results) - ");
+
+            spokes2 = db.GetSpokes2
+                        .WithParameter("minimumSpokes", 24)
+                        .Execute(db.Database.Connection);
+
+            if (!spokes2.Any())
+                WriteSuccess();
+            else
+            {
+                WriteError("\t" + spokes2.Count() + " spokes returned");
+            }
+
             return true;
         }
     }

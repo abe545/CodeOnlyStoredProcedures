@@ -112,7 +112,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DataTransformation\ConvertNumericAttribute.cs" />
-    <Compile Include="DataTransformation\EnumValueTransformer.cs" />
     <Compile Include="DataTransformation\InternAllStringsTransformer.cs" />
     <Compile Include="DataTransformation\InternAttribute.cs" />
     <Compile Include="DataTransformation\TrimAllStringsTransformer.cs" />

@@ -96,7 +96,8 @@ public class StoredProcedureTemplate : Template
 		{ 
 			Contract.Requires(toClone != null);
 		}
-		
+
+#if NET40
 		protected StoredProcedure(string schema, 
             string name,
             IEnumerable<SqlParameter> parameters,
@@ -110,7 +111,22 @@ public class StoredProcedureTemplate : Template
 			Contract.Requires(outputParameterSetters != null);
 			Contract.Requires(dataTransformers != null);
 		}
-		
+#else
+		protected StoredProcedure(string                                      schema,
+                                  string                                      name,
+                                  ImmutableList<SqlParameter>                 parameters,
+                                  ImmutableDictionary<string, Action<object>> outputParameterSetters,
+                                  ImmutableList<IDataTransformer>             dataTransformers)
+			: base(schema, name, parameters, outputParameterSetters, dataTransformers)
+        {
+            Contract.Requires(!string.IsNullOrWhiteSpace(schema));
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Requires(parameters             != null);
+            Contract.Requires(outputParameterSetters != null);
+            Contract.Requires(dataTransformers       != null);
+		}
+#endif
+	
 		public new <#+ GetResults(); #> Execute(IDbConnection connection, int? timeout = null)
 		{
 			Contract.Requires(connection != null);
@@ -143,13 +159,20 @@ public class StoredProcedureTemplate : Template
 				}, token);
 		}
 
+		/// <inheritdoc />
 		protected override StoredProcedure CloneCore(
-			IEnumerable<SqlParameter> parameters,
+#if NET40
+			IEnumerable<SqlParameter>                         parameters,
             IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
-			IEnumerable<IDataTransformer> dataTransformers)
-        {
-            return new StoredProcedure<#+ GetTypes(TypeCount); #>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
-        }
+			IEnumerable<IDataTransformer>                     dataTransformers)
+#else
+            ImmutableList<SqlParameter>                 parameters,
+            ImmutableDictionary<string, Action<object>> outputParameterSetters,
+            ImmutableList<IDataTransformer>             dataTransformers)
+#endif
+		{
+			return new StoredProcedure<#+ GetTypes(TypeCount); #>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
+		}
 	}
 	#endregion
 

@@ -34,7 +34,8 @@ namespace CodeOnlyStoredProcedure
 		{ 
 			Contract.Requires(toClone != null);
 		}
-		
+
+#if NET40
 		protected StoredProcedure(string schema, 
             string name,
             IEnumerable<SqlParameter> parameters,
@@ -48,7 +49,22 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(outputParameterSetters != null);
 			Contract.Requires(dataTransformers != null);
 		}
-		
+#else
+		protected StoredProcedure(string                                      schema,
+                                  string                                      name,
+                                  ImmutableList<SqlParameter>                 parameters,
+                                  ImmutableDictionary<string, Action<object>> outputParameterSetters,
+                                  ImmutableList<IDataTransformer>             dataTransformers)
+			: base(schema, name, parameters, outputParameterSetters, dataTransformers)
+        {
+            Contract.Requires(!string.IsNullOrWhiteSpace(schema));
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Requires(parameters             != null);
+            Contract.Requires(outputParameterSetters != null);
+            Contract.Requires(dataTransformers       != null);
+		}
+#endif
+	
 		public new IEnumerable<T1> Execute(IDbConnection connection, int? timeout = null)
 		{
 			Contract.Requires(connection != null);
@@ -81,13 +97,20 @@ namespace CodeOnlyStoredProcedure
 				}, token);
 		}
 
-		protected override StoredProcedure CloneCore(
-			IEnumerable<SqlParameter> parameters,
+		/// <inheritdoc />
+		protected internal override StoredProcedure CloneCore(
+#if NET40
+			IEnumerable<SqlParameter>                         parameters,
             IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
-			IEnumerable<IDataTransformer> dataTransformers)
-        {
-            return new StoredProcedure<T1>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
-        }
+			IEnumerable<IDataTransformer>                     dataTransformers)
+#else
+            ImmutableList<SqlParameter>                 parameters,
+            ImmutableDictionary<string, Action<object>> outputParameterSetters,
+            ImmutableList<IDataTransformer>             dataTransformers)
+#endif
+		{
+			return new StoredProcedure<T1>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
+		}
 	}
 	#endregion
 
@@ -113,7 +136,8 @@ namespace CodeOnlyStoredProcedure
 		{ 
 			Contract.Requires(toClone != null);
 		}
-		
+
+#if NET40
 		protected StoredProcedure(string schema, 
             string name,
             IEnumerable<SqlParameter> parameters,
@@ -127,7 +151,22 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(outputParameterSetters != null);
 			Contract.Requires(dataTransformers != null);
 		}
-		
+#else
+		protected StoredProcedure(string                                      schema,
+                                  string                                      name,
+                                  ImmutableList<SqlParameter>                 parameters,
+                                  ImmutableDictionary<string, Action<object>> outputParameterSetters,
+                                  ImmutableList<IDataTransformer>             dataTransformers)
+			: base(schema, name, parameters, outputParameterSetters, dataTransformers)
+        {
+            Contract.Requires(!string.IsNullOrWhiteSpace(schema));
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Requires(parameters             != null);
+            Contract.Requires(outputParameterSetters != null);
+            Contract.Requires(dataTransformers       != null);
+		}
+#endif
+	
 		public new Tuple<IEnumerable<T1>, IEnumerable<T2>> Execute(IDbConnection connection, int? timeout = null)
 		{
 			Contract.Requires(connection != null);
@@ -160,13 +199,20 @@ namespace CodeOnlyStoredProcedure
 				}, token);
 		}
 
-		protected override StoredProcedure CloneCore(
-			IEnumerable<SqlParameter> parameters,
+		/// <inheritdoc />
+		protected internal override StoredProcedure CloneCore(
+#if NET40
+			IEnumerable<SqlParameter>                         parameters,
             IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
-			IEnumerable<IDataTransformer> dataTransformers)
-        {
-            return new StoredProcedure<T1, T2>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
-        }
+			IEnumerable<IDataTransformer>                     dataTransformers)
+#else
+            ImmutableList<SqlParameter>                 parameters,
+            ImmutableDictionary<string, Action<object>> outputParameterSetters,
+            ImmutableList<IDataTransformer>             dataTransformers)
+#endif
+		{
+			return new StoredProcedure<T1, T2>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
+		}
 	}
 	#endregion
 
@@ -193,7 +239,8 @@ namespace CodeOnlyStoredProcedure
 		{ 
 			Contract.Requires(toClone != null);
 		}
-		
+
+#if NET40
 		protected StoredProcedure(string schema, 
             string name,
             IEnumerable<SqlParameter> parameters,
@@ -207,7 +254,22 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(outputParameterSetters != null);
 			Contract.Requires(dataTransformers != null);
 		}
-		
+#else
+		protected StoredProcedure(string                                      schema,
+                                  string                                      name,
+                                  ImmutableList<SqlParameter>                 parameters,
+                                  ImmutableDictionary<string, Action<object>> outputParameterSetters,
+                                  ImmutableList<IDataTransformer>             dataTransformers)
+			: base(schema, name, parameters, outputParameterSetters, dataTransformers)
+        {
+            Contract.Requires(!string.IsNullOrWhiteSpace(schema));
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Requires(parameters             != null);
+            Contract.Requires(outputParameterSetters != null);
+            Contract.Requires(dataTransformers       != null);
+		}
+#endif
+	
 		public new Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>> Execute(IDbConnection connection, int? timeout = null)
 		{
 			Contract.Requires(connection != null);
@@ -240,13 +302,20 @@ namespace CodeOnlyStoredProcedure
 				}, token);
 		}
 
-		protected override StoredProcedure CloneCore(
-			IEnumerable<SqlParameter> parameters,
+		/// <inheritdoc />
+		protected internal override StoredProcedure CloneCore(
+#if NET40
+			IEnumerable<SqlParameter>                         parameters,
             IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
-			IEnumerable<IDataTransformer> dataTransformers)
-        {
-            return new StoredProcedure<T1, T2, T3>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
-        }
+			IEnumerable<IDataTransformer>                     dataTransformers)
+#else
+            ImmutableList<SqlParameter>                 parameters,
+            ImmutableDictionary<string, Action<object>> outputParameterSetters,
+            ImmutableList<IDataTransformer>             dataTransformers)
+#endif
+		{
+			return new StoredProcedure<T1, T2, T3>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
+		}
 	}
 	#endregion
 
@@ -274,7 +343,8 @@ namespace CodeOnlyStoredProcedure
 		{ 
 			Contract.Requires(toClone != null);
 		}
-		
+
+#if NET40
 		protected StoredProcedure(string schema, 
             string name,
             IEnumerable<SqlParameter> parameters,
@@ -288,7 +358,22 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(outputParameterSetters != null);
 			Contract.Requires(dataTransformers != null);
 		}
-		
+#else
+		protected StoredProcedure(string                                      schema,
+                                  string                                      name,
+                                  ImmutableList<SqlParameter>                 parameters,
+                                  ImmutableDictionary<string, Action<object>> outputParameterSetters,
+                                  ImmutableList<IDataTransformer>             dataTransformers)
+			: base(schema, name, parameters, outputParameterSetters, dataTransformers)
+        {
+            Contract.Requires(!string.IsNullOrWhiteSpace(schema));
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Requires(parameters             != null);
+            Contract.Requires(outputParameterSetters != null);
+            Contract.Requires(dataTransformers       != null);
+		}
+#endif
+	
 		public new Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>> Execute(IDbConnection connection, int? timeout = null)
 		{
 			Contract.Requires(connection != null);
@@ -321,13 +406,20 @@ namespace CodeOnlyStoredProcedure
 				}, token);
 		}
 
-		protected override StoredProcedure CloneCore(
-			IEnumerable<SqlParameter> parameters,
+		/// <inheritdoc />
+		protected internal override StoredProcedure CloneCore(
+#if NET40
+			IEnumerable<SqlParameter>                         parameters,
             IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
-			IEnumerable<IDataTransformer> dataTransformers)
-        {
-            return new StoredProcedure<T1, T2, T3, T4>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
-        }
+			IEnumerable<IDataTransformer>                     dataTransformers)
+#else
+            ImmutableList<SqlParameter>                 parameters,
+            ImmutableDictionary<string, Action<object>> outputParameterSetters,
+            ImmutableList<IDataTransformer>             dataTransformers)
+#endif
+		{
+			return new StoredProcedure<T1, T2, T3, T4>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
+		}
 	}
 	#endregion
 
@@ -356,7 +448,8 @@ namespace CodeOnlyStoredProcedure
 		{ 
 			Contract.Requires(toClone != null);
 		}
-		
+
+#if NET40
 		protected StoredProcedure(string schema, 
             string name,
             IEnumerable<SqlParameter> parameters,
@@ -370,7 +463,22 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(outputParameterSetters != null);
 			Contract.Requires(dataTransformers != null);
 		}
-		
+#else
+		protected StoredProcedure(string                                      schema,
+                                  string                                      name,
+                                  ImmutableList<SqlParameter>                 parameters,
+                                  ImmutableDictionary<string, Action<object>> outputParameterSetters,
+                                  ImmutableList<IDataTransformer>             dataTransformers)
+			: base(schema, name, parameters, outputParameterSetters, dataTransformers)
+        {
+            Contract.Requires(!string.IsNullOrWhiteSpace(schema));
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Requires(parameters             != null);
+            Contract.Requires(outputParameterSetters != null);
+            Contract.Requires(dataTransformers       != null);
+		}
+#endif
+	
 		public new Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>> Execute(IDbConnection connection, int? timeout = null)
 		{
 			Contract.Requires(connection != null);
@@ -403,13 +511,20 @@ namespace CodeOnlyStoredProcedure
 				}, token);
 		}
 
-		protected override StoredProcedure CloneCore(
-			IEnumerable<SqlParameter> parameters,
+		/// <inheritdoc />
+		protected internal override StoredProcedure CloneCore(
+#if NET40
+			IEnumerable<SqlParameter>                         parameters,
             IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
-			IEnumerable<IDataTransformer> dataTransformers)
-        {
-            return new StoredProcedure<T1, T2, T3, T4, T5>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
-        }
+			IEnumerable<IDataTransformer>                     dataTransformers)
+#else
+            ImmutableList<SqlParameter>                 parameters,
+            ImmutableDictionary<string, Action<object>> outputParameterSetters,
+            ImmutableList<IDataTransformer>             dataTransformers)
+#endif
+		{
+			return new StoredProcedure<T1, T2, T3, T4, T5>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
+		}
 	}
 	#endregion
 
@@ -439,7 +554,8 @@ namespace CodeOnlyStoredProcedure
 		{ 
 			Contract.Requires(toClone != null);
 		}
-		
+
+#if NET40
 		protected StoredProcedure(string schema, 
             string name,
             IEnumerable<SqlParameter> parameters,
@@ -453,7 +569,22 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(outputParameterSetters != null);
 			Contract.Requires(dataTransformers != null);
 		}
-		
+#else
+		protected StoredProcedure(string                                      schema,
+                                  string                                      name,
+                                  ImmutableList<SqlParameter>                 parameters,
+                                  ImmutableDictionary<string, Action<object>> outputParameterSetters,
+                                  ImmutableList<IDataTransformer>             dataTransformers)
+			: base(schema, name, parameters, outputParameterSetters, dataTransformers)
+        {
+            Contract.Requires(!string.IsNullOrWhiteSpace(schema));
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Requires(parameters             != null);
+            Contract.Requires(outputParameterSetters != null);
+            Contract.Requires(dataTransformers       != null);
+		}
+#endif
+	
 		public new Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>> Execute(IDbConnection connection, int? timeout = null)
 		{
 			Contract.Requires(connection != null);
@@ -486,13 +617,20 @@ namespace CodeOnlyStoredProcedure
 				}, token);
 		}
 
-		protected override StoredProcedure CloneCore(
-			IEnumerable<SqlParameter> parameters,
+		/// <inheritdoc />
+		protected internal override StoredProcedure CloneCore(
+#if NET40
+			IEnumerable<SqlParameter>                         parameters,
             IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
-			IEnumerable<IDataTransformer> dataTransformers)
-        {
-            return new StoredProcedure<T1, T2, T3, T4, T5, T6>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
-        }
+			IEnumerable<IDataTransformer>                     dataTransformers)
+#else
+            ImmutableList<SqlParameter>                 parameters,
+            ImmutableDictionary<string, Action<object>> outputParameterSetters,
+            ImmutableList<IDataTransformer>             dataTransformers)
+#endif
+		{
+			return new StoredProcedure<T1, T2, T3, T4, T5, T6>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
+		}
 	}
 	#endregion
 
@@ -523,7 +661,8 @@ namespace CodeOnlyStoredProcedure
 		{ 
 			Contract.Requires(toClone != null);
 		}
-		
+
+#if NET40
 		protected StoredProcedure(string schema, 
             string name,
             IEnumerable<SqlParameter> parameters,
@@ -537,7 +676,22 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(outputParameterSetters != null);
 			Contract.Requires(dataTransformers != null);
 		}
-		
+#else
+		protected StoredProcedure(string                                      schema,
+                                  string                                      name,
+                                  ImmutableList<SqlParameter>                 parameters,
+                                  ImmutableDictionary<string, Action<object>> outputParameterSetters,
+                                  ImmutableList<IDataTransformer>             dataTransformers)
+			: base(schema, name, parameters, outputParameterSetters, dataTransformers)
+        {
+            Contract.Requires(!string.IsNullOrWhiteSpace(schema));
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Requires(parameters             != null);
+            Contract.Requires(outputParameterSetters != null);
+            Contract.Requires(dataTransformers       != null);
+		}
+#endif
+	
 		public new Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>, IEnumerable<T7>> Execute(IDbConnection connection, int? timeout = null)
 		{
 			Contract.Requires(connection != null);
@@ -570,13 +724,20 @@ namespace CodeOnlyStoredProcedure
 				}, token);
 		}
 
-		protected override StoredProcedure CloneCore(
-			IEnumerable<SqlParameter> parameters,
+		/// <inheritdoc />
+		protected internal override StoredProcedure CloneCore(
+#if NET40
+			IEnumerable<SqlParameter>                         parameters,
             IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
-			IEnumerable<IDataTransformer> dataTransformers)
-        {
-            return new StoredProcedure<T1, T2, T3, T4, T5, T6, T7>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
-        }
+			IEnumerable<IDataTransformer>                     dataTransformers)
+#else
+            ImmutableList<SqlParameter>                 parameters,
+            ImmutableDictionary<string, Action<object>> outputParameterSetters,
+            ImmutableList<IDataTransformer>             dataTransformers)
+#endif
+		{
+			return new StoredProcedure<T1, T2, T3, T4, T5, T6, T7>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
+		}
 	}
 	#endregion
 

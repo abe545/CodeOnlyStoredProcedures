@@ -915,7 +915,8 @@ namespace CodeOnlyTests
                 { "Decimal", 100M                      },
                 { "Int",     99                        },
                 { "Long",    1028130L                  },
-                { "Date",    new DateTime(1982, 1, 31) }
+                { "Date",    new DateTime(1982, 1, 31) },
+                { "FooBar",  (int)FooBar.Bar           }
             };
 
             var keys = values.Keys.OrderBy(s => s).ToArray();
@@ -928,13 +929,13 @@ namespace CodeOnlyTests
                    .Returns(reader.Object);
 
             reader.SetupGet(r => r.FieldCount)
-                  .Returns(6);
+                  .Returns(keys.Length);
 
             var first = true;
             reader.Setup(r => r.Read())
                   .Returns(() =>
                   {
-                      if(first)
+                      if (first)
                       {
                           first = false;
                           return true;
@@ -947,7 +948,7 @@ namespace CodeOnlyTests
                   .Returns((int i) => keys[i]);
             reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
                   .Callback((object[] arr) => vals.CopyTo(arr, 0))
-                  .Returns(6);
+                  .Returns(vals.Length);
 
             var results = command.Object.Execute(CancellationToken.None, new[] { typeof(SingleResultSet) }, Enumerable.Empty<IDataTransformer>());
 
@@ -962,6 +963,68 @@ namespace CodeOnlyTests
             Assert.AreEqual(99,                        item.Int);
             Assert.AreEqual(1028130L,                  item.Long);
             Assert.AreEqual(new DateTime(1982, 1, 31), item.Date);
+            Assert.AreEqual(FooBar.Bar,                item.FooBar);
+        }
+
+        [TestMethod]
+        public void TestExecuteReturnsSingleResultSetOneRowWithStringEnumValue()
+        {
+            var values = new Dictionary<string, object>
+            {
+                { "String",  "Hello, World!"           },
+                { "Double",  42.0                      },
+                { "Decimal", 100M                      },
+                { "Int",     99                        },
+                { "Long",    1028130L                  },
+                { "Date",    new DateTime(1982, 1, 31) },
+                { "FooBar",  "Bar"                     }
+            };
+
+            var keys = values.Keys.OrderBy(s => s).ToArray();
+            var vals = values.OrderBy(kv => kv.Key).Select(kv => kv.Value).ToArray();
+
+            var reader  = new Mock<IDataReader>();
+            var command = new Mock<IDbCommand>();
+
+            command.Setup(d => d.ExecuteReader())
+                   .Returns(reader.Object);
+
+            reader.SetupGet(r => r.FieldCount)
+                  .Returns(keys.Length);
+
+            var first = true;
+            reader.Setup(r => r.Read())
+                  .Returns(() =>
+                  {
+                      if (first)
+                      {
+                          first = false;
+                          return true;
+                      }
+
+                      return false;
+                  });
+
+            reader.Setup(r => r.GetName(It.IsAny<int>()))
+                  .Returns((int i) => keys[i]);
+            reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
+                  .Callback((object[] arr) => vals.CopyTo(arr, 0))
+                  .Returns(vals.Length);
+
+            var results = command.Object.Execute(CancellationToken.None, new[] { typeof(SingleResultSet) }, Enumerable.Empty<IDataTransformer>());
+
+            var toTest = (IList<SingleResultSet>)results[typeof(SingleResultSet)];
+
+            Assert.AreEqual(1, toTest.Count);
+            var item = toTest[0];
+
+            Assert.AreEqual("Hello, World!",           item.String);
+            Assert.AreEqual(42.0,                      item.Double);
+            Assert.AreEqual(100M,                      item.Decimal);
+            Assert.AreEqual(99,                        item.Int);
+            Assert.AreEqual(1028130L,                  item.Long);
+            Assert.AreEqual(new DateTime(1982, 1, 31), item.Date);
+            Assert.AreEqual(FooBar.Bar,                item.FooBar);
         }
 
         [TestMethod]
@@ -1581,7 +1644,7 @@ namespace CodeOnlyTests
             command.Setup(d => d.ExecuteReader())
                    .Returns(reader.Object);
 
-            var res = new[] { AttributeTargets.Enum, AttributeTargets.Event, AttributeTargets.Field };
+            var res = new[] { FooBar.Foo, FooBar.Bar };
             int i = 0;
             reader.SetupGet(r => r.FieldCount)
                   .Returns(1);
@@ -1596,10 +1659,45 @@ namespace CodeOnlyTests
                   .Returns(1);
 
             var results = command.Object.Execute(CancellationToken.None,
-                                                 new[] { typeof(AttributeTargets) },
+                                                 new[] { typeof(FooBar) },
                                                  Enumerable.Empty<IDataTransformer>());
 
-            var totest = (IEnumerable<AttributeTargets>)results[typeof(AttributeTargets)];
+            var totest = (IEnumerable<FooBar>)results[typeof(FooBar)];
+            for (int j = 0; j < res.Length; j++)
+            {
+                Assert.AreEqual(res[j], totest.ElementAt(j));
+            }
+        }
+
+        [TestMethod]
+        public void TestExecute_ReturnsSingleColumnSetForEnumReturnedAsString()
+        {
+            var reader = new Mock<IDataReader>();
+            var command = new Mock<IDbCommand>();
+
+            command.SetupAllProperties();
+            command.Setup(d => d.ExecuteReader())
+                   .Returns(reader.Object);
+
+            var res = new[] { FooBar.Foo, FooBar.Bar };
+            int i = 0;
+            reader.SetupGet(r => r.FieldCount)
+                  .Returns(1);
+
+            reader.Setup(r => r.Read())
+                  .Returns(() => i < res.Length);
+
+            reader.Setup(r => r.GetName(0))
+                  .Returns("SHOULD_BE_IGNORED");
+            reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
+                  .Callback((object[] arr) => arr[0] = res[i++].ToString())
+                  .Returns(1);
+
+            var results = command.Object.Execute(CancellationToken.None,
+                                                 new[] { typeof(FooBar) },
+                                                 Enumerable.Empty<IDataTransformer>());
+
+            var totest = (IEnumerable<FooBar>)results[typeof(FooBar)];
             for (int j = 0; j < res.Length; j++)
             {
                 Assert.AreEqual(res[j], totest.ElementAt(j));
@@ -1653,6 +1751,7 @@ namespace CodeOnlyTests
             public Int32    Int     { get; set; }
             public Int64    Long    { get; set; }
             public DateTime Date    { get; set; }
+            public FooBar   FooBar  { get; set; }
         }
 
         private class SingleColumn
@@ -1750,6 +1849,12 @@ namespace CodeOnlyTests
                 Assert.Fail("Transform should not be called when an IDataTransformer returns false from CanTransform");
                 return null;
             }
+        }
+
+        private enum FooBar
+        {
+            Foo = 4,
+            Bar = 6
         }
         #endregion
     }
