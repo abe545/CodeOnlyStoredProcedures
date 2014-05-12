@@ -131,6 +131,24 @@
       <DependentUpon>StoredProcedureExtensions.tt</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="StoredProcedureExtensions.WithDataTransformer.cs">
+      <DependentUpon>StoredProcedureExtensions.cs</DependentUpon>
+    </Compile>
+    <Compile Include="StoredProcedureExtensions.WithInput.cs">
+      <DependentUpon>StoredProcedureExtensions.cs</DependentUpon>
+    </Compile>
+    <Compile Include="StoredProcedureExtensions.WithInputOutputParameter.cs">
+      <DependentUpon>StoredProcedureExtensions.cs</DependentUpon>
+    </Compile>
+    <Compile Include="StoredProcedureExtensions.WithOutputParameter.cs">
+      <DependentUpon>StoredProcedureExtensions.cs</DependentUpon>
+    </Compile>
+    <Compile Include="StoredProcedureExtensions.WithParameter.cs">
+      <DependentUpon>StoredProcedureExtensions.cs</DependentUpon>
+    </Compile>
+    <Compile Include="StoredProcedureExtensions.WithReturnValue.cs">
+      <DependentUpon>StoredProcedureExtensions.cs</DependentUpon>
+    </Compile>
     <Compile Include="StoredProcedureParameterAttribute.cs" />
     <Compile Include="StoredProcedureResultsException.cs" />
     <Compile Include="TableValuedParameterAttribute.cs" />
@@ -145,6 +163,9 @@
       <DependentUpon>StoredProcedureExtensions.cs</DependentUpon>
     </None>
     <None Include="packages.config" />
+    <Compile Include="StoredProcedureExtensions.WithTableValuedParameter.cs">
+      <DependentUpon>StoredProcedureExtensions.cs</DependentUpon>
+    </Compile>
     <None Include="StoredProcedureTemplate.tt">
       <DependentUpon>StoredProcedure.cs</DependentUpon>
     </None>
