@@ -453,7 +453,7 @@ namespace CodeOnlyStoredProcedure
                 {
                     cmd.CommandText    = FullName;
                     cmd.CommandType    = CommandType.StoredProcedure;
-                    cmd.CommandTimeout = commandTimeout ?? 10;
+                    cmd.CommandTimeout = commandTimeout ?? 30;
 
                     // move parameters to command object
                     // we must clone them first because the framework
