@@ -30,26 +30,26 @@ namespace CodeOnlyTests.DataTransformation
         [ExpectedException(typeof(NotSupportedException))]
         public void TestTransformThrowsWhenInputIsNotAString()
         {
-            toTest.Transform(false, typeof(string));
+            toTest.Transform(false, typeof(string), false);
         }
 
         [TestMethod]
         [ExpectedException(typeof(NotSupportedException))]
         public void TestTransformThrowsWhenTargetTypeIsNotString()
         {
-            toTest.Transform("foo", typeof(bool));
+            toTest.Transform("foo", typeof(bool), false);
         }
 
         [TestMethod]
         public void TestTransformReturnsNullForNull()
         {
-            Assert.IsNull(toTest.Transform(null, typeof(string)));
+            Assert.IsNull(toTest.Transform(null, typeof(string), false));
         }
 
         [TestMethod]
         public void TestTransformReturnsEmptyForEmpty()
         {
-            Assert.ReferenceEquals(string.Empty, toTest.Transform(string.Empty, typeof(string)));
+            Assert.ReferenceEquals(string.Empty, toTest.Transform(string.Empty, typeof(string), false));
         }
 
         [TestMethod]
@@ -63,7 +63,7 @@ namespace CodeOnlyTests.DataTransformation
             var str = Assembly.GetExecutingAssembly().FullName + GetType() + DateTime.Now;
             Assert.IsNull(string.IsInterned(str)); // just make sure
 
-            var res = (string)toTest.Transform(str, typeof(string));
+            var res = (string)toTest.Transform(str, typeof(string), false);
             Assert.ReferenceEquals(string.IsInterned(res), res);
         }
     }

@@ -38,7 +38,8 @@ namespace CodeOnlyStoredProcedure
         /// <param name="value">The value to transform. This can potentially come from
         /// another DataTransformer attribute</param>
         /// <param name="targetType">The type of the property the attribute is applied to.</param>
+        /// <param name="isNullable">If the target property is a nullable of type <paramref name="targetType"/></param>
         /// <returns>The transformed value.</returns>
-        public abstract object Transform(object value, Type targetType);
+        public abstract object Transform(object value, Type targetType, bool isNullable);
     }
 }

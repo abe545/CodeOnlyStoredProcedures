@@ -1802,7 +1802,7 @@ namespace CodeOnlyTests
         {
             public object Result { get; set; }
 
-            public override object Transform(object value, Type targetType)
+            public override object Transform(object value, Type targetType, bool isNullable)
             {
                 return Result;
             }
@@ -1816,7 +1816,7 @@ namespace CodeOnlyTests
 
             }
 
-            public override object Transform(object value, Type targetType)
+            public override object Transform(object value, Type targetType, bool isNullable)
             {
                 return ((string)value).ToUpper();
             }
@@ -1826,12 +1826,12 @@ namespace CodeOnlyTests
         {
             public string Result { get; set; }
 
-            public bool CanTransform(object value, Type targetType, IEnumerable<Attribute> propertyAttributes)
+            public bool CanTransform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes)
             {
                 return true;
             }
 
-            public object Transform(object value, Type targetType, IEnumerable<Attribute> propertyAttributes)
+            public object Transform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes)
             {
                 return Result;
             }
@@ -1839,12 +1839,12 @@ namespace CodeOnlyTests
 
         private class NeverTransformer : IDataTransformer
         {
-            public bool CanTransform(object value, Type targetType, IEnumerable<Attribute> propertyAttributes)
+            public bool CanTransform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes)
             {
                 return false;
             }
 
-            public object Transform(object value, Type targetType, IEnumerable<Attribute> propertyAttributes)
+            public object Transform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes)
             {
                 Assert.Fail("Transform should not be called when an IDataTransformer returns false from CanTransform");
                 return null;

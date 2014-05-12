@@ -359,6 +359,14 @@ namespace CodeOnlyStoredProcedure
                 // process the result set
                 if (reader.FieldCount == 1 && (currentType.IsEnum || integralTpes.Contains(currentType)))
                 {
+                    var  targetType = currentType;
+                    bool isNullable = false;
+                    if (currentType.IsGenericType && currentType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                    {
+                        isNullable = true;
+                        targetType = currentType.GetGenericArguments()[0];
+                    }
+
                     while (reader.Read())
                     {
                         token .ThrowIfCancellationRequested();
@@ -370,8 +378,8 @@ namespace CodeOnlyStoredProcedure
 
                         foreach (var xform in transformers)
                         {
-                            if (xform.CanTransform(value, currentType, Enumerable.Empty<Attribute>()))
-                                value = xform.Transform(value, currentType, Enumerable.Empty<Attribute>());
+                            if (xform.CanTransform(value, targetType, isNullable, Enumerable.Empty<Attribute>()))
+                                value = xform.Transform(value, targetType, isNullable, Enumerable.Empty<Attribute>());
                         }
 
                         if (value is string && currentType.IsEnum)
@@ -675,24 +683,27 @@ namespace CodeOnlyStoredProcedure
                 
                 foreach (var kv in props)
                 {
+                    var currentType = kv.Value.PropertyType;
                     var expressions = new List<Expression>();
                     var iterType    = typeof(IEnumerator<IDataTransformer>);
                     var iter        = Expression.Variable(iterType, "iter");
+                    var propType    = Expression.Constant(currentType, typeof(Type));             
+                    var isNullable  = Expression.Constant(currentType.IsGenericType &&
+                                                          currentType.GetGenericTypeDefinition() == typeof(Nullable<>));
 
                     IEnumerable<Attribute> attrs;
                     if (propertyAttrs.TryGetValue(kv.Key, out attrs))
                     {
-                        var propTransformers = attrs.OfType<DataTransformerAttributeBase>().OrderBy(a => a.Order);
-                        var propType         = Expression.Constant(kv.Value.PropertyType, typeof(Type));                        
+                        var propTransformers = attrs.OfType<DataTransformerAttributeBase>().OrderBy(a => a.Order);           
                         var xformType        = typeof(IDataTransformer);
                         var attrsExpr        = Expression.Constant(attrs, typeof(IEnumerable<Attribute>));
                         var transformer      = Expression.Variable(xformType, "transformer");
                         var endFor           = Expression.Label("endForEach");
 
                         var doTransform = Expression.IfThen(
-                            Expression.Call(transformer, xformType.GetMethod("CanTransform"), val, propType, attrsExpr),
+                            Expression.Call(transformer, xformType.GetMethod("CanTransform"), val, propType, isNullable, attrsExpr),
                             Expression.Assign(val,
-                                Expression.Call(transformer, xformType.GetMethod("Transform"), val, propType, attrsExpr)));
+                                Expression.Call(transformer, xformType.GetMethod("Transform"), val, propType, isNullable, attrsExpr)));
 
                         expressions.Add(Expression.Assign(iter, Expression.Call(gts, listType.GetMethod("GetEnumerator"))));
                         var loopBody = Expression.Block(
@@ -716,7 +727,7 @@ namespace CodeOnlyStoredProcedure
                         }
                         
                         foreach (var xform in propTransformers)
-                            expressions.Add(Expression.Assign(val, Expression.Call(Expression.Constant(xform), xf, val, propType)));
+                            expressions.Add(Expression.Assign(val, Expression.Call(Expression.Constant(xform), xf, val, propType, isNullable)));
                     }
 
                     Expression conv;

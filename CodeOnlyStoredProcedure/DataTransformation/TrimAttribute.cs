@@ -21,8 +21,9 @@ namespace CodeOnlyStoredProcedure.DataTransformation
         /// </summary>
         /// <param name="value">The string to trim</param>
         /// <param name="targetType">The type to transform to. Only string types are supported.</param>
+        /// <param name="isNullable">If the target property is a nullable of type <paramref name="targetType"/></param>
         /// <returns>The trimmed string, or empty if a null value was passed.</returns>
-        public override object Transform(object value, Type targetType)
+        public override object Transform(object value, Type targetType, bool isNullable)
         {
             if (targetType != typeof(string))
                 throw new NotSupportedException("Can only set the TrimAttribute on a String property");
