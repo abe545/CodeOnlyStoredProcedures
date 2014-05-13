@@ -85,6 +85,20 @@ namespace CodeOnlyStoredProcedure
             }
         }
 
+        /// <summary>
+        /// Gets the string representation of the arguments that will be passed to the StoredProcedure.
+        /// </summary>
+        internal string Arguments
+        {
+            get
+            {
+                if (parameters == null || !parameters.Any())
+                    return string.Empty;
+
+                return parameters.Aggregate("", (s, p) => s == "" ? Print(p) : s + ", " + Print(p));
+            }
+        }
+
 #if NET40
         /// <summary>
         /// Gets the <see cref="SqlParameter"/>s to pass to the stored procedure.
@@ -421,6 +435,32 @@ namespace CodeOnlyStoredProcedure
         }
         #endregion
 
+        public override string ToString()
+        {
+            if (parameters == null || !parameters.Any())
+                return FullName;
+
+            return string.Format("{0}({1})", FullName, Arguments);
+        }
+
+        public override int GetHashCode()
+        {
+            return FullName.GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            var other = obj as StoredProcedure;
+
+            if (other == null ||  GetType() != other.GetType() || other.FullName != FullName)
+                return false;
+
+            if (parameters == null && other.parameters == null)
+                return true;
+
+            return parameters.SequenceEqual(other.parameters);
+        }
+
         // Suppress this message, because the sp name is never set via user input
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2100:Review SQL queries for security vulnerabilities")]
         internal IDictionary<Type, IList> Execute(
@@ -520,6 +560,14 @@ namespace CodeOnlyStoredProcedure
                                     p.XmlSchemaCollectionDatabase,
                                     p.XmlSchemaCollectionOwningSchema, 
                                     p.XmlSchemaCollectionName);
+        }
+
+        private string Print(SqlParameter p)
+        {
+            Contract.Requires(p != null);
+            Contract.Ensures(!string.IsNullOrEmpty(Contract.Result<string>()));
+
+            return string.Format("@{0} = '{1}'", p.ParameterName, p.Value ?? "");
         }
 
         [ContractInvariantMethod]

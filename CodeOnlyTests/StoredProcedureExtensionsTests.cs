@@ -779,10 +779,6 @@ namespace CodeOnlyTests
             var reader = new Mock<IDataReader>();
             var command = new Mock<IDbCommand>();
 
-            command.SetupAllProperties();
-            command.Setup(d => d.ExecuteReader())
-                   .Returns(reader.Object);
-
             var res = new[] { "Hello", "World", "Foo", "Bar" };
             int i = 0;
             reader.SetupGet(r => r.FieldCount)
@@ -796,6 +792,10 @@ namespace CodeOnlyTests
             reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
                   .Callback((object[] arr) => arr[0] = res[i++])
                   .Returns(1);
+
+            command.SetupAllProperties();
+            command.Setup(d => d.ExecuteReader())
+                   .Returns(reader.Object);
 
             var results = command.Object.Execute(CancellationToken.None,
                                                  new[] { typeof(string) },
