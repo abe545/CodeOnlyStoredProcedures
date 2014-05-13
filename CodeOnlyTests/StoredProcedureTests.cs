@@ -389,6 +389,56 @@ namespace CodeOnlyTests
         }
         #endregion
 
+        #region PrettyPrint Tests
+        [TestMethod]
+        public void TestFullName_IncludesSchema()
+        {
+            var sp = new StoredProcedure("foo", "blah");
+
+            Assert.AreEqual("[foo].[blah]", sp.FullName);
+        }
+
+        [TestMethod]
+        public void TestArguments_PrintsSingleInputArgument()
+        {
+            var sp = new StoredProcedure("foo").WithInput(new { foo = "Bar" });
+
+            Assert.AreEqual("@foo = 'Bar'", sp.Arguments);
+        }
+
+        [TestMethod]
+        public void TestArguments_PrintsMultipleInputArguments()
+        {
+            var sp = new StoredProcedure("foo").WithInput(new { foo = "Bar", date = DateTime.Today });
+
+            Assert.AreEqual("@foo = 'Bar', @date = '" + DateTime.Today.ToString() + "'", sp.Arguments);
+        }
+
+        [TestMethod]
+        public void TestToString_PrintsFullName()
+        {
+            var sp = new StoredProcedure("foo", "blah");
+
+            Assert.AreEqual("[foo].[blah]", sp.ToString());
+        }
+
+        [TestMethod]
+        public void TestToString_PrintsSingleInputArgument()
+        {
+            var sp = new StoredProcedure("foo", "blah").WithInput(new { foo = "Bar" });
+
+            Assert.AreEqual("[foo].[blah](@foo = 'Bar')", sp.ToString());
+        }
+
+        [TestMethod]
+        public void TestToString_PrintsMultipleInputArguments()
+        {
+            var sp = new StoredProcedure("foo", "blah").WithInput(new { foo = "Bar", date = DateTime.Today });
+
+            Assert.AreEqual("[foo].[blah](@foo = 'Bar', @date = '" + DateTime.Today.ToString() + "')", sp.ToString());
+        }
+        #endregion
+
         private static void AssertProcValues(
             StoredProcedure proc,
             Type procType,

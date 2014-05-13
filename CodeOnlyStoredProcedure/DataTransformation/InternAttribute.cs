@@ -22,8 +22,9 @@ namespace CodeOnlyStoredProcedure.DataTransformation
         /// </summary>
         /// <param name="value">The string to intern.</param>
         /// <param name="targetType">Must be typeof(string)</param>
+        /// <param name="isNullable">If the target property is a nullable of type <paramref name="targetType"/></param>
         /// <returns>The interned string</returns>
-        public override object Transform(object value, Type targetType)
+        public override object Transform(object value, Type targetType, bool isNullable)
         {
             if (targetType != typeof(string))
                 throw new NotSupportedException("Can only put the InternAttribute on string properties.");

@@ -28,11 +28,6 @@ namespace CodeOnlyStoredProcedure
     public class StoredProcedure
     {
         #region Private Fields
-        private static readonly IList<IDataTransformer> globalTransformers = new List<IDataTransformer>
-        {
-            new EnumValueTransformer()
-        };
-
         private readonly string schema;
         private readonly string name;
 
@@ -87,6 +82,20 @@ namespace CodeOnlyStoredProcedure
                 Contract.Ensures(!string.IsNullOrWhiteSpace(Contract.Result<string>()));
 
                 return string.Format("[{0}].[{1}]", schema, name); 
+            }
+        }
+
+        /// <summary>
+        /// Gets the string representation of the arguments that will be passed to the StoredProcedure.
+        /// </summary>
+        internal string Arguments
+        {
+            get
+            {
+                if (parameters == null || !parameters.Any())
+                    return string.Empty;
+
+                return parameters.Aggregate("", (s, p) => s == "" ? Print(p) : s + ", " + Print(p));
             }
         }
 
@@ -426,6 +435,32 @@ namespace CodeOnlyStoredProcedure
         }
         #endregion
 
+        public override string ToString()
+        {
+            if (parameters == null || !parameters.Any())
+                return FullName;
+
+            return string.Format("{0}({1})", FullName, Arguments);
+        }
+
+        public override int GetHashCode()
+        {
+            return FullName.GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            var other = obj as StoredProcedure;
+
+            if (other == null ||  GetType() != other.GetType() || other.FullName != FullName)
+                return false;
+
+            if (parameters == null && other.parameters == null)
+                return true;
+
+            return parameters.SequenceEqual(other.parameters);
+        }
+
         // Suppress this message, because the sp name is never set via user input
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2100:Review SQL queries for security vulnerabilities")]
         internal IDictionary<Type, IList> Execute(
@@ -458,7 +493,7 @@ namespace CodeOnlyStoredProcedure
                 {
                     cmd.CommandText    = FullName;
                     cmd.CommandType    = CommandType.StoredProcedure;
-                    cmd.CommandTimeout = commandTimeout ?? 10;
+                    cmd.CommandTimeout = commandTimeout ?? 30;
 
                     // move parameters to command object
                     // we must clone them first because the framework
@@ -472,7 +507,7 @@ namespace CodeOnlyStoredProcedure
 
                     IDictionary<Type, IList> results;
                     if (outputTypes != null && outputTypes.Any())
-                        results = cmd.Execute(token, outputTypes, globalTransformers.Concat(dataTransformers));
+                        results = cmd.Execute(token, outputTypes, dataTransformers);
                     else
                     {
                         cmd.DoExecute(c => c.ExecuteNonQuery(), token);
@@ -525,6 +560,14 @@ namespace CodeOnlyStoredProcedure
                                     p.XmlSchemaCollectionDatabase,
                                     p.XmlSchemaCollectionOwningSchema, 
                                     p.XmlSchemaCollectionName);
+        }
+
+        private string Print(SqlParameter p)
+        {
+            Contract.Requires(p != null);
+            Contract.Ensures(!string.IsNullOrEmpty(Contract.Result<string>()));
+
+            return string.Format("@{0} = '{1}'", p.ParameterName, p.Value ?? "");
         }
 
         [ContractInvariantMethod]

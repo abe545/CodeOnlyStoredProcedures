@@ -22,16 +22,12 @@ namespace CodeOnlyStoredProcedure.DataTransformation
         /// </summary>
         /// <param name="value">The value to convert</param>
         /// <param name="targetType">The type of the property</param>
+        /// <param name="isNullable">If the target property is a nullable of type <paramref name="targetType"/></param>
         /// <returns>The converted value.</returns>
-        public override object Transform(object value, Type targetType)
+        public override object Transform(object value, Type targetType, bool isNullable)
         {
-            if (targetType.IsGenericType && targetType.GetGenericTypeDefinition() == typeof(Nullable<>))
-            {
-                if (value == null)
-                    return null;
-
-                targetType = targetType.GetGenericArguments().Single();
-            }
+            if (isNullable && ReferenceEquals(null, value))
+                return value;
 
             return Convert.ChangeType(value, targetType);
         }

@@ -122,9 +122,6 @@
     <Compile Include="..\CodeOnlyStoredProcedure\DataTransformation\ConvertNumericAttribute.cs">
       <Link>DataTransformation\ConvertNumericAttribute.cs</Link>
     </Compile>
-    <Compile Include="..\CodeOnlyStoredProcedure\DataTransformation\EnumValueTransformer.cs">
-      <Link>DataTransformation\EnumValueTransformer.cs</Link>
-    </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\DataTransformation\InternAllStringsTransformer.cs">
       <Link>DataTransformation\InternAllStringsTransformer.cs</Link>
     </Compile>
@@ -163,6 +160,34 @@
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>StoredProcedureExtensions.tt</DependentUpon>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedureExtensions.WithDataTransformer.cs">
+      <Link>StoredProcedureExtensions.WithDataTransformer.cs</Link>
+      <DependentUpon>StoredProcedureExtensions.cs</DependentUpon>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedureExtensions.WithInput.cs">
+      <Link>StoredProcedureExtensions.WithInput.cs</Link>
+      <DependentUpon>StoredProcedureExtensions.cs</DependentUpon>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedureExtensions.WithInputOutputParameter.cs">
+      <Link>StoredProcedureExtensions.WithInputOutputParameter.cs</Link>
+      <DependentUpon>StoredProcedureExtensions.cs</DependentUpon>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedureExtensions.WithOutputParameter.cs">
+      <Link>StoredProcedureExtensions.WithOutputParameter.cs</Link>
+      <DependentUpon>StoredProcedureExtensions.cs</DependentUpon>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedureExtensions.WithParameter.cs">
+      <Link>StoredProcedureExtensions.WithParameter.cs</Link>
+      <DependentUpon>StoredProcedureExtensions.cs</DependentUpon>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedureExtensions.WithReturnValue.cs">
+      <Link>StoredProcedureExtensions.WithReturnValue.cs</Link>
+      <DependentUpon>StoredProcedureExtensions.cs</DependentUpon>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedureExtensions.WithTableValuedParameter.cs">
+      <Link>StoredProcedureExtensions.WithTableValuedParameter.cs</Link>
+      <DependentUpon>StoredProcedureExtensions.cs</DependentUpon>
     </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedureParameterAttribute.cs">
       <Link>StoredProcedureParameterAttribute.cs</Link>

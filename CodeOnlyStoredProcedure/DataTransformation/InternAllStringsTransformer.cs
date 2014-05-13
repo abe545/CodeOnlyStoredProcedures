@@ -13,9 +13,10 @@ namespace CodeOnlyStoredProcedure.DataTransformation
         /// </summary>
         /// <param name="value">The value to attempt to transform</param>
         /// <param name="targetType">The type of the property</param>
+        /// <param name="isNullable">If the target property is a nullable of type <paramref name="targetType"/></param>
         /// <param name="propertyAttributes">All attributes applied to the property</param>
         /// <returns>True if the value is a string, and so is targetType, false otherwise.</returns>
-        public bool CanTransform(object value, Type targetType, IEnumerable<Attribute> propertyAttributes)
+        public bool CanTransform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes)
         {
             if (targetType != typeof(string) || !(value is string))
                 return false;
@@ -28,9 +29,10 @@ namespace CodeOnlyStoredProcedure.DataTransformation
         /// </summary>
         /// <param name="value">The string to intern</param>
         /// <param name="targetType">The type of the property</param>
+        /// <param name="isNullable">If the target property is a nullable of type <paramref name="targetType"/></param>
         /// <param name="propertyAttributes">All attributes applied to the property</param>
         /// <returns>The interned string</returns>
-        public object Transform(object value, Type targetType, IEnumerable<Attribute> propertyAttributes)
+        public object Transform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes)
         {
             return string.Intern((string)value);
         }
