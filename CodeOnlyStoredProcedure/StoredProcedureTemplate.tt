@@ -87,12 +87,53 @@ public class StoredProcedureTemplate : Template
 		Write(";");
 	}
 
+	public void WriteTypeParams()
+    {
+        for (int i = 1; i <= TypeCount; i++)
+        {
+			if (i > 1)
+				Write("\t");
+			Write("/// <typeparam name=\"T" + i + "\">The type of the " + GetOrdinal(i) + " result set returned by the stored procedure.</typeparam>\n");
+        }
+    }
+
+	public string GetOrdinal(int i)
+    {
+        switch (i)
+        {
+			case 1:
+				return "first";
+
+			case 2:
+				return "second";
+
+			case 3:
+				return "third";
+
+			case 4:
+				return "fourth";
+
+			case 5:
+				return "fifth";
+
+			case 6:
+				return "sixth";
+
+			case 7:
+				return "seventh";
+
+			default:
+				return i + "th";
+        }
+    }
+
     public override string TransformText()
     {
 #>
 	#region StoredProcedure<#+ GetTypes(TypeCount); #>
 
 	/// <summary>Calls a StoredProcedure that returns <#+ Write(TypeCount.ToString()); #> result set(s).</summary>
+	<#+ WriteTypeParams(); #>
 	public class StoredProcedure<#+ GetTypes(TypeCount); #> : StoredProcedure<#+ GetTypes(TypeCount - 1); #>
 
 	{

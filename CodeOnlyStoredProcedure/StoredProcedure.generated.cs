@@ -15,6 +15,7 @@ namespace CodeOnlyStoredProcedure
 {
 	#region StoredProcedure<T1>
 	/// <summary>Calls a StoredProcedure that returns 1 result set(s).</summary>
+	/// <typeparam name="T1">The type of the first result set returned by the stored procedure.</typeparam>
 	public class StoredProcedure<T1> : StoredProcedure
 	{
 		private static readonly Type t1 = typeof(T1);
@@ -195,6 +196,8 @@ namespace CodeOnlyStoredProcedure
 
 	#region StoredProcedure<T1, T2>
 	/// <summary>Calls a StoredProcedure that returns 2 result set(s).</summary>
+	/// <typeparam name="T1">The type of the first result set returned by the stored procedure.</typeparam>
+	/// <typeparam name="T2">The type of the second result set returned by the stored procedure.</typeparam>
 	public class StoredProcedure<T1, T2> : StoredProcedure<T1>
 	{
 		private static readonly Type t1 = typeof(T1);
@@ -376,6 +379,9 @@ namespace CodeOnlyStoredProcedure
 
 	#region StoredProcedure<T1, T2, T3>
 	/// <summary>Calls a StoredProcedure that returns 3 result set(s).</summary>
+	/// <typeparam name="T1">The type of the first result set returned by the stored procedure.</typeparam>
+	/// <typeparam name="T2">The type of the second result set returned by the stored procedure.</typeparam>
+	/// <typeparam name="T3">The type of the third result set returned by the stored procedure.</typeparam>
 	public class StoredProcedure<T1, T2, T3> : StoredProcedure<T1, T2>
 	{
 		private static readonly Type t1 = typeof(T1);
@@ -558,6 +564,10 @@ namespace CodeOnlyStoredProcedure
 
 	#region StoredProcedure<T1, T2, T3, T4>
 	/// <summary>Calls a StoredProcedure that returns 4 result set(s).</summary>
+	/// <typeparam name="T1">The type of the first result set returned by the stored procedure.</typeparam>
+	/// <typeparam name="T2">The type of the second result set returned by the stored procedure.</typeparam>
+	/// <typeparam name="T3">The type of the third result set returned by the stored procedure.</typeparam>
+	/// <typeparam name="T4">The type of the fourth result set returned by the stored procedure.</typeparam>
 	public class StoredProcedure<T1, T2, T3, T4> : StoredProcedure<T1, T2, T3>
 	{
 		private static readonly Type t1 = typeof(T1);
@@ -741,6 +751,11 @@ namespace CodeOnlyStoredProcedure
 
 	#region StoredProcedure<T1, T2, T3, T4, T5>
 	/// <summary>Calls a StoredProcedure that returns 5 result set(s).</summary>
+	/// <typeparam name="T1">The type of the first result set returned by the stored procedure.</typeparam>
+	/// <typeparam name="T2">The type of the second result set returned by the stored procedure.</typeparam>
+	/// <typeparam name="T3">The type of the third result set returned by the stored procedure.</typeparam>
+	/// <typeparam name="T4">The type of the fourth result set returned by the stored procedure.</typeparam>
+	/// <typeparam name="T5">The type of the fifth result set returned by the stored procedure.</typeparam>
 	public class StoredProcedure<T1, T2, T3, T4, T5> : StoredProcedure<T1, T2, T3, T4>
 	{
 		private static readonly Type t1 = typeof(T1);
@@ -925,6 +940,12 @@ namespace CodeOnlyStoredProcedure
 
 	#region StoredProcedure<T1, T2, T3, T4, T5, T6>
 	/// <summary>Calls a StoredProcedure that returns 6 result set(s).</summary>
+	/// <typeparam name="T1">The type of the first result set returned by the stored procedure.</typeparam>
+	/// <typeparam name="T2">The type of the second result set returned by the stored procedure.</typeparam>
+	/// <typeparam name="T3">The type of the third result set returned by the stored procedure.</typeparam>
+	/// <typeparam name="T4">The type of the fourth result set returned by the stored procedure.</typeparam>
+	/// <typeparam name="T5">The type of the fifth result set returned by the stored procedure.</typeparam>
+	/// <typeparam name="T6">The type of the sixth result set returned by the stored procedure.</typeparam>
 	public class StoredProcedure<T1, T2, T3, T4, T5, T6> : StoredProcedure<T1, T2, T3, T4, T5>
 	{
 		private static readonly Type t1 = typeof(T1);
@@ -1110,6 +1131,13 @@ namespace CodeOnlyStoredProcedure
 
 	#region StoredProcedure<T1, T2, T3, T4, T5, T6, T7>
 	/// <summary>Calls a StoredProcedure that returns 7 result set(s).</summary>
+	/// <typeparam name="T1">The type of the first result set returned by the stored procedure.</typeparam>
+	/// <typeparam name="T2">The type of the second result set returned by the stored procedure.</typeparam>
+	/// <typeparam name="T3">The type of the third result set returned by the stored procedure.</typeparam>
+	/// <typeparam name="T4">The type of the fourth result set returned by the stored procedure.</typeparam>
+	/// <typeparam name="T5">The type of the fifth result set returned by the stored procedure.</typeparam>
+	/// <typeparam name="T6">The type of the sixth result set returned by the stored procedure.</typeparam>
+	/// <typeparam name="T7">The type of the seventh result set returned by the stored procedure.</typeparam>
 	public class StoredProcedure<T1, T2, T3, T4, T5, T6, T7> : StoredProcedure<T1, T2, T3, T4, T5, T6>
 	{
 		private static readonly Type t1 = typeof(T1);
