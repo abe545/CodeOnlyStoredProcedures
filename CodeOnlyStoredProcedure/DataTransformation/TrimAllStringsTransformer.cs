@@ -16,9 +16,10 @@ namespace CodeOnlyStoredProcedure.DataTransformation
         /// </summary>
         /// <param name="value">The input value to transform.</param>
         /// <param name="targetType">The type of the property the value is being set on.</param>
+        /// <param name="isNullable">If the target property is a nullable of type <paramref name="targetType"/></param>
         /// <param name="propertyAttributes">The attributes applied to the property.</param>
         /// <returns>True if both value is a string, and targetType is typeof(string); false otherwise.</returns>
-        public bool CanTransform(object value, Type targetType, IEnumerable<Attribute> propertyAttributes)
+        public bool CanTransform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes)
         {
             if (targetType != typeof(string))
                 return false;
@@ -34,9 +35,10 @@ namespace CodeOnlyStoredProcedure.DataTransformation
         /// </summary>
         /// <param name="value">The string to trim</param>
         /// <param name="targetType">Must be typeof(string)</param>
+        /// <param name="isNullable">If the target property is a nullable of type <paramref name="targetType"/></param>
         /// <param name="propertyAttributes">The attributes applied to the property.</param>
         /// <returns>The trimmed string.</returns>
-        public object Transform(object value, Type targetType, IEnumerable<Attribute> propertyAttributes)
+        public object Transform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes)
         {
             var str = (string)value;
             if (string.IsNullOrWhiteSpace(str))

@@ -60,12 +60,35 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
-    <Compile Include="DataTransformation\EnumValueTransformerTests.cs" />
     <Compile Include="DataTransformation\TrimAttributeTests.cs" />
     <Compile Include="DataTransformation\InternAttributeTests.cs" />
     <Compile Include="DataTransformation\InternAllStringsTransformerTests.cs" />
     <Compile Include="DataTransformation\TrimAllStringsTransformerTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="StoredProcedureExtensionsTests.DoExecute.cs">
+      <DependentUpon>StoredProcedureExtensionsTests.cs</DependentUpon>
+    </Compile>
+    <Compile Include="StoredProcedureExtensionsTests.WithDataTransformer.cs">
+      <DependentUpon>StoredProcedureExtensionsTests.cs</DependentUpon>
+    </Compile>
+    <Compile Include="StoredProcedureExtensionsTests.WithInput.cs">
+      <DependentUpon>StoredProcedureExtensionsTests.cs</DependentUpon>
+    </Compile>
+    <Compile Include="StoredProcedureExtensionsTests.WithInputOutputParameter.cs">
+      <DependentUpon>StoredProcedureExtensionsTests.cs</DependentUpon>
+    </Compile>
+    <Compile Include="StoredProcedureExtensionsTests.WithOutputParameter.cs">
+      <DependentUpon>StoredProcedureExtensionsTests.cs</DependentUpon>
+    </Compile>
+    <Compile Include="StoredProcedureExtensionsTests.WithParameter.cs">
+      <DependentUpon>StoredProcedureExtensionsTests.cs</DependentUpon>
+    </Compile>
+    <Compile Include="StoredProcedureExtensionsTests.WithReturnValue.cs">
+      <DependentUpon>StoredProcedureExtensionsTests.cs</DependentUpon>
+    </Compile>
+    <Compile Include="StoredProcedureExtensionsTests.WithTableValuedParameter.cs">
+      <DependentUpon>StoredProcedureExtensionsTests.cs</DependentUpon>
+    </Compile>
     <Compile Include="StoredProcedureTests.cs" />
     <Compile Include="StoredProcedureExtensionsTests.cs" />
   </ItemGroup>

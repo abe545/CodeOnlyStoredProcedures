@@ -24,31 +24,31 @@ namespace CodeOnlyTests.DataTransformation
         [TestMethod]
         public void TestCanTransformReturnsFalseForNonStringTargetType()
         {
-            Assert.IsFalse(toTest.CanTransform("foo", typeof(int), Enumerable.Empty<Attribute>()));
+            Assert.IsFalse(toTest.CanTransform("foo", typeof(int), false, Enumerable.Empty<Attribute>()));
         }
 
         [TestMethod]
         public void TestCanTransformReturnsFalseForNonStringInput()
         {
-            Assert.IsFalse(toTest.CanTransform(false, typeof(string), Enumerable.Empty<Attribute>()));
+            Assert.IsFalse(toTest.CanTransform(false, typeof(string), false, Enumerable.Empty<Attribute>()));
         }
 
         [TestMethod]
         public void TestCanTransformReturnsFalseForNullInput()
         {
-            Assert.IsFalse(toTest.CanTransform(null, typeof(string), Enumerable.Empty<Attribute>()));
+            Assert.IsFalse(toTest.CanTransform(null, typeof(string), false, Enumerable.Empty<Attribute>()));
         }
 
         [TestMethod]
         public void TestCanTransformReturnsTrueForString()
         {
-            Assert.IsTrue(toTest.CanTransform("foo", typeof(string), Enumerable.Empty<Attribute>()));
+            Assert.IsTrue(toTest.CanTransform("foo", typeof(string), false, Enumerable.Empty<Attribute>()));
         }
 
         [TestMethod]
         public void TestTransformReturnsEmptyForEmpty()
         {
-            var res = toTest.Transform(string.Empty, typeof(string), Enumerable.Empty<Attribute>());
+            var res = toTest.Transform(string.Empty, typeof(string), false, Enumerable.Empty<Attribute>());
             Assert.ReferenceEquals(string.Empty, res);
         }
 
@@ -63,7 +63,7 @@ namespace CodeOnlyTests.DataTransformation
             var str = Assembly.GetExecutingAssembly().FullName + GetType() + DateTime.Now;
             Assert.IsNull(string.IsInterned(str)); // just make sure
 
-            var res = (string)toTest.Transform(str, typeof(string), Enumerable.Empty<Attribute>());
+            var res = (string)toTest.Transform(str, typeof(string), false, Enumerable.Empty<Attribute>());
             Assert.ReferenceEquals(string.IsInterned(res), res);
         }
     }

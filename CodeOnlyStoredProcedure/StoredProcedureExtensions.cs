@@ -16,7 +16,7 @@ using System.Linq.Expressions;
 namespace CodeOnlyStoredProcedure
 {
     /// <summary>
-    /// Extension methods for common functionality on StoredProcedures.
+    /// Defines extension methods on the <see cref="StoredProcedure"/> classes.
     /// </summary>
     public static partial class StoredProcedureExtensions
     {
@@ -35,298 +35,6 @@ namespace CodeOnlyStoredProcedure
                 typeof(Guid)
             };
 
-        #region WithParameter
-        /// <summary>
-        /// Adds an input parameter to the stored procedure.
-        /// </summary>
-        /// <typeparam name="TSP">The type of StoredProcedure. Can be a StoredProcedure with or without results.</typeparam>
-        /// <typeparam name="TValue">The type of value to pass.</typeparam>
-        /// <param name="sp">The StoredProcedure to add the input parameter to</param>
-        /// <param name="name">The name that the StoredProcedure expects (without the @).</param>
-        /// <param name="value">The value to pass.</param>
-        /// <returns>A copy of the StoredProcedure with the input parameter passed.</returns>
-        /// <remarks>StoredProcedures are immutable, so all the Fluent API methods return copies.</remarks>
-        public static TSP WithParameter<TSP, TValue>(this TSP sp, string name, TValue value)
-            where TSP : StoredProcedure
-        {
-            Contract.Requires(sp != null);
-            Contract.Requires(!string.IsNullOrWhiteSpace(name));
-            Contract.Ensures(Contract.Result<TSP>() != null);
-
-            return (TSP)sp.CloneWith(new SqlParameter(name, value));
-        }
-
-        /// <summary>
-        /// Adds an input parameter to the stored procedure.
-        /// </summary>
-        /// <typeparam name="TSP">The type of StoredProcedure. Can be a StoredProcedure with or without results.</typeparam>
-        /// <typeparam name="TValue">The type of value to pass.</typeparam>
-        /// <param name="sp">The StoredProcedure to add the input parameter to</param>
-        /// <param name="name">The name that the StoredProcedure expects (without the @).</param>
-        /// <param name="value">The value to pass.</param>
-        /// <param name="dbType">The SqlDbType that the StoredProcedure expects.</param>
-        /// <returns>A copy of the StoredProcedure with the input parameter passed.</returns>
-        /// <remarks>StoredProcedures are immutable, so all the Fluent API methods return copies.</remarks>
-        public static TSP WithParameter<TSP, TValue>(this TSP sp, string name, TValue value, SqlDbType dbType)
-            where TSP : StoredProcedure
-        {
-            Contract.Requires(sp != null);
-            Contract.Requires(!string.IsNullOrWhiteSpace(name));
-            Contract.Ensures(Contract.Result<TSP>() != null);
-
-            return (TSP)sp.CloneWith(new SqlParameter(name, value) { SqlDbType = dbType } );
-        }
-        #endregion
-
-        #region WithOutputParameter
-        public static TSP WithOutputParameter<TSP, TValue>(this TSP sp, 
-            string name,
-            Action<TValue> setter,
-            int? size = null,
-            byte? scale = null,
-            byte? precision = null)
-            where TSP : StoredProcedure
-        {
-            Contract.Requires(sp != null);
-            Contract.Requires(!string.IsNullOrWhiteSpace(name));
-            Contract.Requires(setter != null);
-            Contract.Ensures(Contract.Result<TSP>() != null);
-
-            return (TSP)sp.CloneWith(
-                new SqlParameter
-                {
-                    ParameterName = name,
-                    Direction     = ParameterDirection.Output
-                }.AddPrecisison(size, scale, precision), 
-                o => setter((TValue)o));
-        }
-
-        public static TSP WithOutputParameter<TSP, TValue>(this TSP sp, 
-            string name,
-            Action<TValue> setter,
-            SqlDbType dbType,
-            int? size = null,
-            byte? scale = null,
-            byte? precision = null)
-            where TSP : StoredProcedure
-        {
-            Contract.Requires(sp != null);
-            Contract.Requires(!string.IsNullOrWhiteSpace(name));
-            Contract.Requires(setter != null);
-            Contract.Ensures(Contract.Result<TSP>() != null);
-
-            return (TSP)sp.CloneWith(
-                new SqlParameter
-                {
-                    ParameterName = name,
-                    Direction     = ParameterDirection.Output,
-                    SqlDbType     = dbType
-                }.AddPrecisison(size, scale, precision), 
-                o => setter((TValue)o));
-        }
-        #endregion
-
-        #region WithInputOutputParameter
-        public static TSP WithInputOutputParameter<TSP, TValue>(this TSP sp,
-            string name,
-            TValue value,
-            Action<TValue> setter,
-            int? size = null,
-            byte? scale = null,
-            byte? precision = null)
-            where TSP : StoredProcedure
-        {
-            Contract.Requires(sp != null);
-            Contract.Requires(!string.IsNullOrWhiteSpace(name));
-            Contract.Requires(setter != null);
-            Contract.Ensures(Contract.Result<TSP>() != null);
-
-            return (TSP)sp.CloneWith(
-                new SqlParameter(name, value)
-                {
-                    Direction = ParameterDirection.InputOutput
-                }.AddPrecisison(size, scale, precision),
-                o => setter((TValue)o));
-        }
-
-        public static TSP WithInputOutputParameter<TSP, TValue>(this TSP sp,
-            string name,
-            TValue value,
-            Action<TValue> setter,
-            SqlDbType dbType,
-            int? size = null,
-            byte? scale = null,
-            byte? precision = null)
-            where TSP : StoredProcedure
-        {
-            Contract.Requires(sp != null);
-            Contract.Requires(!string.IsNullOrWhiteSpace(name));
-            Contract.Requires(setter != null);
-            Contract.Ensures(Contract.Result<TSP>() != null);
-
-            return (TSP)sp.CloneWith(
-                new SqlParameter(name, value)
-                {
-                    Direction = ParameterDirection.InputOutput,
-                    SqlDbType = dbType
-                }.AddPrecisison(size, scale, precision),
-                o => setter((TValue)o));
-        }
-        #endregion
-
-        #region WithReturnValue
-        /// <summary>
-        /// Adds an action to be called with the return value from the <see cref="StoredProcedure"/>.
-        /// </summary>
-        /// <typeparam name="TSP">The <see cref="StoredProcedure"/> type.</typeparam>
-        /// <param name="sp">The <see cref="StoredProcedure"/> to register for the return value.</param>
-        /// <param name="returnValue">The <see href="http://msdn.microsoft.com/en-us/library/018hxwa8.aspx" alt="Action"/> to call with the return value.</param>
-        /// <returns>A copy of the <see cref="StoredProcedure"/> with the return value associated.</returns>
-        public static TSP WithReturnValue<TSP>(this TSP sp, Action<int> returnValue)
-            where TSP : StoredProcedure
-        {
-            Contract.Requires(sp != null);
-            Contract.Requires(returnValue != null);
-            Contract.Ensures(Contract.Result<TSP>() != null);
-
-            return (TSP)sp.CloneWith(new SqlParameter
-                {
-                    ParameterName = "_Code_Only_Stored_Procedures_Auto_Generated_Return_Value_",
-                    Direction     = ParameterDirection.ReturnValue,
-                    SqlDbType     = SqlDbType.Int
-                }, 
-                o => returnValue((int)o));
-        }
-        #endregion
-
-        #region WithInput
-        public static TSP WithInput<TSP, TInput>(this TSP sp, TInput input)
-            where TSP : StoredProcedure
-        {
-            Contract.Requires(sp != null);
-            Contract.Requires(input != null);
-            Contract.Ensures(Contract.Result<TSP>() != null);
-
-            foreach (var pi in typeof(TInput).GetMappedProperties())
-            {
-                SqlParameter parameter;
-                var tableAttr = pi.GetCustomAttributes(typeof(TableValuedParameterAttribute), false)
-                                  .OfType<TableValuedParameterAttribute>()
-                                  .FirstOrDefault();
-                var attr = pi.GetCustomAttributes(typeof(StoredProcedureParameterAttribute), false)
-                             .OfType<StoredProcedureParameterAttribute>()
-                             .FirstOrDefault();
-
-                if (tableAttr != null)
-                    parameter = tableAttr.CreateSqlParameter(pi.Name);
-                else if (attr != null)
-                    parameter = attr.CreateSqlParameter(pi.Name);
-                else
-                    parameter = new SqlParameter(pi.Name, pi.GetValue(input, null));
-
-                // store table values, scalar value or null
-                var value = pi.GetValue(input, null);
-                if (value == null)
-                    parameter.Value = DBNull.Value;
-                else if (parameter.SqlDbType == SqlDbType.Structured)
-                {
-                    // An IEnumerable type to be used as a Table-Valued Parameter
-                    if (!(value is IEnumerable))
-                        throw new InvalidCastException(string.Format("{0} must be an IEnumerable type to be used as a Table-Valued Parameter", pi.Name));
-
-                    var baseType = value.GetType().GetEnumeratedType();
-
-                    // generate table valued parameter
-                    parameter.Value = ((IEnumerable)value).ToTableValuedParameter(baseType);
-                }
-                else
-                    parameter.Value = value;
-
-                switch (parameter.Direction)
-                {
-                    case ParameterDirection.Input:
-                        sp = (TSP)sp.CloneWith(parameter);
-                        break;
-
-                    case ParameterDirection.InputOutput:
-                    case ParameterDirection.Output:
-                        sp = (TSP)sp.CloneWith(parameter, o => pi.SetValue(input, o, null));
-                        break;
-
-                    case ParameterDirection.ReturnValue:
-                        if (pi.PropertyType != typeof(int))
-                            throw new NotSupportedException("Can only use a ReturnValue of type int.");
-                        sp = (TSP)sp.CloneWith(parameter, o => pi.SetValue(input, o, null));
-                        break;
-                }
-            }
-
-            return sp;
-        }
-        #endregion
-
-        #region WithTableValuedParameter
-        public static TSP WithTableValuedParameter<TSP, TRow>(this TSP sp, 
-            string name,
-            IEnumerable<TRow> table,
-            string tableTypeName)
-            where TSP : StoredProcedure
-        {
-            Contract.Requires(sp != null);
-            Contract.Requires(!string.IsNullOrWhiteSpace(name));
-            Contract.Requires(table != null);
-            Contract.Requires(!string.IsNullOrWhiteSpace(tableTypeName));
-            Contract.Ensures(Contract.Result<TSP>() != null);
-
-            var p = new SqlParameter
-            {
-                ParameterName = name,
-                SqlDbType     = SqlDbType.Structured,
-                TypeName      = "[dbo].[" + tableTypeName + "]",
-                Value         = table.ToTableValuedParameter(typeof(TRow))
-            };
-
-            return (TSP)sp.CloneWith(p);
-        }
-
-        public static TSP WithTableValuedParameter<TSP, TRow>(this TSP sp,
-            string name,
-            IEnumerable<TRow> table,
-            string tableTypeSchema,
-            string tableTypeName)
-            where TSP : StoredProcedure
-        {
-            Contract.Requires(sp != null);
-            Contract.Requires(!string.IsNullOrWhiteSpace(name));
-            Contract.Requires(table != null);
-            Contract.Requires(!string.IsNullOrWhiteSpace(tableTypeSchema));
-            Contract.Requires(!string.IsNullOrWhiteSpace(tableTypeName));
-            Contract.Ensures(Contract.Result<TSP>() != null);
-
-            var p = new SqlParameter
-            {
-                ParameterName = name,
-                SqlDbType     = SqlDbType.Structured,
-                TypeName      = string.Format("[{0}].[{1}]", tableTypeSchema, tableTypeName),
-                Value         = table.ToTableValuedParameter(typeof(TRow))
-            };
-
-            return (TSP)sp.CloneWith(p);
-        }
-        #endregion
-
-        #region WithDataTransformer
-        public static TSP WithDataTransformer<TSP>(this TSP sp, IDataTransformer transformer)
-            where TSP : StoredProcedure
-        {
-            Contract.Requires(sp != null);
-            Contract.Requires(transformer != null);
-            Contract.Ensures(Contract.Result<TSP>() != null);
-
-            return (TSP)sp.CloneWith(transformer);
-        }
-        #endregion
-
         internal static IDictionary<Type, IList> Execute(
             this IDbCommand               cmd,
             CancellationToken             token,
@@ -334,7 +42,7 @@ namespace CodeOnlyStoredProcedure
             IEnumerable<IDataTransformer> transformers)
         {
             Contract.Requires(cmd          != null);
-            Contract.Requires(outputTypes  != null);
+            Contract.Requires(outputTypes  != null && Contract.ForAll(outputTypes, t => t != null));
             Contract.Requires(transformers != null);
             Contract.Ensures (Contract.Result<IDictionary<Type, IList>>() != null);
 
@@ -359,6 +67,14 @@ namespace CodeOnlyStoredProcedure
                 // process the result set
                 if (reader.FieldCount == 1 && (currentType.IsEnum || integralTpes.Contains(currentType)))
                 {
+                    var  targetType = currentType;
+                    bool isNullable = false;
+                    if (currentType.IsGenericType && currentType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                    {
+                        isNullable = true;
+                        targetType = currentType.GetGenericArguments().Single();
+                    }
+
                     while (reader.Read())
                     {
                         token .ThrowIfCancellationRequested();
@@ -370,9 +86,12 @@ namespace CodeOnlyStoredProcedure
 
                         foreach (var xform in transformers)
                         {
-                            if (xform.CanTransform(value, currentType, Enumerable.Empty<Attribute>()))
-                                value = xform.Transform(value, currentType, Enumerable.Empty<Attribute>());
+                            if (xform.CanTransform(value, targetType, isNullable, Enumerable.Empty<Attribute>()))
+                                value = xform.Transform(value, targetType, isNullable, Enumerable.Empty<Attribute>());
                         }
+
+                        if (value is string && currentType.IsEnum)
+                            value = Enum.Parse(currentType, (string)value);
 
                         output.Add(value);
                     }
@@ -448,6 +167,7 @@ namespace CodeOnlyStoredProcedure
             catch (OperationCanceledException)
             {
                 cmd.Cancel();
+                throw;
             }
 
             token.ThrowIfCancellationRequested();
@@ -671,24 +391,27 @@ namespace CodeOnlyStoredProcedure
                 
                 foreach (var kv in props)
                 {
+                    var currentType = kv.Value.PropertyType;
                     var expressions = new List<Expression>();
                     var iterType    = typeof(IEnumerator<IDataTransformer>);
                     var iter        = Expression.Variable(iterType, "iter");
+                    var propType    = Expression.Constant(currentType, typeof(Type));             
+                    var isNullable  = Expression.Constant(currentType.IsGenericType &&
+                                                          currentType.GetGenericTypeDefinition() == typeof(Nullable<>));
 
                     IEnumerable<Attribute> attrs;
                     if (propertyAttrs.TryGetValue(kv.Key, out attrs))
                     {
-                        var propTransformers = attrs.OfType<DataTransformerAttributeBase>().OrderBy(a => a.Order);
-                        var propType         = Expression.Constant(kv.Value.PropertyType, typeof(Type));                        
+                        var propTransformers = attrs.OfType<DataTransformerAttributeBase>().OrderBy(a => a.Order);           
                         var xformType        = typeof(IDataTransformer);
                         var attrsExpr        = Expression.Constant(attrs, typeof(IEnumerable<Attribute>));
                         var transformer      = Expression.Variable(xformType, "transformer");
                         var endFor           = Expression.Label("endForEach");
 
                         var doTransform = Expression.IfThen(
-                            Expression.Call(transformer, xformType.GetMethod("CanTransform"), val, propType, attrsExpr),
+                            Expression.Call(transformer, xformType.GetMethod("CanTransform"), val, propType, isNullable, attrsExpr),
                             Expression.Assign(val,
-                                Expression.Call(transformer, xformType.GetMethod("Transform"), val, propType, attrsExpr)));
+                                Expression.Call(transformer, xformType.GetMethod("Transform"), val, propType, isNullable, attrsExpr)));
 
                         expressions.Add(Expression.Assign(iter, Expression.Call(gts, listType.GetMethod("GetEnumerator"))));
                         var loopBody = Expression.Block(
@@ -701,10 +424,18 @@ namespace CodeOnlyStoredProcedure
                                                   loopBody,
                                                   Expression.Break(endFor)),
                             endFor));
-
-
+                                                
+                        if (kv.Value.PropertyType.IsEnum)
+                        {
+                            // nulls are always false for a TypeIs operation, so no need to explicitly check for it
+                            expressions.Add(Expression.IfThen(Expression.TypeIs(val, typeof(string)),
+                                                              Expression.Assign(val, Expression.Call(typeof(Enum).GetMethod("Parse", new[] { typeof(Type), typeof(string) }),
+                                                                                                     propType,
+                                                                                                     Expression.Convert(val, typeof(string))))));
+                        }
+                        
                         foreach (var xform in propTransformers)
-                            expressions.Add(Expression.Assign(val, Expression.Call(Expression.Constant(xform), xf, val, propType)));
+                            expressions.Add(Expression.Assign(val, Expression.Call(Expression.Constant(xform), xf, val, propType, isNullable)));
                     }
 
                     Expression conv;

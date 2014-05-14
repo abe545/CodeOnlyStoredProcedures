@@ -67,9 +67,6 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
-    <Compile Include="..\CodeOnlyTests\DataTransformation\EnumValueTransformerTests.cs">
-      <Link>DataTransformation\EnumValueTransformerTests.cs</Link>
-    </Compile>
     <Compile Include="..\CodeOnlyTests\DataTransformation\InternAllStringsTransformerTests.cs">
       <Link>DataTransformation\InternAllStringsTransformerTests.cs</Link>
     </Compile>
@@ -84,6 +81,38 @@
     </Compile>
     <Compile Include="..\CodeOnlyTests\StoredProcedureExtensionsTests.cs">
       <Link>StoredProcedureExtensionsTests.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyTests\StoredProcedureExtensionsTests.DoExecute.cs">
+      <Link>StoredProcedureExtensionsTests.DoExecute.cs</Link>
+      <DependentUpon>StoredProcedureExtensionsTests.cs</DependentUpon>
+    </Compile>
+    <Compile Include="..\CodeOnlyTests\StoredProcedureExtensionsTests.WithDataTransformer.cs">
+      <Link>StoredProcedureExtensionsTests.WithDataTransformer.cs</Link>
+      <DependentUpon>StoredProcedureExtensionsTests.cs</DependentUpon>
+    </Compile>
+    <Compile Include="..\CodeOnlyTests\StoredProcedureExtensionsTests.WithInput.cs">
+      <Link>StoredProcedureExtensionsTests.WithInput.cs</Link>
+      <DependentUpon>StoredProcedureExtensionsTests.cs</DependentUpon>
+    </Compile>
+    <Compile Include="..\CodeOnlyTests\StoredProcedureExtensionsTests.WithInputOutputParameter.cs">
+      <Link>StoredProcedureExtensionsTests.WithInputOutputParameter.cs</Link>
+      <DependentUpon>StoredProcedureExtensionsTests.cs</DependentUpon>
+    </Compile>
+    <Compile Include="..\CodeOnlyTests\StoredProcedureExtensionsTests.WithOutputParameter.cs">
+      <Link>StoredProcedureExtensionsTests.WithOutputParameter.cs</Link>
+      <DependentUpon>StoredProcedureExtensionsTests.cs</DependentUpon>
+    </Compile>
+    <Compile Include="..\CodeOnlyTests\StoredProcedureExtensionsTests.WithParameter.cs">
+      <Link>StoredProcedureExtensionsTests.WithParameter.cs</Link>
+      <DependentUpon>StoredProcedureExtensionsTests.cs</DependentUpon>
+    </Compile>
+    <Compile Include="..\CodeOnlyTests\StoredProcedureExtensionsTests.WithReturnValue.cs">
+      <Link>StoredProcedureExtensionsTests.WithReturnValue.cs</Link>
+      <DependentUpon>StoredProcedureExtensionsTests.cs</DependentUpon>
+    </Compile>
+    <Compile Include="..\CodeOnlyTests\StoredProcedureExtensionsTests.WithTableValuedParameter.cs">
+      <Link>StoredProcedureExtensionsTests.WithTableValuedParameter.cs</Link>
+      <DependentUpon>StoredProcedureExtensionsTests.cs</DependentUpon>
     </Compile>
     <Compile Include="..\CodeOnlyTests\StoredProcedureTests.cs">
       <Link>StoredProcedureTests.cs</Link>

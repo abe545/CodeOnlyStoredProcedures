@@ -7,6 +7,10 @@ using System.Data.SqlClient;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+#if !NET40
+using System.Collections.Immutable;
+#endif
+using System.Collections.Generic;
 
 #if NET40
 namespace CodeOnlyTests.Net40
@@ -98,6 +102,45 @@ namespace CodeOnlyTests
             Assert.AreEqual(0, sp.Parameters.Count());
             Assert.AreEqual(0, sp.OutputParameterSetters.Count());
         } 
+        #endregion
+
+        #region CloneCore Tests
+        [TestMethod]
+        public void TestCloneCore_CreatesNewStoredProcedureWithParameters()
+        {
+            var p1 = new SqlParameter("Foo", 12);
+            var p2 = new SqlParameter("Bar", 42.0);
+
+#if NET40
+            var parms = new[] { p1, p2 };
+            var outputParms = new ReadOnlyDictionary<string, Action<object>>(
+                new Dictionary<string, Action<object>>());
+            var transformers = new IDataTransformer[0];
+#else
+            var parms = ImmutableList<SqlParameter>.Empty
+                                                   .Add(p1)
+                                                   .Add(p2);
+            var outputParms = ImmutableDictionary<string, Action<object>>.Empty;
+            var transformers = ImmutableList<IDataTransformer>.Empty;
+#endif
+            var sp = new StoredProcedure("schema", "Test");
+            var toTest = sp.CloneCore(parms, outputParms, transformers);
+
+            Assert.AreEqual("schema", toTest.Schema, "Schema not cloned");
+            Assert.AreEqual("Test", toTest.Name, "Name not cloned");
+            CollectionAssert.AreEquivalent(
+                new[] { p1, p2 }, 
+                toTest.Parameters.ToArray(), 
+                "Parameters are not equal");
+            CollectionAssert.AreEquivalent(
+                new Dictionary<string, Action<object>>(),
+                toTest.OutputParameterSetters.ToArray(), 
+                "Output Parameters are not eqaul");
+            CollectionAssert.AreEquivalent(
+                new IDataParameter[0],
+                toTest.DataTransformers.ToArray(),
+                "DataTransformers are not equal");
+        }
         #endregion
 
         #region CloneWith Tests
@@ -343,6 +386,56 @@ namespace CodeOnlyTests
             catch (TimeoutException)
             {
             }
+        }
+        #endregion
+
+        #region PrettyPrint Tests
+        [TestMethod]
+        public void TestFullName_IncludesSchema()
+        {
+            var sp = new StoredProcedure("foo", "blah");
+
+            Assert.AreEqual("[foo].[blah]", sp.FullName);
+        }
+
+        [TestMethod]
+        public void TestArguments_PrintsSingleInputArgument()
+        {
+            var sp = new StoredProcedure("foo").WithInput(new { foo = "Bar" });
+
+            Assert.AreEqual("@foo = 'Bar'", sp.Arguments);
+        }
+
+        [TestMethod]
+        public void TestArguments_PrintsMultipleInputArguments()
+        {
+            var sp = new StoredProcedure("foo").WithInput(new { foo = "Bar", date = DateTime.Today });
+
+            Assert.AreEqual("@foo = 'Bar', @date = '" + DateTime.Today.ToString() + "'", sp.Arguments);
+        }
+
+        [TestMethod]
+        public void TestToString_PrintsFullName()
+        {
+            var sp = new StoredProcedure("foo", "blah");
+
+            Assert.AreEqual("[foo].[blah]", sp.ToString());
+        }
+
+        [TestMethod]
+        public void TestToString_PrintsSingleInputArgument()
+        {
+            var sp = new StoredProcedure("foo", "blah").WithInput(new { foo = "Bar" });
+
+            Assert.AreEqual("[foo].[blah](@foo = 'Bar')", sp.ToString());
+        }
+
+        [TestMethod]
+        public void TestToString_PrintsMultipleInputArguments()
+        {
+            var sp = new StoredProcedure("foo", "blah").WithInput(new { foo = "Bar", date = DateTime.Today });
+
+            Assert.AreEqual("[foo].[blah](@foo = 'Bar', @date = '" + DateTime.Today.ToString() + "')", sp.ToString());
         }
         #endregion
 

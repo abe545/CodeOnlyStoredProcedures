@@ -20,10 +20,11 @@ namespace CodeOnlyStoredProcedure
         /// the database, or the output from another transformer if multiple transformers are
         /// setup.</param>
         /// <param name="targetType">The type of the property the value is being set on.</param>
+        /// <param name="isNullable">If the target property is a nullable of type <paramref name="targetType"/></param>
         /// <param name="propertyAttributes">The attributes applied to the property.</param>
         /// <returns>True if Transform will produce a valid result; false otherwise.</returns>
         [Pure]
-        bool   CanTransform(object value, Type targetType, IEnumerable<Attribute> propertyAttributes);
+        bool   CanTransform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes);
         /// <summary>
         /// When implemented, transforms the input value in some way
         /// </summary>
@@ -31,15 +32,16 @@ namespace CodeOnlyStoredProcedure
         /// the database, or the output from another transformer if multiple transformers are
         /// setup.</param>
         /// <param name="targetType">The type of the property the value is being set on.</param>
+        /// <param name="isNullable">If the target property is a nullable of type <paramref name="targetType"/></param>
         /// <param name="propertyAttributes">The attributes applied to the property.</param>
         /// <returns>The transformed value</returns>
-        object Transform(object value, Type targetType, IEnumerable<Attribute> propertyAttributes);
+        object Transform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes);
     }
 
     [ContractClassFor(typeof(IDataTransformer))]
     abstract class IDataTransformerContract : IDataTransformer
     {
-        public bool CanTransform(object value, Type targetType, IEnumerable<Attribute> propertyAttributes)
+        public bool CanTransform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes)
         {
             Contract.Requires(targetType != null);
             Contract.Requires(propertyAttributes != null);
@@ -47,11 +49,11 @@ namespace CodeOnlyStoredProcedure
             return false;
         }
 
-        public object Transform(object value, Type targetType, IEnumerable<Attribute> propertyAttributes)
+        public object Transform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes)
         {
             Contract.Requires(targetType != null);
             Contract.Requires(propertyAttributes != null);
-            Contract.Requires(CanTransform(value, targetType, propertyAttributes));
+            Contract.Requires(CanTransform(value, targetType, isNullable, propertyAttributes));
 
             return null;
         }

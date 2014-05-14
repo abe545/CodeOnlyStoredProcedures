@@ -1,10 +1,15 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Data;
 using System.Data.SqlClient;
 using System.Diagnostics.Contracts;
 
 namespace CodeOnlyStoredProcedure
 {
+    /// <summary>
+    /// Attribute to control parameters passed to a <see cref="StoredProcedure"/> using the <see cref="StoredProcedureExtensions.WithInput"/>
+    /// extension method.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Property)]
     public class StoredProcedureParameterAttribute : Attribute
     {
@@ -17,6 +22,7 @@ namespace CodeOnlyStoredProcedure
         /// <summary>
         /// Defines the direction of data flow for the property/parameter.
         /// </summary>
+        [DefaultValue(ParameterDirection.Input)]
         public ParameterDirection Direction { get; set; }
 
         /// <summary>
@@ -40,15 +46,23 @@ namespace CodeOnlyStoredProcedure
         /// </summary>
         public SqlDbType? SqlDbType { get; set; }
 
+        /// <summary>
+        /// Creates a new StoredProcedureParameterAttribute.
+        /// </summary>
         public StoredProcedureParameterAttribute()
         {
             Direction = ParameterDirection.Input;
         }
 
+        /// <summary>
+        /// Creates an <see cref="SqlParameter"/> that will be used to pass data to the <see cref="StoredProcedure"/>.
+        /// </summary>
+        /// <param name="propertyName">The name of the property that is decorated with this attribute.</param>
+        /// <returns>A <see cref="SqlParameter"/> used to pass the property to the stored procedure.</returns>
         public virtual SqlParameter CreateSqlParameter(string propertyName)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(propertyName));
-            Contract.Ensures(Contract.Result<SqlParameter>() != null);
+            Contract.Ensures (Contract.Result<SqlParameter>() != null);
 
             var res = new SqlParameter
             {
