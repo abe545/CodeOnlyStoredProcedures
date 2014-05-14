@@ -42,7 +42,7 @@ namespace CodeOnlyStoredProcedure
             IEnumerable<IDataTransformer> transformers)
         {
             Contract.Requires(cmd          != null);
-            Contract.Requires(outputTypes  != null);
+            Contract.Requires(outputTypes  != null && Contract.ForAll(outputTypes, t => t != null));
             Contract.Requires(transformers != null);
             Contract.Ensures (Contract.Result<IDictionary<Type, IList>>() != null);
 
@@ -72,7 +72,7 @@ namespace CodeOnlyStoredProcedure
                     if (currentType.IsGenericType && currentType.GetGenericTypeDefinition() == typeof(Nullable<>))
                     {
                         isNullable = true;
-                        targetType = currentType.GetGenericArguments()[0];
+                        targetType = currentType.GetGenericArguments().Single();
                     }
 
                     while (reader.Read())

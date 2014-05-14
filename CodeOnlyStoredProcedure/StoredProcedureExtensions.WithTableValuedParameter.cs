@@ -7,10 +7,22 @@ namespace CodeOnlyStoredProcedure
 {
     public static partial class StoredProcedureExtensions
     {
+        /// <summary>
+        /// Clones the given <see cref="StoredProcedure"/>, and associates the <typeparamref name="TRow"/> items
+        /// as a Table Valued Parameter.
+        /// </summary>
+        /// <typeparam name="TSP">The type of <see cref="StoredProcedure"/> to associate the Table Valued Parameter with.</typeparam>
+        /// <typeparam name="TRow">The type of object to pass in the Table Valued Parameter.</typeparam>
+        /// <param name="sp">The <see cref="StoredProcedure"/> to clone.</param>
+        /// <param name="name">The name of the Table Valued Parameter in the stored procedure.</param>
+        /// <param name="table">The items to pass in the Table Valued Parameter.</param>
+        /// <param name="tableTypeName">The name of the table that the database's stored procedure expects
+        /// in its Table Valued Parameter.</param>
+        /// <returns>A copy of the <see cref="StoredProcedure"/> that has the Table Valued Parameter set.</returns>
         public static TSP WithTableValuedParameter<TSP, TRow>(this TSP sp,
-            string name,
+            string            name,
             IEnumerable<TRow> table,
-            string tableTypeName)
+            string            tableTypeName)
             where TSP : StoredProcedure
         {
             Contract.Requires(sp != null);
@@ -30,11 +42,25 @@ namespace CodeOnlyStoredProcedure
             return (TSP)sp.CloneWith(p);
         }
 
+        /// <summary>
+        /// Clones the given <see cref="StoredProcedure"/>, and associates the <typeparamref name="TRow"/> items
+        /// as a Table Valued Parameter.
+        /// </summary>
+        /// <typeparam name="TSP">The type of <see cref="StoredProcedure"/> to associate the Table Valued Parameter with.</typeparam>
+        /// <typeparam name="TRow">The type of object to pass in the Table Valued Parameter.</typeparam>
+        /// <param name="sp">The <see cref="StoredProcedure"/> to clone.</param>
+        /// <param name="name">The name of the Table Valued Parameter in the stored procedure.</param>
+        /// <param name="table">The items to pass in the Table Valued Parameter.</param>
+        /// <param name="tableTypeSchema">The schema of the table that the database's stored procedure expects
+        /// in its Table Valued Parameter.</param>
+        /// <param name="tableTypeName">The name of the table that the database's stored procedure expects
+        /// in its Table Valued Parameter.</param>
+        /// <returns>A copy of the <see cref="StoredProcedure"/> that has the Table Valued Parameter set.</returns>
         public static TSP WithTableValuedParameter<TSP, TRow>(this TSP sp,
-            string name,
+            string            name,
             IEnumerable<TRow> table,
-            string tableTypeSchema,
-            string tableTypeName)
+            string            tableTypeSchema,
+            string            tableTypeName)
             where TSP : StoredProcedure
         {
             Contract.Requires(sp != null);
