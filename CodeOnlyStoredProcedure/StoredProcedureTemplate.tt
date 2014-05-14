@@ -25,21 +25,38 @@ public class StoredProcedureTemplate : Template
 		PopIndent();
 	}
 
-	private void GetResults()
+	private void GetResults(bool isInXml = false)
 	{
 		if (TypeCount > 1)
-			Write("Tuple<");
+        {			
+			Write("Tuple");
+			WriteOpen(isInXml);
+        }
 
 		for (int i = 1; i <= TypeCount; ++i)
 		{
 			if (i > 1)
 				Write(", ");
-			Write("IEnumerable<T" + i + ">");
+
+			Write("IEnumerable");
+			WriteOpen(isInXml);
+			Write("T" + i);
+			WriteClose(isInXml);
 		}
 
 		if (TypeCount > 1)
-			Write(">");
+			WriteClose(isInXml);
 	}
+
+	private void WriteOpen(bool isInXml)
+    {
+		Write(isInXml ? "&lt;" : "<");
+    }
+
+	private void WriteClose(bool isInXml)
+    {
+		Write(isInXml ? "&gt;" : ">");
+    }
 
 	public void GetCachedFields()
 	{
@@ -70,21 +87,74 @@ public class StoredProcedureTemplate : Template
 		Write(";");
 	}
 
+	public void WriteTypeParams()
+    {
+        for (int i = 1; i <= TypeCount; i++)
+        {
+			if (i > 1)
+				Write("\t");
+			Write("/// <typeparam name=\"T" + i + "\">The type of the " + GetOrdinal(i) + " result set returned by the stored procedure.</typeparam>\n");
+        }
+    }
+
+	public string GetOrdinal(int i)
+    {
+        switch (i)
+        {
+			case 1:
+				return "first";
+
+			case 2:
+				return "second";
+
+			case 3:
+				return "third";
+
+			case 4:
+				return "fourth";
+
+			case 5:
+				return "fifth";
+
+			case 6:
+				return "sixth";
+
+			case 7:
+				return "seventh";
+
+			default:
+				return i + "th";
+        }
+    }
+
     public override string TransformText()
     {
 #>
 	#region StoredProcedure<#+ GetTypes(TypeCount); #>
 
+	/// <summary>Calls a StoredProcedure that returns <#+ Write(TypeCount.ToString()); #> result set(s).</summary>
+	<#+ WriteTypeParams(); #>
 	public class StoredProcedure<#+ GetTypes(TypeCount); #> : StoredProcedure<#+ GetTypes(TypeCount - 1); #>
 
 	{
 <#+ CreateCachedFields(); #>
 
+        /// <summary>
+        /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
+        /// in the dbo schema.
+        /// </summary>
+        /// <param name="name">The name of the stored procedure.</param>
 		public StoredProcedure(string name) : base(name)
 		{ 
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
 		}
-
+		
+        /// <summary>
+        /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
+        /// in the <paramref name="schema"/> schema.
+        /// </summary>
+        /// <param name="schema">The schema of the stored procedure.</param>
+        /// <param name="name">The name of the stored procedure.</param>
 		public StoredProcedure(string schema, string name) : base(schema, name)
 		{ 
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
@@ -96,8 +166,19 @@ public class StoredProcedureTemplate : Template
 		{ 
 			Contract.Requires(toClone != null);
 		}
-
+				
 #if NET40
+        /// <summary>
+        /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
+        /// in the <paramref name="schema"/> schema, with the <see cref="SqlParameter"/>s
+        /// to pass, the output action map, and the <see cref="IDataTransformer"/>s to 
+        /// use to transform the results.
+        /// </summary>
+        /// <param name="schema">The schema of the stored procedure.</param>
+        /// <param name="name">The name of the stored procedure.</param>
+        /// <param name="parameters">The <see cref="SqlParameter"/>s to pass to the stored procedure.</param>
+        /// <param name="outputParameterSetters">The map of <see cref="Action{T}"/> to call for output parameters.</param>
+        /// <param name="dataTransformers">The <see cref="IDataTransformer"/>s to transform the results.</param>
 		protected StoredProcedure(string schema, 
             string name,
             IEnumerable<SqlParameter> parameters,
@@ -112,6 +193,17 @@ public class StoredProcedureTemplate : Template
 			Contract.Requires(dataTransformers != null);
 		}
 #else
+        /// <summary>
+        /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
+        /// in the <paramref name="schema"/> schema, with the <see cref="SqlParameter"/>s
+        /// to pass, the output action map, and the <see cref="IDataTransformer"/>s to 
+        /// use to transform the results.
+        /// </summary>
+        /// <param name="schema">The schema of the stored procedure.</param>
+        /// <param name="name">The name of the stored procedure.</param>
+        /// <param name="parameters">The <see cref="SqlParameter"/>s to pass to the stored procedure.</param>
+        /// <param name="outputParameterSetters">The map of <see cref="Action{T}"/> to call for output parameters.</param>
+        /// <param name="dataTransformers">The <see cref="IDataTransformer"/>s to transform the results.</param>
 		protected StoredProcedure(string                                      schema,
                                   string                                      name,
                                   ImmutableList<SqlParameter>                 parameters,
@@ -127,7 +219,19 @@ public class StoredProcedureTemplate : Template
 		}
 #endif
 	
-		public new <#+ GetResults(); #> Execute(IDbConnection connection, int? timeout = null)
+        /// <summary>
+        /// Executes the stored procedure.
+        /// </summary>
+        /// <param name="connection">The connection to use to execute the StoredProcedure.</param>
+        /// <param name="timeout">The number of seconds to wait before aborting the 
+        /// stored procedure's execution.</param>
+		/// <returns>The results from the stored procedure.</returns>
+        /// <example>If using from an Entity Framework DbContext, the connection can be passed:
+        /// <code language='cs'>
+        /// var results = storedProcedure.Execute(this.Database.Connection);
+        /// </code>
+        /// </example>
+		public new <#+ GetResults(); #> Execute(IDbConnection connection, int timeout = 30)
 		{
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<<#+ GetResults(); #>>() != null);
@@ -136,8 +240,20 @@ public class StoredProcedureTemplate : Template
 
 			return <#+ ParseResults(); #> 
 		}
-
-		public new Task<<#+ GetResults(); #>> ExecuteAsync(IDbConnection connection, int? timeout = null)
+		
+        /// <summary>
+        /// Executes the StoredProcedure asynchronously.
+        /// </summary>
+        /// <param name="connection">The connection to use to execute the StoredProcedure.</param>
+        /// <param name="timeout">The number of seconds to wait before aborting the 
+        /// stored procedure's execution.</param>
+        /// <returns>A Task&lt;<#+ GetResults(true); #>&gt; that will be completed when the StoredProcedure is finished executing.</returns>
+        /// <example>If using from an Entity Framework DbContext, the connection can be passed:
+        /// <code language='cs'>
+        /// var results = await storedProcedure.ExecuteAsync(this.Database.Connection);
+        /// </code>
+        /// </example>
+		public new Task<<#+ GetResults(); #>> ExecuteAsync(IDbConnection connection, int timeout = 30)
 		{
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Task<<#+ GetResults(); #>>>() != null);
@@ -145,7 +261,22 @@ public class StoredProcedureTemplate : Template
 			return ExecuteAsync(connection, CancellationToken.None, timeout);
 		}
 
-		public new Task<<#+ GetResults(); #>> ExecuteAsync(IDbConnection connection, CancellationToken token, int? timeout = null)
+		
+        /// <summary>
+        /// Executes the StoredProcedure asynchronously.
+        /// </summary>
+        /// <param name="connection">The connection to use to execute the StoredProcedure.</param>
+        /// <param name="token">The <see cref="CancellationToken"/> to use to cancel the execution of the StoredProcedure.</param>
+        /// <param name="timeout">The number of seconds to wait before aborting the 
+        /// stored procedure's execution.</param>
+        /// <returns>A Task&lt;<#+ GetResults(true); #>&gt; that will be completed when the StoredProcedure is finished executing.</returns>
+        /// <example>If using from an Entity Framework DbContext, the connection can be passed:
+        /// <code language='cs'>
+		/// var cts     = new CancellationTokenSource();
+        /// var results = await storedProcedure.ExecuteAsync(this.Database.Connection, cts.Token);
+        /// </code>
+        /// </example>
+		public new Task<<#+ GetResults(); #>> ExecuteAsync(IDbConnection connection, CancellationToken token, int timeout = 30)
 		{
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Task<<#+ GetResults(); #>>>() != null);
@@ -158,9 +289,15 @@ public class StoredProcedureTemplate : Template
 					return <#+ ParseResults(); #> 
 				}, token);
 		}
-
-		/// <inheritdoc />
-		protected override StoredProcedure CloneCore(
+		
+        /// <summary>
+        /// Clones the StoredProcedure, and gives it the passed parameters.
+        /// </summary>
+        /// <param name="parameters">The <see cref="SqlParameter"/>s to pass to the stored procedure.</param>
+        /// <param name="outputParameterSetters">The map of <see cref="Action{T}"/> to call for output parameters.</param>
+        /// <param name="dataTransformers">The <see cref="IDataTransformer"/>s to transform the results.</param>
+        /// <returns>A clone of the stored procedure.</returns>
+		protected internal override StoredProcedure CloneCore(
 #if NET40
 			IEnumerable<SqlParameter>                         parameters,
             IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,

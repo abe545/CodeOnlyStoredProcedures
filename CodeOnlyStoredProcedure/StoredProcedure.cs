@@ -295,6 +295,11 @@ namespace CodeOnlyStoredProcedure
         #endregion
 
         #region Create
+        /// <summary>
+        /// Creates a new StoredProcedure. Useful for using the Fluent API.
+        /// </summary>
+        /// <param name="name">The name of the stored procedure in the database.</param>
+        /// <returns>A StoredProcedure that can call the sp named <paramref name="name"/>.</returns>
         public static StoredProcedure Create(string name)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
@@ -303,6 +308,12 @@ namespace CodeOnlyStoredProcedure
             return new StoredProcedure(name);
         }
 
+        /// <summary>
+        /// Creates a new StoredProcedure. Useful for using the Fluent API.
+        /// </summary>
+        /// <param name="name">The name of the stored procedure in the database.</param>
+        /// <param name="schema">The schema of the stored procedure.</param>
+        /// <returns>A StoredProcedure that can call the sp named <paramref name="name"/> in the <paramref name="schema"/>.</returns>
         public static StoredProcedure Create(string schema, string name)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
@@ -357,7 +368,14 @@ namespace CodeOnlyStoredProcedure
             return CloneCore(parameters.Add(parameter), outputParameterSetters, dataTransformers);
 #endif
         }
-
+        
+        /// <summary>
+        /// Clones the current stored procedure, and adds the <paramref name="parameter"/> as 
+        /// an output parameter.
+        /// </summary>
+        /// <param name="parameter">The <see cref="SqlParameter"/> to pass to the stored procedure.</param>
+        /// <param name="setter">The <see cref="Action{T}"/> to call when the value is returned.</param>
+        /// <returns>A copy of the current <see cref="StoredProcedure"/> with the additional output parameter.</returns>
         protected internal StoredProcedure CloneWith(SqlParameter parameter, Action<object> setter)
         {
             Contract.Requires(parameter != null);
@@ -379,6 +397,12 @@ namespace CodeOnlyStoredProcedure
 #endif
         } 
 
+        /// <summary>
+        /// Clones the current stored procedure, and adds the <paramref name="transformer"/> that will attempt
+        /// to transform every value in the result set(s) (for every column).
+        /// </summary>
+        /// <param name="transformer">The <see cref="IDataTransformer"/> to use to transform values in the results.</param>
+        /// <returns>A copy of the current <see cref="StoredProcedure"/> with the additional transformer.</returns>
         protected internal StoredProcedure CloneWith(IDataTransformer transformer)
         {
             Contract.Requires(transformer != null);
@@ -408,7 +432,7 @@ namespace CodeOnlyStoredProcedure
         /// storedProcedure.Execute(this.Database.Connection);
         /// </code>
         /// </example>
-        public void Execute(IDbConnection connection, int? timeout = null)
+        public void Execute(IDbConnection connection, int timeout = 30)
         {
             Contract.Requires(connection != null);
 
@@ -417,7 +441,19 @@ namespace CodeOnlyStoredProcedure
         #endregion
 
         #region ExecuteAsync
-        public Task ExecuteAsync(IDbConnection connection, int? timeout = null)
+        /// <summary>
+        /// Executes the StoredProcedure asynchronously.
+        /// </summary>
+        /// <param name="connection">The connection to use to execute the StoredProcedure.</param>
+        /// <param name="timeout">The number of seconds to wait before aborting the 
+        /// stored procedure's execution.</param>
+        /// <returns>A <see cref="Task"/> that will be completed when the StoredProcedure is finished executing.</returns>
+        /// <example>If using from an Entity Framework DbContext, the connection can be passed:
+        /// <code language='cs'>
+        /// await storedProcedure.ExecuteAsync(this.Database.Connection);
+        /// </code>
+        /// </example>
+        public Task ExecuteAsync(IDbConnection connection, int timeout = 30)
         {
             Contract.Requires(connection != null);
             Contract.Ensures (Contract.Result<Task>() != null);
@@ -425,7 +461,21 @@ namespace CodeOnlyStoredProcedure
             return ExecuteAsync(connection, CancellationToken.None, timeout);
         }
 
-        public Task ExecuteAsync(IDbConnection connection, CancellationToken token, int? timeout = null)
+        /// <summary>
+        /// Executes the StoredProcedure asynchronously.
+        /// </summary>
+        /// <param name="connection">The connection to use to execute the StoredProcedure.</param>
+        /// <param name="token">The <see cref="CancellationToken"/> to use to cancel the execution of the StoredProcedure.</param>
+        /// <param name="timeout">The number of seconds to wait before aborting the 
+        /// stored procedure's execution.</param>
+        /// <returns>A <see cref="Task"/> that will be completed when the StoredProcedure is finished executing.</returns>
+        /// <example>If using from an Entity Framework DbContext, the connection can be passed:
+        /// <code language='cs'>
+        /// var cts = new CancellationTokenSource();
+        /// await storedProcedure.ExecuteAsync(this.Database.Connection, cts.Token);
+        /// </code>
+        /// </example>
+        public Task ExecuteAsync(IDbConnection connection, CancellationToken token, int timeout = 30)
         {
             Contract.Requires(connection != null);
             Contract.Ensures (Contract.Result<Task>() != null);
@@ -435,6 +485,11 @@ namespace CodeOnlyStoredProcedure
         }
         #endregion
 
+        /// <summary>
+        /// Gets the string representation of this StoredProcedure.
+        /// </summary>
+        /// <remarks>This will be the fully qualified name, and all the parameters passed into it.</remarks>
+        /// <returns>The string representation of this StoredProcedure.</returns>
         public override string ToString()
         {
             if (parameters == null || !parameters.Any())
@@ -443,22 +498,13 @@ namespace CodeOnlyStoredProcedure
             return string.Format("{0}({1})", FullName, Arguments);
         }
 
+        /// <summary>
+        /// Gets the hash code that represents the StoredProcedure.
+        /// </summary>
+        /// <returns>The hashcode for this StoredProcedure.</returns>
         public override int GetHashCode()
         {
             return FullName.GetHashCode();
-        }
-
-        public override bool Equals(object obj)
-        {
-            var other = obj as StoredProcedure;
-
-            if (other == null ||  GetType() != other.GetType() || other.FullName != FullName)
-                return false;
-
-            if (parameters == null && other.parameters == null)
-                return true;
-
-            return parameters.SequenceEqual(other.parameters);
         }
 
         // Suppress this message, because the sp name is never set via user input
@@ -466,7 +512,7 @@ namespace CodeOnlyStoredProcedure
         internal IDictionary<Type, IList> Execute(
             IDbConnection     connection,
             CancellationToken token,
-            int?              commandTimeout = null,
+            int               commandTimeout = 30,
             IEnumerable<Type> outputTypes    = null)
         {
             Contract.Requires(connection != null);
@@ -493,7 +539,7 @@ namespace CodeOnlyStoredProcedure
                 {
                     cmd.CommandText    = FullName;
                     cmd.CommandType    = CommandType.StoredProcedure;
-                    cmd.CommandTimeout = commandTimeout ?? 30;
+                    cmd.CommandTimeout = commandTimeout;
 
                     // move parameters to command object
                     // we must clone them first because the framework

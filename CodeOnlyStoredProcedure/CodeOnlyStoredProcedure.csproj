@@ -114,10 +114,12 @@
     <Compile Include="DataTransformation\ConvertNumericAttribute.cs" />
     <Compile Include="DataTransformation\InternAllStringsTransformer.cs" />
     <Compile Include="DataTransformation\InternAttribute.cs" />
+    <Compile Include="DataTransformation\NamespaceDoc.cs" />
     <Compile Include="DataTransformation\TrimAllStringsTransformer.cs" />
     <Compile Include="DataTransformation\TrimAttribute.cs" />
     <Compile Include="DataTransformerAttributeBase.cs" />
     <Compile Include="IDataTransformer.cs" />
+    <Compile Include="NamespaceDoc.cs" />
     <Compile Include="StoredProcedure.cs" />
     <Compile Include="StoredProcedure.generated.cs">
       <AutoGen>True</AutoGen>

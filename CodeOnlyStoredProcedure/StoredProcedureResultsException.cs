@@ -1,17 +1,34 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Text;
 
 namespace CodeOnlyStoredProcedure
 {
+    /// <summary>
+    /// Exception thrown if the results of a <see cref="StoredProcedure"/> are unexpected.
+    /// </summary>
     [Serializable]
     public class StoredProcedureResultsException : Exception
     {
+        /// <summary>
+        /// Gets the names of the properties that were not found in the result set.
+        /// </summary>
+        public IEnumerable<string> MissingProperties { get; private set; }
+
+        /// <summary>
+        /// Creates a new StoredProcedureResultsException
+        /// </summary>
+        /// <param name="resultType">The <see cref="Type"/> of results that were expected.</param>
+        /// <param name="propertyNames">The names of the properties that were not found in the result set, but
+        /// were expected to be.</param>
         public StoredProcedureResultsException(Type resultType, params string[] propertyNames)
             : base(BuildMessage(resultType, propertyNames))
         {
-            Contract.Requires(resultType != null);
+            Contract.Requires(resultType    != null);
             Contract.Requires(propertyNames != null && propertyNames.Length > 0);
+
+            this.MissingProperties = propertyNames;
         }
 
         private static string BuildMessage(Type resultType, string[] propertyNames)

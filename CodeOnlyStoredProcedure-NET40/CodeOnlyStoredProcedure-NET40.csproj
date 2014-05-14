@@ -128,6 +128,9 @@
     <Compile Include="..\CodeOnlyStoredProcedure\DataTransformation\InternAttribute.cs">
       <Link>DataTransformation\InternAttribute.cs</Link>
     </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\DataTransformation\NamespaceDoc.cs">
+      <Link>DataTransformation\NamespaceDoc.cs</Link>
+    </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\DataTransformation\TrimAllStringsTransformer.cs">
       <Link>DataTransformation\TrimAllStringsTransformer.cs</Link>
     </Compile>
@@ -139,6 +142,9 @@
     </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\IDataTransformer.cs">
       <Link>IDataTransformer.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\NamespaceDoc.cs">
+      <Link>NamespaceDoc.cs</Link>
     </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\Properties\AssemblyInfo.cs">
       <Link>Properties\AssemblyInfo.cs</Link>
