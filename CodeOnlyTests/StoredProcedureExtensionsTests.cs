@@ -876,6 +876,83 @@ namespace CodeOnlyTests
                 Assert.AreEqual(res[j], totest.ElementAt(j));
         }
 
+        [TestMethod]
+        public void TestExecute_DoesNotPassNullableToTransformationAttributes()
+        {
+            var reader  = new Mock<IDataReader>();
+            var command = new Mock<IDbCommand>();
+
+            var res = new[] { 1.0, new Nullable<double>() };
+            int i = 0;
+            reader.SetupGet(r => r.FieldCount)
+                  .Returns(1);
+            reader.Setup(r => r.Read())
+                  .Returns(() => i < res.Length);
+            reader.Setup(r => r.GetName(0))
+                  .Returns("Value");
+            reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
+                  .Callback((object[] arr) => arr[0] = res[i++])
+                  .Returns(1);
+
+            command.Setup(d => d.ExecuteReader())
+                   .Returns(reader.Object);
+
+            var results = command.Object.Execute(CancellationToken.None,
+                                                 new[] { typeof(NullableChecker) },
+                                                 Enumerable.Empty<IDataTransformer>());
+
+            var totest = (IEnumerable<NullableChecker>)results[typeof(NullableChecker)];
+            for (int j = 0; j < res.Length; j++)
+                Assert.AreEqual(res[j], totest.ElementAt(j).Value);
+        }
+
+        [TestMethod]
+        public void TestExecute_DoesNotPassNullableToTransformers()
+        {
+            var reader  = new Mock<IDataReader>();
+            var command = new Mock<IDbCommand>();
+            var xformer = new Mock<IDataTransformer>();
+
+            var res = new[] { 1.0, new Nullable<double>() };
+            int i = 0;
+            reader.SetupGet(r => r.FieldCount)
+                  .Returns(1);
+            reader.Setup(r => r.Read())
+                  .Returns(() => i < res.Length);
+            reader.Setup(r => r.GetName(0))
+                  .Returns("Value");
+            reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
+                  .Callback((object[] arr) => arr[0] = res[i++])
+                  .Returns(1);
+
+            command.Setup(d => d.ExecuteReader())
+                   .Returns(reader.Object);
+
+            xformer.Setup(x => x.CanTransform(It.IsAny<object>(), typeof(double), true, It.IsAny<IEnumerable<Attribute>>()))
+                   .Returns(true)
+                   .Verifiable();
+            xformer.Setup(x => x.Transform(It.IsAny<object>(), typeof(double), true, It.IsAny<IEnumerable<Attribute>>()))
+                   .Returns<object, Type, bool, IEnumerable<Attribute>>((o, t, b, e) =>
+                   {
+                       Assert.IsTrue(b, "isNullable must be true for a Nullable<T> property.");
+                       if (t.IsGenericType)
+                           Assert.AreNotEqual(typeof(Nullable<>), t.GetGenericTypeDefinition(), "A Nullable<T> type can not be passed to a DataTransformerAttributeBase.");
+                        
+                        return o;
+                    })
+                   .Verifiable();
+
+            var results = command.Object.Execute(CancellationToken.None,
+                                                 new[] { typeof(NullableChecker) },
+                                                 new[] { xformer.Object });
+
+            var totest = (IEnumerable<NullableChecker>)results[typeof(NullableChecker)];
+            for (int j = 0; j < res.Length; j++)
+                Assert.AreEqual(res[j], totest.ElementAt(j).Value);
+
+            xformer.Verify();
+        }
+
         #region Test Helper Classes
         private class WithNamedParameter
         {
@@ -969,6 +1046,12 @@ namespace CodeOnlyTests
             public double Value { get; set; }
         }
 
+        private class NullableChecker
+        {
+            [NullableTransformation]
+            public double? Value { get; set; }
+        }
+
         private class StaticValueAttribute : DataTransformerAttributeBase
         {
             public object Result { get; set; }
@@ -1021,6 +1104,19 @@ namespace CodeOnlyTests
                 return null;
             }
         }
+
+        private class NullableTransformationAttribute : DataTransformerAttributeBase
+        {
+            public override object Transform(object value, Type targetType, bool isNullable)
+            {
+                Assert.IsTrue(isNullable, "isNullable must be true for a Nullable<T> property.");
+                if (targetType.IsGenericType)
+                    Assert.AreNotEqual(typeof(Nullable<>), targetType.GetGenericTypeDefinition(), "A Nullable<T> type can not be passed to a DataTransformerAttributeBase.");
+
+                return value;
+            }
+        }
+
 
         private enum FooBar
         {
