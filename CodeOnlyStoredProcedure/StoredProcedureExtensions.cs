@@ -399,6 +399,9 @@ namespace CodeOnlyStoredProcedure
                     var isNullable  = Expression.Constant(currentType.IsGenericType &&
                                                           currentType.GetGenericTypeDefinition() == typeof(Nullable<>));
 
+                    if ((bool)isNullable.Value)
+                        propType = Expression.Constant(kv.Value.PropertyType.GetGenericArguments().Single());
+
                     IEnumerable<Attribute> attrs;
                     if (propertyAttrs.TryGetValue(kv.Key, out attrs))
                     {

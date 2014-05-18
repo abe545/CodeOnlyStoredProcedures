@@ -53,7 +53,7 @@ Fixed critical bugs with (now removed) release 0.0.4</releaseNotes>
                 <dependency id="Microsoft.Bcl.Immutable" version="1.0.30" />
             </group>
             <group targetFramework=".NETFramework4.0">
-                <dependency id="EntityFramework" version="6.0.2" />
+                <dependency id="EntityFramework" version="6.1.0" />
             </group>
         </dependencies>
         <references>
