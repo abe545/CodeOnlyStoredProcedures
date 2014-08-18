@@ -9,7 +9,10 @@
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>A library for easily calling Stored Procedures in .NET. Works great with Entity Framework Code First models. 
 Code Only Stored Procedures will not create any Stored Procedures on your database. Instead, its aim is to make it easy to call your existing stored procedures by writing simple code.</description>
-        <releaseNotes>1.0.0
+        <releaseNotes>1.0.1
+Fixed bug where calling a stored procedure within a Task that was executing on the SynchronizationContext could cause a deadlock.
+
+1.0.0
 Added implementation of ToString that will print the stored procedure's schema, name, and parameters.
 Significantly improved speed of the code that converts values to enum values.
 Added xml comments to all public methods. While not complete documentation, they are a huge first step.
