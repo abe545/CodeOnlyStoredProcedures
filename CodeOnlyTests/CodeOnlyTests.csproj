@@ -92,6 +92,7 @@
     </Compile>
     <Compile Include="StoredProcedureTests.cs" />
     <Compile Include="StoredProcedureExtensionsTests.cs" />
+    <Compile Include="TestSynchronizationContext.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CodeOnlyStoredProcedure\CodeOnlyStoredProcedure.csproj">

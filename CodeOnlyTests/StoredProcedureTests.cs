@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using System.Collections.Immutable;
 #endif
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 
 #if NET40
 namespace CodeOnlyTests.Net40
@@ -386,6 +387,36 @@ namespace CodeOnlyTests
             catch (TimeoutException)
             {
             }
+        }
+
+        [TestMethod]
+        public void TestExecuteAsyncDoesNotExecuteOnSameThreadWhenCalledFromATaskRunningOnSynchronizationContextScheduler()
+        {
+            var ctx = new TestSynchronizationContext();
+            SynchronizationContext.SetSynchronizationContext(ctx);
+
+            var cmd = new Mock<IDbCommand>();
+            cmd.SetupAllProperties();
+            cmd.Setup(c => c.ExecuteNonQuery())
+               .Callback(() => Assert.AreNotEqual(ctx.Worker, Thread.CurrentThread, "Command called from the same thread as the reentrant Task."));
+
+            var conn = new Mock<IDbConnection>();
+            conn.Setup(c => c.CreateCommand())
+                .Callback(() => Assert.AreNotEqual(ctx.Worker, Thread.CurrentThread, "Command called from the same thread as the reentrant Task."))
+                .Returns(cmd.Object);
+
+            var toTest = new StoredProcedure("foo", "bar");
+
+            Task.Factory
+                .StartNew(() => "Hello, world!")
+                .ContinueWith(_ =>
+                             {
+                                 return toTest.ExecuteAsync(conn.Object, CancellationToken.None, 100); 
+                             }, TaskScheduler.FromCurrentSynchronizationContext())
+                .Unwrap()
+                .Wait();
+
+            SynchronizationContext.SetSynchronizationContext(null);
         }
         #endregion
 

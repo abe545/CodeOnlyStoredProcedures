@@ -133,7 +133,7 @@ namespace CodeOnlyStoredProcedure
 
             // execute in a background task, so we can cancel the command if the 
             // CancellationToken is cancelled, or the command times out
-            var readerTask = Task.Factory.StartNew(() => exec(cmd), token);
+            var readerTask = Task.Factory.StartNew(() => exec(cmd), token, TaskCreationOptions.None, TaskScheduler.Default);
 
             try
             {

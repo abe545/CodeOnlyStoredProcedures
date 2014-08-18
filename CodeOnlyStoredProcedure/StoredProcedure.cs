@@ -481,7 +481,10 @@ namespace CodeOnlyStoredProcedure
             Contract.Ensures (Contract.Result<Task>() != null);
 
             return Task.Factory.StartNew(
-                () => Execute(connection, token, timeout), token);
+                () => Execute(connection, token, timeout),
+                token,
+                TaskCreationOptions.None,
+                TaskScheduler.Default);
         }
         #endregion
 
