@@ -953,6 +953,26 @@ namespace CodeOnlyTests
             xformer.Verify();
         }
 
+        [TestMethod]
+        public void TestDoExecute_DoesNotExecuteMethodFromSameThreadWhenRunningInSynchronizationContext()
+        {
+            var cmd = Mock.Of<IDbCommand>();
+            var ctx = new TestSynchronizationContext();
+
+            SynchronizationContext.SetSynchronizationContext(ctx);
+
+            Task.Factory
+                .StartNew(() => "Hello, world!")
+                .ContinueWith(s => cmd.DoExecute(_ =>
+                {
+                    Assert.AreNotEqual(ctx.Worker, Thread.CurrentThread, "Command called from the same thread as the reentrant Task.");
+                    return 0;
+                }, CancellationToken.None), TaskScheduler.FromCurrentSynchronizationContext())
+                .Wait();
+
+            SynchronizationContext.SetSynchronizationContext(null);
+        }
+
         #region Test Helper Classes
         private class WithNamedParameter
         {
