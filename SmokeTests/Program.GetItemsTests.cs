@@ -12,18 +12,18 @@ namespace SmokeTests
         {
             Console.Write("Calling usp_GetItems synchronously - ");
 
-            var res = db.GetItems.Execute(db.Database.Connection);
+            var res = db.GetItems.Execute(db.Database.Connection, timeout);
             if (!TestGetItemsResults(res))
                 return false;
 
             Console.Write("Calling usp_GetItems asynchronously - ");
-            res = db.GetItems.ExecuteAsync(db.Database.Connection).Result;
+            res = db.GetItems.ExecuteAsync(db.Database.Connection, timeout).Result;
             if (!TestGetItemsResults(res))
                 return false;
 
             Console.Write("Calling usp_GetItems two times asynchronoulsy simultaneously - ");
-            var t1 = db.GetItems.ExecuteAsync(db.Database.Connection);
-            var t2 = db.GetItems.ExecuteAsync(db.Database.Connection);
+            var t1 = db.GetItems.ExecuteAsync(db.Database.Connection, timeout);
+            var t2 = db.GetItems.ExecuteAsync(db.Database.Connection, timeout);
             Task.WaitAll(t1, t2);
             if (!TestGetItemsResults(t1.Result, false))
                 return false;

@@ -16,7 +16,7 @@ namespace SmokeTests
             Console.Write("Calling usp_ReturnsOne (WithInput) synchronously - ");
 
             var ro = new ReturnsOne();
-            db.ReturnsOne.WithInput(ro).Execute(db.Database.Connection);
+            db.ReturnsOne.WithInput(ro).Execute(db.Database.Connection, timeout);
             if (ro.ReturnValue != 1)
             {
                 WriteError("\tusp_ReturnsOne did not set the ReturnValue for WithInput");
@@ -29,7 +29,7 @@ namespace SmokeTests
             int res = -1;
 
             db.ReturnsOne.WithReturnValue(i => res = i)
-                         .Execute(db.Database.Connection);
+                         .Execute(db.Database.Connection, timeout);
             if (res != 1)
             {
                 WriteError("\tusp_ReturnsOne did not set the ReturnValue for WithReturnValue");
@@ -41,7 +41,7 @@ namespace SmokeTests
 
             ro = new ReturnsOne();
             db.ReturnsOne.WithInput(ro)
-                         .ExecuteAsync(db.Database.Connection)
+                         .ExecuteAsync(db.Database.Connection, timeout)
                          .Wait();
             if (ro.ReturnValue != 1)
             {
@@ -55,7 +55,7 @@ namespace SmokeTests
             res = -1;
 
             db.ReturnsOne.WithReturnValue(i => res = i)
-                         .ExecuteAsync(db.Database.Connection)
+                         .ExecuteAsync(db.Database.Connection, timeout)
                          .Wait();
             if (res != 1)
             {
@@ -70,8 +70,8 @@ namespace SmokeTests
             var results = new List<int>();
             var sp = db.ReturnsOne.WithReturnValue(i => results.Add(i));
 
-            var t1 = sp.ExecuteAsync(db.Database.Connection);
-            var t2 = sp.ExecuteAsync(db.Database.Connection);
+            var t1 = sp.ExecuteAsync(db.Database.Connection, timeout);
+            var t2 = sp.ExecuteAsync(db.Database.Connection, timeout);
 
             Task.WaitAll(t1, t2);
 

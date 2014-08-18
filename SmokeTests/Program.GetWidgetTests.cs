@@ -14,7 +14,7 @@ namespace SmokeTests
 
             var items = db.GetWidget
                           .WithParameter("WidgetId", 1)
-                          .Execute(db.Database.Connection);
+                          .Execute(db.Database.Connection, timeout);
 
             if (!TestGetWidgetResults(items))
                 return false;
@@ -23,7 +23,7 @@ namespace SmokeTests
 
             items = db.GetWidget
                       .WithInput(new { WidgetId = 1 })
-                      .Execute(db.Database.Connection);
+                      .Execute(db.Database.Connection, timeout);
 
             if (!TestGetWidgetResults(items))
                 return false;
@@ -33,7 +33,7 @@ namespace SmokeTests
 
             items = db.GetWidget
                       .WithParameter("WidgetId", 1)
-                      .ExecuteAsync(db.Database.Connection)
+                      .ExecuteAsync(db.Database.Connection, timeout)
                       .Result;
 
             if (!TestGetWidgetResults(items))
@@ -43,7 +43,7 @@ namespace SmokeTests
 
             items = db.GetWidget
                       .WithInput(new { WidgetId = 1 })
-                      .ExecuteAsync(db.Database.Connection)
+                      .ExecuteAsync(db.Database.Connection, timeout)
                       .Result;
 
             if (!TestGetWidgetResults(items))
@@ -53,8 +53,8 @@ namespace SmokeTests
 
             var sp = db.GetWidget.WithInput(new { WidgetId = 1 });
 
-            var t1 = sp.ExecuteAsync(db.Database.Connection);
-            var t2 = sp.ExecuteAsync(db.Database.Connection);
+            var t1 = sp.ExecuteAsync(db.Database.Connection, timeout);
+            var t2 = sp.ExecuteAsync(db.Database.Connection, timeout);
 
             Task.WaitAll(t1, t2);
 

@@ -14,7 +14,7 @@ namespace SmokeTests
             Console.Write("Calling usp_GetSpokesTests synchronously (No parameters) - ");
 
             var spokes = db.GetSpokes
-                           .Execute(db.Database.Connection);
+                           .Execute(db.Database.Connection, timeout);
 
             if (!spokes.SequenceEqual(new[] { 4, 8, 16 }))
             {
@@ -28,7 +28,7 @@ namespace SmokeTests
 
             spokes = db.GetSpokes
                        .WithParameter("minimumSpokes", 4)
-                       .Execute(db.Database.Connection);
+                       .Execute(db.Database.Connection, timeout);
 
             if (!spokes.SequenceEqual(new[] { 4, 8, 16 }))
             {
@@ -42,7 +42,7 @@ namespace SmokeTests
 
             spokes = db.GetSpokes
                        .WithInput(new { minimumSpokes = 6 })
-                       .Execute(db.Database.Connection);
+                       .Execute(db.Database.Connection, timeout);
 
             if (!spokes.SequenceEqual(new[] { 8, 16 }))
             {
@@ -56,7 +56,7 @@ namespace SmokeTests
 
             spokes = db.GetSpokes
                        .WithParameter("minimumSpokes", 4)
-                       .ExecuteAsync(db.Database.Connection)
+                       .ExecuteAsync(db.Database.Connection, timeout)
                        .Result;
 
             if (!spokes.SequenceEqual(new[] { 4, 8, 16 }))
@@ -71,7 +71,7 @@ namespace SmokeTests
 
             spokes = db.GetSpokes
                        .WithInput(new { minimumSpokes = 6 })
-                       .ExecuteAsync(db.Database.Connection)
+                       .ExecuteAsync(db.Database.Connection, timeout)
                        .Result;
 
             if (!spokes.SequenceEqual(new[] { 8, 16 }))
@@ -86,7 +86,7 @@ namespace SmokeTests
 
             spokes = db.GetSpokes
                        .WithParameter("minimumSpokes", 24)
-                       .Execute(db.Database.Connection);
+                       .Execute(db.Database.Connection, timeout);
 
             if (!spokes.Any())
                 WriteSuccess();
@@ -98,7 +98,7 @@ namespace SmokeTests
             Console.Write("Calling usp_GetSpokesTests (Enum result) synchronously (No parameters) - ");
 
             var spokes2 = db.GetSpokes2
-                            .Execute(db.Database.Connection);
+                            .Execute(db.Database.Connection, timeout);
 
             if (!spokes2.SequenceEqual(new[] { Spoke.Four, Spoke.Eight, Spoke.Sixteen }))
             {
@@ -112,7 +112,7 @@ namespace SmokeTests
 
             spokes2 = db.GetSpokes2
                         .WithParameter("minimumSpokes", 4)
-                        .Execute(db.Database.Connection);
+                        .Execute(db.Database.Connection, timeout);
 
             if (!spokes2.SequenceEqual(new[] { Spoke.Four, Spoke.Eight, Spoke.Sixteen }))
             {
@@ -126,7 +126,7 @@ namespace SmokeTests
 
             spokes2 = db.GetSpokes2
                         .WithInput(new { minimumSpokes = 6 })
-                        .Execute(db.Database.Connection);
+                        .Execute(db.Database.Connection, timeout);
 
             if (!spokes2.SequenceEqual(new[] { Spoke.Eight, Spoke.Sixteen }))
             {
@@ -140,7 +140,7 @@ namespace SmokeTests
 
             spokes2 = db.GetSpokes2
                         .WithParameter("minimumSpokes", 4)
-                        .ExecuteAsync(db.Database.Connection)
+                        .ExecuteAsync(db.Database.Connection, timeout)
                         .Result;
 
             if (!spokes2.SequenceEqual(new[] { Spoke.Four, Spoke.Eight, Spoke.Sixteen }))
@@ -155,7 +155,7 @@ namespace SmokeTests
 
             spokes2 = db.GetSpokes2
                         .WithInput(new { minimumSpokes = 6 })
-                        .ExecuteAsync(db.Database.Connection)
+                        .ExecuteAsync(db.Database.Connection, timeout)
                         .Result;
 
             if (!spokes2.SequenceEqual(new[] { Spoke.Eight, Spoke.Sixteen }))
@@ -170,7 +170,7 @@ namespace SmokeTests
 
             spokes2 = db.GetSpokes2
                         .WithParameter("minimumSpokes", 24)
-                        .Execute(db.Database.Connection);
+                        .Execute(db.Database.Connection, timeout);
 
             if (!spokes2.Any())
                 WriteSuccess();

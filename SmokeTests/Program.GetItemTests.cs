@@ -16,7 +16,7 @@ namespace SmokeTests
 
             var items = db.GetItem
                           .WithParameter("ItemId", 0)
-                          .Execute(db.Database.Connection);
+                          .Execute(db.Database.Connection, timeout);
 
             if (!TestGetItemResults(items))
                 return false;
@@ -25,7 +25,7 @@ namespace SmokeTests
 
             items = db.GetItem
                       .WithInput(new GetItemInput { Id = 0 })
-                      .Execute(db.Database.Connection);
+                      .Execute(db.Database.Connection, timeout);
 
             if (!TestGetItemResults(items))
                 return false;
@@ -34,7 +34,7 @@ namespace SmokeTests
 
             items = db.GetItem
                       .WithParameter("ItemId", 41)
-                      .Execute(db.Database.Connection);
+                      .Execute(db.Database.Connection, timeout);
 
             if (items.Any())
             {
@@ -48,7 +48,7 @@ namespace SmokeTests
 
             items = db.GetItem
                           .WithParameter("ItemId", 0)
-                          .ExecuteAsync(db.Database.Connection)
+                          .ExecuteAsync(db.Database.Connection, timeout)
                           .Result;
 
             if (!TestGetItemResults(items))
@@ -58,7 +58,7 @@ namespace SmokeTests
 
             items = db.GetItem
                       .WithInput(new GetItemInput { Id = 0 })
-                      .ExecuteAsync(db.Database.Connection)
+                      .ExecuteAsync(db.Database.Connection, timeout)
                       .Result;
 
             if (!TestGetItemResults(items))
@@ -68,8 +68,8 @@ namespace SmokeTests
 
             var sp = db.GetItem.WithInput(new { ItemId = 0 });
 
-            var t1 = sp.ExecuteAsync(db.Database.Connection);
-            var t2 = sp.ExecuteAsync(db.Database.Connection);
+            var t1 = sp.ExecuteAsync(db.Database.Connection, timeout);
+            var t2 = sp.ExecuteAsync(db.Database.Connection, timeout);
 
             Task.WaitAll(t1, t2);
 

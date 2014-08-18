@@ -5,6 +5,8 @@ namespace SmokeTests
 {
     partial class Program
     {
+        private const int timeout = 100;
+
         static int Main(string[] args)
         {
             var toTest = new SmokeDb();
