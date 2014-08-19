@@ -154,6 +154,7 @@
     <Compile Include="StoredProcedureParameterAttribute.cs" />
     <Compile Include="StoredProcedureResultsException.cs" />
     <Compile Include="TableValuedParameterAttribute.cs" />
+    <Compile Include="TypeExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="StoredProcedure.tt">

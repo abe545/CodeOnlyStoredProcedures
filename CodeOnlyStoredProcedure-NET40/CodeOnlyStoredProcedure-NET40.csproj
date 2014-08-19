@@ -204,6 +204,9 @@
     <Compile Include="..\CodeOnlyStoredProcedure\TableValuedParameterAttribute.cs">
       <Link>TableValuedParameterAttribute.cs</Link>
     </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\TypeExtensions.cs">
+      <Link>TypeExtensions.cs</Link>
+    </Compile>
     <Compile Include="ReadOnlyDictionary.cs" />
   </ItemGroup>
   <ItemGroup>
