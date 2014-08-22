@@ -149,6 +149,15 @@
     <Compile Include="..\CodeOnlyStoredProcedure\Properties\AssemblyInfo.cs">
       <Link>Properties\AssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\DynamicRowFactory.cs">
+      <Link>RowFactory\DynamicRowFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\IRowFactory.cs">
+      <Link>RowFactory\IRowFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\RowFactoryCreator.cs">
+      <Link>RowFactory\RowFactoryCreator.cs</Link>
+    </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedure.cs">
       <Link>StoredProcedure.cs</Link>
     </Compile>
