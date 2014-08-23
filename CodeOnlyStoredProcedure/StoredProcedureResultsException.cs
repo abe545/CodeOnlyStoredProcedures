@@ -9,7 +9,7 @@ namespace CodeOnlyStoredProcedure
     /// Exception thrown if the results of a <see cref="StoredProcedure"/> are unexpected.
     /// </summary>
     [Serializable]
-    public class StoredProcedureResultsException : Exception
+    public sealed class StoredProcedureResultsException : StoredProcedureException
     {
         /// <summary>
         /// Gets the names of the properties that were not found in the result set.

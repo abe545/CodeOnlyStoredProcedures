@@ -66,6 +66,7 @@
     <Compile Include="DataTransformation\InternAllStringsTransformerTests.cs" />
     <Compile Include="DataTransformation\TrimAllStringsTransformerTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RowFactory\DyamicRowFactoryTests.cs" />
     <Compile Include="StoredProcedureExtensionsTests.DoExecute.cs">
       <DependentUpon>StoredProcedureExtensionsTests.cs</DependentUpon>
     </Compile>
@@ -103,7 +104,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="SmokeTest.GenericTest">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
+  <ItemGroup />
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">
       <ItemGroup>

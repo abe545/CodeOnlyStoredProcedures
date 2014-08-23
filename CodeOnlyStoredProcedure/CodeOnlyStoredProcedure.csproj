@@ -120,12 +120,17 @@
     <Compile Include="DataTransformerAttributeBase.cs" />
     <Compile Include="IDataTransformer.cs" />
     <Compile Include="NamespaceDoc.cs" />
+    <Compile Include="RowFactory\DynamicRowFactory.cs" />
+    <Compile Include="RowFactory\IRowFactory.cs" />
+    <Compile Include="RowFactory\RowFactoryCreator.cs" />
     <Compile Include="StoredProcedure.cs" />
     <Compile Include="StoredProcedure.generated.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>StoredProcedure.tt</DependentUpon>
     </Compile>
+    <Compile Include="StoredProcedureColumnException.cs" />
+    <Compile Include="StoredProcedureException.cs" />
     <Compile Include="StoredProcedureExtensions.cs" />
     <Compile Include="StoredProcedureExtensions.generated.cs">
       <AutoGen>True</AutoGen>
