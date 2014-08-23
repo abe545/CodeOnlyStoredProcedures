@@ -9,7 +9,11 @@
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>A library for easily calling Stored Procedures in .NET. Works great with Entity Framework Code First models. 
 Code Only Stored Procedures will not create any Stored Procedures on your database. Instead, its aim is to make it easy to call your existing stored procedures by writing simple code.</description>
-        <releaseNotes>1.0.1
+        <releaseNotes>1.1.0
+Improved exceptions so that it is easier to determine why the data returned doesn't map to your model correctly.
+Now ignores read-only properties, so they don't have to be attributed with [NotMapped]
+
+1.0.1
 Fixed bug where calling a stored procedure within a Task that was executing on the SynchronizationContext could cause a deadlock.
 
 1.0.0
@@ -32,24 +36,7 @@ Added IDataTransformer implementation for trimming strings.
 
 0.2.0
 Added data transformation attribute for converting numeric types automatically from their database type to the property type the attribute decorates.
-Added data transformation attribute to automatically remove whitespace from strings returned from the database.
-
-0.1.0
-Created continuous deployment server.
-Added symbols to symbolsource.org
-Updated to check code contracts at runtime.
-
-0.0.7
-Added support for altering the results from the database to make data models simpler.
-Added code contracts to all methods.
-          
-0.0.6
-Added support for DBNull values.
-Bug fixes.
-
-0.0.5
-Added support for .NET 4.0 (with a dependency on EF).
-Fixed critical bugs with (now removed) release 0.0.4</releaseNotes>
+Added data transformation attribute to automatically remove whitespace from strings returned from the database.</releaseNotes>
         <tags>StoredProcedure EntityFramework EF</tags>
         <dependencies>
             <group targetFramework=".NETFramework4.5">
