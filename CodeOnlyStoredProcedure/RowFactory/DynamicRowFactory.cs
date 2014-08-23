@@ -119,7 +119,15 @@ namespace CodeOnlyStoredProcedure
                     if (DBNull.Value.Equals(value))
                         value = null;
 
-                    set(row, value, transformers);
+                    try
+                    {
+                        set(row, value, transformers);
+                    }
+                    catch(Exception ex)
+                    {
+                        var prop = typeof(T).GetResultPropertiesBySqlName()[name];
+                        throw new StoredProcedureColumnException(prop.Name, prop.PropertyType, value, ex);
+                    }
                     unfoundProps.Remove(name);
                 }
             }

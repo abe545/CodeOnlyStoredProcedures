@@ -129,6 +129,8 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>StoredProcedure.tt</DependentUpon>
     </Compile>
+    <Compile Include="StoredProcedureColumnException.cs" />
+    <Compile Include="StoredProcedureException.cs" />
     <Compile Include="StoredProcedureExtensions.cs" />
     <Compile Include="StoredProcedureExtensions.generated.cs">
       <AutoGen>True</AutoGen>

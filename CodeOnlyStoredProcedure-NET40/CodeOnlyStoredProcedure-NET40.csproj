@@ -167,6 +167,12 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>StoredProcedure.tt</DependentUpon>
     </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedureColumnException.cs">
+      <Link>StoredProcedureColumnException.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedureException.cs">
+      <Link>StoredProcedureException.cs</Link>
+    </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedureExtensions.cs">
       <Link>StoredProcedureExtensions.cs</Link>
     </Compile>

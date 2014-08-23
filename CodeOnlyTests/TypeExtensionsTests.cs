@@ -4,7 +4,11 @@ using System.Reflection;
 using CodeOnlyStoredProcedure;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+#if NET40
+namespace CodeOnlyTests.Net40
+#else
 namespace CodeOnlyTests
+#endif
 {
     [TestClass]
     public class TypeExtensionsTests

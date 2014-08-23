@@ -275,9 +275,6 @@ namespace CodeOnlyStoredProcedure
 
             return recordList;
         }
-
-        
-
         #endregion
     }
 }

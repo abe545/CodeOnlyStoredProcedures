@@ -1,0 +1,5 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<GenericTest name="SmokeTest" storage="c:\code\codeonlystoredprocedures\codeonlytests-net40\smoketest.generictest" id="6eaa9cd3-d9ce-4a77-8fe2-8e9e4f7aa03a" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Command filename="..\..\..\SmokeTests-NET40\bin\Release\SmokeTests-NET40.exe" workingDirectory="%TestOutputDirectory%" />
+  <SummaryXmlFile path="%TestOutputDirectory%\&lt;Enter summary file name here&gt;" />
+</GenericTest>
