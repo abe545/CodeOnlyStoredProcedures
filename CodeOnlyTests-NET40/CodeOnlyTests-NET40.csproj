@@ -81,6 +81,9 @@
     <Compile Include="..\CodeOnlyTests\DataTransformation\TrimAttributeTests.cs">
       <Link>DataTransformation\TrimAttributeTests.cs</Link>
     </Compile>
+    <Compile Include="..\CodeOnlyTests\RowFactory\DyamicRowFactoryTests.cs">
+      <Link>RowFactory\DyamicRowFactoryTests.cs</Link>
+    </Compile>
     <Compile Include="..\CodeOnlyTests\StoredProcedureExtensionsTests.cs">
       <Link>StoredProcedureExtensionsTests.cs</Link>
     </Compile>
@@ -122,6 +125,9 @@
     <Compile Include="..\CodeOnlyTests\TestSynchronizationContext.cs">
       <Link>TestSynchronizationContext.cs</Link>
     </Compile>
+    <Compile Include="..\CodeOnlyTests\TypeExtensionsTests.cs">
+      <Link>TypeExtensionsTests.cs</Link>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ReadOnlyDictionaryTests.cs" />
   </ItemGroup>
@@ -132,8 +138,12 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="SmokeTest.GenericTest">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">
       <ItemGroup>

@@ -2,7 +2,11 @@
 using System.Collections.Generic;
 using System.Threading;
 
+#if NET40
+namespace CodeOnlyTests.Net40
+#else
 namespace CodeOnlyTests
+#endif
 {
     public sealed class TestSynchronizationContext : SynchronizationContext
     {

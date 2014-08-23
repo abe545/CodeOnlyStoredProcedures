@@ -149,6 +149,15 @@
     <Compile Include="..\CodeOnlyStoredProcedure\Properties\AssemblyInfo.cs">
       <Link>Properties\AssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\DynamicRowFactory.cs">
+      <Link>RowFactory\DynamicRowFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\IRowFactory.cs">
+      <Link>RowFactory\IRowFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\RowFactoryCreator.cs">
+      <Link>RowFactory\RowFactoryCreator.cs</Link>
+    </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedure.cs">
       <Link>StoredProcedure.cs</Link>
     </Compile>
@@ -157,6 +166,12 @@
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>StoredProcedure.tt</DependentUpon>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedureColumnException.cs">
+      <Link>StoredProcedureColumnException.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedureException.cs">
+      <Link>StoredProcedureException.cs</Link>
     </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedureExtensions.cs">
       <Link>StoredProcedureExtensions.cs</Link>
@@ -203,6 +218,9 @@
     </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\TableValuedParameterAttribute.cs">
       <Link>TableValuedParameterAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\TypeExtensions.cs">
+      <Link>TypeExtensions.cs</Link>
     </Compile>
     <Compile Include="ReadOnlyDictionary.cs" />
   </ItemGroup>
