@@ -102,6 +102,7 @@
     <DocumentationFile>..\Bin\Release\NET45\CodeOnlyStoredProcedure.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.CSharp" />
     <Reference Include="System" />
     <Reference Include="System.Collections.Immutable">
       <HintPath>..\packages\Microsoft.Bcl.Immutable.1.0.30\lib\portable-net45+win8+wp8\System.Collections.Immutable.dll</HintPath>
@@ -118,11 +119,15 @@
     <Compile Include="DataTransformation\TrimAllStringsTransformer.cs" />
     <Compile Include="DataTransformation\TrimAttribute.cs" />
     <Compile Include="DataTransformerAttributeBase.cs" />
+    <Compile Include="DynamicStoredProcedure.cs" />
     <Compile Include="IDataTransformer.cs" />
     <Compile Include="NamespaceDoc.cs" />
     <Compile Include="RowFactory\DynamicRowFactory.cs" />
     <Compile Include="RowFactory\IRowFactory.cs" />
     <Compile Include="RowFactory\RowFactoryCreator.cs" />
+    <Compile Include="StoredProcedure.Call.cs">
+      <DependentUpon>StoredProcedure.cs</DependentUpon>
+    </Compile>
     <Compile Include="StoredProcedure.cs" />
     <Compile Include="StoredProcedure.generated.cs">
       <AutoGen>True</AutoGen>

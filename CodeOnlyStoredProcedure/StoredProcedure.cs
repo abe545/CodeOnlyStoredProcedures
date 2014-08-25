@@ -25,7 +25,7 @@ namespace CodeOnlyStoredProcedure
     /// <see cref="StoredProcedure{T1,T2,T3,T4}"/>, <see cref="StoredProcedure{T1,T2,T3,T4,T5}"/>,
     /// <see cref="StoredProcedure{T1,T2,T3,T4,T5,T6}"/>, or <see cref="StoredProcedure{T1,T2,T3,T4,T5,T6, T7}"/>
     /// classes.</remarks>
-    public class StoredProcedure
+    public partial class StoredProcedure
     {
         #region Private Fields
         private readonly string schema;
@@ -508,6 +508,26 @@ namespace CodeOnlyStoredProcedure
         public override int GetHashCode()
         {
             return FullName.GetHashCode();
+        }
+
+        internal virtual object InternalCall(
+            IDbConnection connection,
+            int           commandTimeout = 30)
+        {
+            Contract.Requires(connection != null);
+
+            Execute(connection, commandTimeout);
+            return null;
+        }
+
+        internal virtual object InternalCallAsync(
+            IDbConnection     connection,
+            CancellationToken token,
+            int               commandTimeout = 30)
+        {
+            Contract.Requires(connection != null);
+
+            return ExecuteAsync(connection, token, commandTimeout);
         }
 
         // Suppress this message, because the sp name is never set via user input

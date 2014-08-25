@@ -11,7 +11,7 @@ namespace SmokeTests
     {
         static bool DoGetSpokesTests(SmokeDb db)
         {
-            Console.Write("Calling usp_GetSpokesTests synchronously (No parameters) - ");
+            Console.Write("Calling usp_GetSpokes synchronously (No parameters) - ");
 
             var spokes = db.GetSpokes
                            .Execute(db.Database.Connection, timeout);
@@ -24,7 +24,19 @@ namespace SmokeTests
             else
                 WriteSuccess();
 
-            Console.Write("Calling usp_GetSpokesTests synchronously (WithParameter) - ");
+            Console.Write("Calling usp_GetSpokes asynchronously (Dynamic Syntax no parameters) - ");
+
+            spokes = StoredProcedure.Call(db.Database.Connection, timeout).usp_GetSpokes<int>();
+
+            if (!spokes.SequenceEqual(new[] { 4, 8, 16 }))
+            {
+                WriteError("\treturned the wrong data.");
+                return false;
+            }
+            else
+                WriteSuccess();
+
+            Console.Write("Calling usp_GetSpokes synchronously (WithParameter) - ");
 
             spokes = db.GetSpokes
                        .WithParameter("minimumSpokes", 4)
@@ -38,7 +50,7 @@ namespace SmokeTests
             else
                 WriteSuccess();
 
-            Console.Write("Calling usp_GetSpokesTests synchronously (WithInput) - ");
+            Console.Write("Calling usp_GetSpokes synchronously (WithInput) - ");
 
             spokes = db.GetSpokes
                        .WithInput(new { minimumSpokes = 6 })
@@ -52,7 +64,7 @@ namespace SmokeTests
             else
                 WriteSuccess();
 
-            Console.Write("Calling usp_GetSpokesTests asynchronously (WithParameter) - ");
+            Console.Write("Calling usp_GetSpokes asynchronously (WithParameter) - ");
 
             spokes = db.GetSpokes
                        .WithParameter("minimumSpokes", 4)
@@ -67,7 +79,19 @@ namespace SmokeTests
             else
                 WriteSuccess();
 
-            Console.Write("Calling usp_GetSpokesTests asynchronously (WithInput) - ");
+            Console.Write("Calling usp_GetSpokes asynchronously (Dynamic Syntax) - ");
+
+            spokes = StoredProcedure.Call(db.Database.Connection, timeout).usp_GetSpokes<int>(minimumSpokes: 4);
+
+            if (!spokes.SequenceEqual(new[] { 4, 8, 16 }))
+            {
+                WriteError("\treturned the wrong data.");
+                return false;
+            }
+            else
+                WriteSuccess();
+
+            Console.Write("Calling usp_GetSpokes asynchronously (WithInput) - ");
 
             spokes = db.GetSpokes
                        .WithInput(new { minimumSpokes = 6 })
@@ -82,7 +106,19 @@ namespace SmokeTests
             else
                 WriteSuccess();
 
-            Console.Write("Calling usp_GetSpokesTests (WithParameter expecting no results) - ");
+            Console.Write("Calling usp_GetSpokes asynchronously (Dynamic Syntax) - ");
+
+            spokes = StoredProcedure.CallAsync(db.Database.Connection, timeout).usp_GetSpokes<int>(minimumSpokes: 6).Result;
+
+            if (!spokes.SequenceEqual(new[] { 8, 16 }))
+            {
+                WriteError("\treturned the wrong data.");
+                return false;
+            }
+            else
+                WriteSuccess();
+
+            Console.Write("Calling usp_GetSpokes synchronously (WithParameter expecting no results) - ");
 
             spokes = db.GetSpokes
                        .WithParameter("minimumSpokes", 24)
@@ -93,9 +129,22 @@ namespace SmokeTests
             else
             {
                 WriteError("\t" + spokes.Count() + " spokes returned");
+                return false;
             }
 
-            Console.Write("Calling usp_GetSpokesTests (Enum result) synchronously (No parameters) - ");
+            Console.Write("Calling usp_GetSpokes synchronously (Dynamic Syntax expecting no results) - ");
+
+            spokes = StoredProcedure.Call(db.Database.Connection, timeout).usp_GetSpokes<int>(minimumSpokes: 100);
+
+            if (!spokes.Any())
+                WriteSuccess();
+            else
+            {
+                WriteError("\t" + spokes.Count() + " spokes returned");
+                return false;
+            }
+
+            Console.Write("Calling usp_GetSpokes (Enum result) synchronously (No parameters) - ");
 
             var spokes2 = db.GetSpokes2
                             .Execute(db.Database.Connection, timeout);
@@ -108,7 +157,19 @@ namespace SmokeTests
             else
                 WriteSuccess();
 
-            Console.Write("Calling usp_GetSpokesTests (Enum result) synchronously (WithParameter) - ");
+            Console.Write("Calling usp_GetSpokes (Enum result) synchronously (Dynamic Syntax no parameters) - ");
+
+            spokes2 = StoredProcedure.Call(db.Database.Connection, timeout).usp_GetSpokes<Spoke>();
+
+            if (!spokes2.SequenceEqual(new[] { Spoke.Four, Spoke.Eight, Spoke.Sixteen }))
+            {
+                WriteError("\treturned the wrong data.");
+                return false;
+            }
+            else
+                WriteSuccess();
+
+            Console.Write("Calling usp_GetSpokes (Enum result) synchronously (WithParameter) - ");
 
             spokes2 = db.GetSpokes2
                         .WithParameter("minimumSpokes", 4)
@@ -122,7 +183,7 @@ namespace SmokeTests
             else
                 WriteSuccess();
 
-            Console.Write("Calling usp_GetSpokesTests (Enum result) synchronously (WithInput) - ");
+            Console.Write("Calling usp_GetSpokes (Enum result) synchronously (WithInput) - ");
 
             spokes2 = db.GetSpokes2
                         .WithInput(new { minimumSpokes = 6 })
@@ -136,7 +197,19 @@ namespace SmokeTests
             else
                 WriteSuccess();
 
-            Console.Write("Calling usp_GetSpokesTests (Enum result) asynchronously (WithParameter) - ");
+            Console.Write("Calling usp_GetSpokes (Enum result) synchronously (Dynamic Syntax) - ");
+
+            spokes2 = StoredProcedure.Call(db.Database.Connection, timeout).usp_GetSpokes<Spoke>(minimumSpokes: 6);
+
+            if (!spokes2.SequenceEqual(new[] { Spoke.Eight, Spoke.Sixteen }))
+            {
+                WriteError("\treturned the wrong data.");
+                return false;
+            }
+            else
+                WriteSuccess();
+
+            Console.Write("Calling usp_GetSpokes (Enum result) asynchronously (WithParameter) - ");
 
             spokes2 = db.GetSpokes2
                         .WithParameter("minimumSpokes", 4)
@@ -151,7 +224,7 @@ namespace SmokeTests
             else
                 WriteSuccess();
 
-            Console.Write("Calling usp_GetSpokesTests (Enum result) asynchronously (WithInput) - ");
+            Console.Write("Calling usp_GetSpokes (Enum result) asynchronously (WithInput) - ");
 
             spokes2 = db.GetSpokes2
                         .WithInput(new { minimumSpokes = 6 })
@@ -166,7 +239,19 @@ namespace SmokeTests
             else
                 WriteSuccess();
 
-            Console.Write("Calling usp_GetSpokesTests (Enum result) (WithParameter expecting no results) - ");
+            Console.Write("Calling usp_GetSpokes (Enum result) asynchronously (Dynamic Syntax) - ");
+
+            spokes2 = StoredProcedure.CallAsync(db.Database.Connection, timeout).usp_GetSpokes<Spoke>(minimumSpokes: 6).Result;
+
+            if (!spokes2.SequenceEqual(new[] { Spoke.Eight, Spoke.Sixteen }))
+            {
+                WriteError("\treturned the wrong data.");
+                return false;
+            }
+            else
+                WriteSuccess();
+
+            Console.Write("Calling usp_GetSpokes (Enum result) (WithParameter expecting no results) - ");
 
             spokes2 = db.GetSpokes2
                         .WithParameter("minimumSpokes", 24)
@@ -177,6 +262,19 @@ namespace SmokeTests
             else
             {
                 WriteError("\t" + spokes2.Count() + " spokes returned");
+                return false;
+            }
+
+            Console.Write("Calling usp_GetSpokes (Enum result) synchronously (Dynamic Syntax expecting no results) - ");
+
+            spokes2 = StoredProcedure.Call(db.Database.Connection, timeout).usp_GetSpokes<Spoke>(minimumSpokes: 32);
+
+            if (!spokes2.Any())
+                WriteSuccess();
+            else
+            {
+                WriteError("\t" + spokes2.Count() + " spokes returned");
+                return false;
             }
 
             return true;

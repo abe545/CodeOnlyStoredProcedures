@@ -45,7 +45,16 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(input                  != null);
             Contract.Ensures (Contract.Result<TSP>() != null);
 
-            foreach (var pi in typeof(TInput).GetMappedProperties())
+            return (TSP)sp.WithInput(input, typeof(TInput));
+        }
+
+        internal static StoredProcedure WithInput(this StoredProcedure sp, object input, Type inputType)
+        {
+            Contract.Requires(sp                                 != null);
+            Contract.Requires(input                              != null);
+            Contract.Ensures (Contract.Result<StoredProcedure>() != null);
+
+            foreach (var pi in inputType.GetMappedProperties())
             {
                 SqlParameter parameter;
                 var tableAttr = pi.GetCustomAttributes(typeof(TableValuedParameterAttribute), false)
@@ -83,18 +92,18 @@ namespace CodeOnlyStoredProcedure
                 switch (parameter.Direction)
                 {
                     case ParameterDirection.Input:
-                        sp = (TSP)sp.CloneWith(parameter);
+                        sp = sp.CloneWith(parameter);
                         break;
 
                     case ParameterDirection.InputOutput:
                     case ParameterDirection.Output:
-                        sp = (TSP)sp.CloneWith(parameter, o => pi.SetValue(input, o, null));
+                        sp = sp.CloneWith(parameter, o => pi.SetValue(input, o, null));
                         break;
 
                     case ParameterDirection.ReturnValue:
                         if (pi.PropertyType != typeof(int))
                             throw new NotSupportedException("Can only use a ReturnValue of type int.");
-                        sp = (TSP)sp.CloneWith(parameter, o => pi.SetValue(input, o, null));
+                        sp = sp.CloneWith(parameter, o => pi.SetValue(input, o, null));
                         break;
                 }
             }

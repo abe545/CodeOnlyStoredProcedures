@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CodeOnlyStoredProcedure;
 
 namespace SmokeTests
 {
@@ -18,6 +19,16 @@ namespace SmokeTests
 
             Console.Write("Calling usp_GetItems asynchronously - ");
             res = db.GetItems.ExecuteAsync(db.Database.Connection, timeout).Result;
+            if (!TestGetItemsResults(res))
+                return false;
+
+            Console.Write("Calling usp_GetItems synchronously (Dynamic Syntax) - ");
+            res = StoredProcedure.Call(db.Database.Connection, timeout).usp_GetItems<Item>();
+            if (!TestGetItemsResults(res))
+                return false;
+
+            Console.Write("Calling usp_GetItems asynchronously (Dynamic Syntax) - ");
+            res = StoredProcedure.CallAsync(db.Database.Connection, timeout).usp_GetItems<Item>().Result;
             if (!TestGetItemsResults(res))
                 return false;
 

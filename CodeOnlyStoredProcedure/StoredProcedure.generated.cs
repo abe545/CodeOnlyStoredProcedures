@@ -190,7 +190,22 @@ namespace CodeOnlyStoredProcedure
 #endif
 		{
 			return new StoredProcedure<T1>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
-		}
+		}		
+
+        internal override object InternalCall(
+            IDbConnection connection,
+            int           commandTimeout = 30)
+        {
+            return this.Execute(connection, commandTimeout);
+        }
+
+        internal override object InternalCallAsync(
+            IDbConnection     connection,
+            CancellationToken token,
+            int               commandTimeout = 30)
+        {
+            return this.ExecuteAsync(connection, token, commandTimeout);
+        }
 	}
 	#endregion
 
@@ -373,7 +388,22 @@ namespace CodeOnlyStoredProcedure
 #endif
 		{
 			return new StoredProcedure<T1, T2>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
-		}
+		}		
+
+        internal override object InternalCall(
+            IDbConnection connection,
+            int           commandTimeout = 30)
+        {
+            return this.Execute(connection, commandTimeout);
+        }
+
+        internal override object InternalCallAsync(
+            IDbConnection     connection,
+            CancellationToken token,
+            int               commandTimeout = 30)
+        {
+            return this.ExecuteAsync(connection, token, commandTimeout);
+        }
 	}
 	#endregion
 
@@ -558,7 +588,22 @@ namespace CodeOnlyStoredProcedure
 #endif
 		{
 			return new StoredProcedure<T1, T2, T3>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
-		}
+		}		
+
+        internal override object InternalCall(
+            IDbConnection connection,
+            int           commandTimeout = 30)
+        {
+            return this.Execute(connection, commandTimeout);
+        }
+
+        internal override object InternalCallAsync(
+            IDbConnection     connection,
+            CancellationToken token,
+            int               commandTimeout = 30)
+        {
+            return this.ExecuteAsync(connection, token, commandTimeout);
+        }
 	}
 	#endregion
 
@@ -745,7 +790,22 @@ namespace CodeOnlyStoredProcedure
 #endif
 		{
 			return new StoredProcedure<T1, T2, T3, T4>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
-		}
+		}		
+
+        internal override object InternalCall(
+            IDbConnection connection,
+            int           commandTimeout = 30)
+        {
+            return this.Execute(connection, commandTimeout);
+        }
+
+        internal override object InternalCallAsync(
+            IDbConnection     connection,
+            CancellationToken token,
+            int               commandTimeout = 30)
+        {
+            return this.ExecuteAsync(connection, token, commandTimeout);
+        }
 	}
 	#endregion
 
@@ -934,7 +994,22 @@ namespace CodeOnlyStoredProcedure
 #endif
 		{
 			return new StoredProcedure<T1, T2, T3, T4, T5>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
-		}
+		}		
+
+        internal override object InternalCall(
+            IDbConnection connection,
+            int           commandTimeout = 30)
+        {
+            return this.Execute(connection, commandTimeout);
+        }
+
+        internal override object InternalCallAsync(
+            IDbConnection     connection,
+            CancellationToken token,
+            int               commandTimeout = 30)
+        {
+            return this.ExecuteAsync(connection, token, commandTimeout);
+        }
 	}
 	#endregion
 
@@ -1125,7 +1200,22 @@ namespace CodeOnlyStoredProcedure
 #endif
 		{
 			return new StoredProcedure<T1, T2, T3, T4, T5, T6>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
-		}
+		}		
+
+        internal override object InternalCall(
+            IDbConnection connection,
+            int           commandTimeout = 30)
+        {
+            return this.Execute(connection, commandTimeout);
+        }
+
+        internal override object InternalCallAsync(
+            IDbConnection     connection,
+            CancellationToken token,
+            int               commandTimeout = 30)
+        {
+            return this.ExecuteAsync(connection, token, commandTimeout);
+        }
 	}
 	#endregion
 
@@ -1318,7 +1408,22 @@ namespace CodeOnlyStoredProcedure
 #endif
 		{
 			return new StoredProcedure<T1, T2, T3, T4, T5, T6, T7>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
-		}
+		}		
+
+        internal override object InternalCall(
+            IDbConnection connection,
+            int           commandTimeout = 30)
+        {
+            return this.Execute(connection, commandTimeout);
+        }
+
+        internal override object InternalCallAsync(
+            IDbConnection     connection,
+            CancellationToken token,
+            int               commandTimeout = 30)
+        {
+            return this.ExecuteAsync(connection, token, commandTimeout);
+        }
 	}
 	#endregion
 

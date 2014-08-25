@@ -77,5 +77,22 @@ namespace CodeOnlyStoredProcedure
                 }.AddPrecisison(size, scale, precision),
                 o => setter((TValue)o));
         }
+
+        internal static TSP WithOutputParameter<TSP>(this TSP sp, string name, Action<object> setter)
+            where TSP : StoredProcedure
+        {
+            Contract.Requires(sp                     != null);
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Requires(setter                 != null);
+            Contract.Ensures (Contract.Result<TSP>() != null);
+
+            return (TSP)sp.CloneWith(
+                new SqlParameter
+                {
+                    ParameterName = name,
+                    Direction     = ParameterDirection.Output
+                },
+                setter);
+        }
     }
 }

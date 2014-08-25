@@ -37,6 +37,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.CSharp" />
     <Reference Include="Moq, Version=4.2.1402.2112, Culture=neutral, PublicKeyToken=69f491c39445e920, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Moq.4.2.1402.2112\lib\net40\Moq.dll</HintPath>
@@ -95,6 +96,7 @@
     <Compile Include="StoredProcedureExtensionsTests.cs" />
     <Compile Include="TestSynchronizationContext.cs" />
     <Compile Include="TypeExtensionsTests.cs" />
+    <Compile Include="DynamicStoredProcedureTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CodeOnlyStoredProcedure\CodeOnlyStoredProcedure.csproj">

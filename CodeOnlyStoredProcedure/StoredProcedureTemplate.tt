@@ -309,7 +309,22 @@ public class StoredProcedureTemplate : Template
 #endif
 		{
 			return new StoredProcedure<#+ GetTypes(TypeCount); #>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
-		}
+		}		
+
+        internal override object InternalCall(
+            IDbConnection connection,
+            int           commandTimeout = 30)
+        {
+            return this.Execute(connection, commandTimeout);
+        }
+
+        internal override object InternalCallAsync(
+            IDbConnection     connection,
+            CancellationToken token,
+            int               commandTimeout = 30)
+        {
+            return this.ExecuteAsync(connection, token, commandTimeout);
+        }
 	}
 	#endregion
 

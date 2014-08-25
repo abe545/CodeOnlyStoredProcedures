@@ -24,6 +24,7 @@ namespace SmokeTests
             }
 
             WriteSuccess();
+
             Console.Write("Calling usp_ReturnsOne (WithReturnValue) synchronously - ");
 
             int res = -1;
@@ -37,6 +38,19 @@ namespace SmokeTests
             }
 
             WriteSuccess();
+
+            Console.Write("Calling usp_ReturnsOne (Dynamic Syntax) synchronously - ");
+
+            res = -1;
+            StoredProcedure.Call(db.Database.Connection, timeout).usp_ReturnsOne(returnValue: out res);
+            if (res != 1)
+            {
+                WriteError("\tusp_ReturnsOne did not set the ReturnValue when called dynamically");
+                return false;
+            }
+
+            WriteSuccess();
+
             Console.Write("Calling usp_ReturnsOne (WithInput) asynchronously - ");
 
             ro = new ReturnsOne();
@@ -50,6 +64,7 @@ namespace SmokeTests
             }
 
             WriteSuccess();
+
             Console.Write("Calling usp_ReturnsOne (WithReturnValue) asynchronously - ");
 
             res = -1;
@@ -60,6 +75,18 @@ namespace SmokeTests
             if (res != 1)
             {
                 WriteError("\tusp_ReturnsOne did not set the ReturnValue for WithReturnValue");
+                return false;
+            }
+
+            WriteSuccess();
+
+            Console.Write("Calling usp_ReturnsOne (Dynamic Syntax) asynchronously - ");
+
+            ro = new ReturnsOne();
+            StoredProcedure.CallAsync(db.Database.Connection, timeout).usp_ReturnsOne(ro).Wait();
+            if (ro.ReturnValue != 1)
+            {
+                WriteError("\tusp_ReturnsOne did not set the ReturnValue when called dynamically");
                 return false;
             }
 

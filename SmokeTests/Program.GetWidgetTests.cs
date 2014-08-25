@@ -28,6 +28,12 @@ namespace SmokeTests
             if (!TestGetWidgetResults(items))
                 return false;
 
+            Console.Write("Calling usp_GetWidget synchronously (Dynamic Syntax) - ");
+
+            items = StoredProcedure.Call(db.Database.Connection, timeout).usp_GetWidget<Widget, WidgetComponent>(WidgetId: 1);
+
+            if (!TestGetWidgetResults(items))
+                return false;
 
             Console.Write("Calling usp_GetWidget asynchronously (WithParameter) - ");
 
@@ -45,6 +51,13 @@ namespace SmokeTests
                       .WithInput(new { WidgetId = 1 })
                       .ExecuteAsync(db.Database.Connection, timeout)
                       .Result;
+
+            if (!TestGetWidgetResults(items))
+                return false;
+
+            Console.Write("Calling usp_GetWidget asynchronously (Dynamic Syntax) - ");
+
+            items = StoredProcedure.CallAsync(db.Database.Connection, timeout).usp_GetWidget<Widget, WidgetComponent>(WidgetId: 1).Result;
 
             if (!TestGetWidgetResults(items))
                 return false;
