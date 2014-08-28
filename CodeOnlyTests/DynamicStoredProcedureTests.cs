@@ -40,7 +40,7 @@ namespace CodeOnlyTests
             var ctx = new Mock<IDbConnection>();
             ctx.Setup(c => c.CreateCommand())
                .Returns(cmd.Object);
-
+            
             dynamic toTest = new DynamicStoredProcedure(ctx.Object, false, CancellationToken.None);
 
             IEnumerable<Person> people = toTest.usp_GetPeople<Person>();

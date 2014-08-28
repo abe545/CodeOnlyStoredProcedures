@@ -30,7 +30,7 @@ namespace SmokeTests
 
             Console.Write("Calling usp_GetWidget synchronously (Dynamic Syntax) - ");
 
-            items = StoredProcedure.Call(db.Database.Connection, timeout).usp_GetWidget<Widget, WidgetComponent>(WidgetId: 1);
+            items = db.Database.Connection.Call(timeout).usp_GetWidget<Widget, WidgetComponent>(WidgetId: 1);
 
             if (!TestGetWidgetResults(items))
                 return false;
@@ -57,7 +57,7 @@ namespace SmokeTests
 
             Console.Write("Calling usp_GetWidget asynchronously (Dynamic Syntax) - ");
 
-            items = StoredProcedure.CallAsync(db.Database.Connection, timeout).usp_GetWidget<Widget, WidgetComponent>(WidgetId: 1).Result;
+            items = db.Database.Connection.CallAsync(timeout).usp_GetWidget<Widget, WidgetComponent>(WidgetId: 1).Result;
 
             if (!TestGetWidgetResults(items))
                 return false;

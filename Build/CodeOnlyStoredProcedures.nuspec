@@ -40,10 +40,10 @@ Added data transformation attribute to automatically remove whitespace from stri
         <tags>StoredProcedure EntityFramework EF</tags>
         <dependencies>
             <group targetFramework=".NETFramework4.5">
-                <dependency id="Microsoft.Bcl.Immutable" version="1.0.30" />
+                <dependency id="Microsoft.Bcl.Immutable" version="1.0.34" />
             </group>
             <group targetFramework=".NETFramework4.0">
-                <dependency id="EntityFramework" version="6.1.0" />
+                <dependency id="EntityFramework" version="6.1.1" />
             </group>
         </dependencies>
         <references>

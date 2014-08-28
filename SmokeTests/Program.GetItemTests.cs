@@ -32,7 +32,7 @@ namespace SmokeTests
             
             Console.Write("Calling usp_GetItem synchronously (Dynamic Syntax) - ");
 
-            items = StoredProcedure.Call(db.Database.Connection, timeout).usp_GetItem<Item>(ItemId: 0);
+            items = db.Database.Connection.Call(timeout).usp_GetItem<Item>(ItemId: 0);
 
             if (!TestGetItemResults(items))
                 return false;
@@ -53,7 +53,7 @@ namespace SmokeTests
 
             Console.Write("Calling usp_GetItem synchronously (Dynamic Syntax expecting no results) - ");
 
-            items = StoredProcedure.Call(db.Database.Connection, timeout).usp_GetItem<Item>(ItemId: 41);
+            items = db.Database.Connection.Call(timeout).usp_GetItem<Item>(ItemId: 41);
 
             if (items.Any())
             {
@@ -85,7 +85,7 @@ namespace SmokeTests
 
             Console.Write("Calling usp_GetItem asynchronously (Dynamic Syntax) - ");
 
-            items = StoredProcedure.CallAsync(db.Database.Connection, timeout).usp_GetItem<Item>(ItemId: 0).Result;
+            items = db.Database.Connection.CallAsync(timeout).usp_GetItem<Item>(ItemId: 0).Result;
 
             if (!TestGetItemResults(items))
                 return false;

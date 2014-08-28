@@ -106,11 +106,11 @@
   <ItemGroup>
     <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\EntityFramework.6.1.0\lib\net40\EntityFramework.dll</HintPath>
+      <HintPath>..\packages\EntityFramework.6.1.1\lib\net40\EntityFramework.dll</HintPath>
     </Reference>
     <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\EntityFramework.6.1.0\lib\net40\EntityFramework.SqlServer.dll</HintPath>
+      <HintPath>..\packages\EntityFramework.6.1.1\lib\net40\EntityFramework.SqlServer.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
@@ -146,6 +146,9 @@
     <Compile Include="..\CodeOnlyStoredProcedure\IDataTransformer.cs">
       <Link>IDataTransformer.cs</Link>
     </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\IDbConnectionExtensions.cs">
+      <Link>IDbConnectionExtensions.cs</Link>
+    </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\NamespaceDoc.cs">
       <Link>NamespaceDoc.cs</Link>
     </Compile>
@@ -160,10 +163,6 @@
     </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\RowFactoryCreator.cs">
       <Link>RowFactory\RowFactoryCreator.cs</Link>
-    </Compile>
-    <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedure.Call.cs">
-      <Link>StoredProcedure.Call.cs</Link>
-      <DependentUpon>StoredProcedure.cs</DependentUpon>
     </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedure.cs">
       <Link>StoredProcedure.cs</Link>
