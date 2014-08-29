@@ -127,14 +127,15 @@
     <Compile Include="RowFactory\DynamicRowFactory.cs" />
     <Compile Include="RowFactory\IRowFactory.cs" />
     <Compile Include="RowFactory\RowFactoryCreator.cs" />
+    <Compile Include="RowFactory\SimpleTypeRowFactory.cs" />
     <Compile Include="StoredProcedure.cs" />
     <Compile Include="StoredProcedure.generated.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>StoredProcedure.tt</DependentUpon>
     </Compile>
-    <Compile Include="StoredProcedureColumnException.cs" />
-    <Compile Include="StoredProcedureException.cs" />
+    <Compile Include="Exceptions\StoredProcedureColumnException.cs" />
+    <Compile Include="Exceptions\StoredProcedureException.cs" />
     <Compile Include="StoredProcedureExtensions.cs" />
     <Compile Include="StoredProcedureExtensions.generated.cs">
       <AutoGen>True</AutoGen>
@@ -161,7 +162,7 @@
       <DependentUpon>StoredProcedureExtensions.cs</DependentUpon>
     </Compile>
     <Compile Include="StoredProcedureParameterAttribute.cs" />
-    <Compile Include="StoredProcedureResultsException.cs" />
+    <Compile Include="Exceptions\StoredProcedureResultsException.cs" />
     <Compile Include="TableValuedParameterAttribute.cs" />
     <Compile Include="TypeExtensions.cs" />
   </ItemGroup>

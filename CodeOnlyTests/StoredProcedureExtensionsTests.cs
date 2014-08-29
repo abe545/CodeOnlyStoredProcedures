@@ -809,6 +809,41 @@ namespace CodeOnlyTests
         }
 
         [TestMethod]
+        public void TestExecute_ReturnsSingleColumnSetForInt()
+        {
+            var reader = new Mock<IDataReader>();
+            var command = new Mock<IDbCommand>();
+
+            var res = new[] { 42, 36, 81, 14 };
+            int i = 0;
+            reader.SetupGet(r => r.FieldCount)
+                  .Returns(1);
+
+            reader.Setup(r => r.Read())
+                  .Returns(() => i < res.Length);
+
+            reader.Setup(r => r.GetName(0))
+                  .Returns("SHOULD_BE_IGNORED");
+            reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
+                  .Callback((object[] arr) => arr[0] = res[i++])
+                  .Returns(1);
+
+            command.SetupAllProperties();
+            command.Setup(d => d.ExecuteReader())
+                   .Returns(reader.Object);
+
+            var results = command.Object.Execute(CancellationToken.None,
+                                                 new[] { typeof(int) },
+                                                 Enumerable.Empty<IDataTransformer>());
+
+            var totest = (IEnumerable<int>)results[typeof(int)];
+            for (int j = 0; j < res.Length; j++)
+            {
+                Assert.AreEqual(res[j], totest.ElementAt(j));
+            }
+        }
+
+        [TestMethod]
         public void TestExecute_ReturnsSingleColumnSetForEnum()
         {
             var reader = new Mock<IDataReader>();
@@ -874,6 +909,42 @@ namespace CodeOnlyTests
             var totest = (IEnumerable<FooBar>)results[typeof(FooBar)];
             for (int j = 0; j < res.Length; j++)
                 Assert.AreEqual(res[j], totest.ElementAt(j));
+        }
+
+        [TestMethod]
+        public void TestExecute_HelpfulExceptionWhenColumnWrongType()
+        {
+            var reader = new Mock<IDataReader>();
+            var command = new Mock<IDbCommand>();
+
+            var res = new[] { 42M, 36M, 81M, 14M };
+            int i = 0;
+            reader.SetupGet(r => r.FieldCount)
+                  .Returns(1);
+
+            reader.Setup(r => r.Read())
+                  .Returns(() => i < res.Length);
+
+            reader.Setup(r => r.GetName(0))
+                  .Returns("SHOULD_BE_IGNORED");
+            reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
+                  .Callback((object[] arr) => arr[0] = res[i++])
+                  .Returns(1);
+
+            command.SetupAllProperties();
+            command.Setup(d => d.ExecuteReader())
+                   .Returns(reader.Object);
+
+            try
+            {
+                command.Object.Execute(CancellationToken.None,
+                                       new[] { typeof(int) },
+                                       Enumerable.Empty<IDataTransformer>());
+            }
+            catch (StoredProcedureColumnException ex)
+            {
+                Assert.AreEqual("Error setting [Int32] result. Received value: [Decimal] 42.", ex.Message);
+            }
         }
 
         [TestMethod]

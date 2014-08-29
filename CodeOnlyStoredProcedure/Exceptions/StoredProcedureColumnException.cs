@@ -18,14 +18,26 @@ namespace CodeOnlyStoredProcedure
         /// </summary>
         /// <param name="propertyName">The name of the property being set</param>
         /// <param name="propertyType">The type of the property</param>
-        /// <param name="value">The value that was attempted to be set on the property</param>
+        /// <param name="value">The value that was attempted to be set on the property (after data transformation, if any)</param>
         /// <param name="innerException">The exception that was thrown originally</param>
         public StoredProcedureColumnException(string propertyName, Type propertyType, object value, Exception innerException)
-            : base(BuildMessage(propertyName, propertyType, value), innerException)
+            : base(BuildMessage(propertyName + " property", propertyType, value), innerException)
         {
             Contract.Requires(!string.IsNullOrEmpty(propertyName));
             Contract.Requires(propertyType != null);
             Contract.Requires(innerException != null);
+        }
+
+        /// <summary>
+        /// Creates a new StoredProcedureColumnException when the return type is a single
+        /// column.
+        /// </summary>
+        /// <param name="resultType">Type type of results expected</param>
+        /// <param name="value">The value attempting to return (after data transformation, if any)</param>
+        public StoredProcedureColumnException(Type resultType, object value)
+            : base(BuildMessage("result", resultType, value))
+        {
+            Contract.Requires(resultType != null);
         }
 
         private static string BuildMessage(string propertyName, Type propertyType, object value)
@@ -36,7 +48,7 @@ namespace CodeOnlyStoredProcedure
 
             var sb = new StringBuilder();
 
-            sb.AppendFormat("Error setting [{0}] {1} property. Received value: ", propertyType.Name, propertyName);
+            sb.AppendFormat("Error setting [{0}] {1}. Received value: ", propertyType.Name, propertyName);
 
             if (value == null || value == DBNull.Value)
                 sb.Append("<NULL>.");

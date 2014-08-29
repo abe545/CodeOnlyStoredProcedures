@@ -64,58 +64,43 @@ namespace CodeOnlyStoredProcedure
                 var values = new object[reader.FieldCount];
                 var output = (IList)Activator.CreateInstance (typeof(List<>).MakeGenericType(currentType));
 
+                IRowFactory factory;
+
                 // process the result set
                 if (reader.FieldCount == 1 && (currentType.IsEnum || integralTpes.Contains(currentType)))
+                    factory = new SimpleTypeRowFactory(currentType);
+                else
+                    factory = currentType.CreateRowFactory();
+
+                var names = Enumerable.Range(0, reader.FieldCount)
+                                        .Select(i => reader.GetName(i))
+                                        .ToArray();
+
+                while (reader.Read())
                 {
-                    var  targetType = currentType;
-                    bool isNullable = false;
-                    if (currentType.IsGenericType && currentType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                    token .ThrowIfCancellationRequested();
+                    reader.GetValues(values);
+
+                    var row = factory.CreateRow(names, values, transformers);
+
+                    try
                     {
-                        isNullable = true;
-                        targetType = currentType.GetGenericArguments().Single();
+                        output.Add(row);
                     }
-
-                    while (reader.Read())
+                    catch (ArgumentException)
                     {
-                        token .ThrowIfCancellationRequested();
-                        reader.GetValues(values);
-
-                        var value = values[0];
-                        if (DBNull.Value.Equals(value))
-                            value = null;
-
-                        foreach (var xform in transformers)
-                        {
-                            if (xform.CanTransform(value, targetType, isNullable, Enumerable.Empty<Attribute>()))
-                                value = xform.Transform(value, targetType, isNullable, Enumerable.Empty<Attribute>());
-                        }
-
-                        if (value is string && currentType.IsEnum)
-                            value = Enum.Parse(currentType, (string)value);
-
-                        output.Add(value);
+                        if (factory is SimpleTypeRowFactory)
+                            throw new StoredProcedureColumnException(currentType, row);
+                        else
+                            throw;
                     }
                 }
-                else
+
+                if (output.Count > 0)
                 {
-                    var row   = currentType.CreateRowFactory();
-                    var names = Enumerable.Range(0, reader.FieldCount)
-                                          .Select(i => reader.GetName(i))
-                                          .ToArray();
-
-                    while (reader.Read())
-                    {
-                        token .ThrowIfCancellationRequested();
-                        reader.GetValues(values);
-                        output.Add(row.CreateRow(names, values, transformers));
-                    }
-
-                    if (output.Count > 0)
-                    {
-                        // throw an exception if the result set didn't include a mapped property
-                        if (row.UnfoundPropertyNames.Any())
-                            throw new StoredProcedureResultsException(currentType, row.UnfoundPropertyNames.ToArray());
-                    }
+                    // throw an exception if the result set didn't include a mapped property
+                    if (factory.UnfoundPropertyNames.Any())
+                        throw new StoredProcedureResultsException(currentType, factory.UnfoundPropertyNames.ToArray());
                 }
 
                 results.Add(currentType, output);
