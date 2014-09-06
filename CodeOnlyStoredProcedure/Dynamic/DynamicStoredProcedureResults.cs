@@ -1,15 +1,12 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Diagnostics.Contracts;
 using System.Dynamic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -17,6 +14,14 @@ namespace CodeOnlyStoredProcedure.Dynamic
 {
     internal class DynamicStoredProcedureResults : DynamicObject
     {
+        private const string tupleName = "System.Tuple`";
+        private static readonly Lazy<Dictionary<int, MethodInfo>> tupleCreates = new Lazy<Dictionary<int, MethodInfo>>(() =>
+            {
+                return typeof(Tuple).GetMethods(BindingFlags.Static | BindingFlags.Public)
+                                    .Where(mi => mi.Name == "Create")
+                                    .ToDictionary(mi => mi.GetGenericArguments().Count());
+            });
+
         private readonly Task<IEnumerable<StoredProcedureExtensions.StoredProcedureResult>> resultTask;
         private readonly IDbConnection                                                      connection;
         private readonly IDbCommand                                                         command;
@@ -140,7 +145,6 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
 #if NET40
                     result = Activator.CreateInstance(getCompletionType.Value, this, resultTask, continueOnCaller);
-
 #else
                     result = new DynamicStoredProcedureResultsAwaiter(this, resultTask, continueOnCaller);
 #endif
@@ -158,18 +162,20 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
         public override bool TryConvert(ConvertBinder binder, out object result)
         {
-            var retType = binder.ReturnType;
-            if (typeof(Task).IsAssignableFrom(retType))
+            var retType  = binder.ReturnType;
+            var taskType = typeof(Task);
+
+            if (taskType.IsAssignableFrom(retType))
             {
                 if (!canBeAsync)
                     throw new NotSupportedException(DynamicStoredProcedure.asyncParameterDirectionError);
 
-                if (!retType.IsGenericType)
+                if (retType == taskType)
                 {
-                    // this is just a Task (no results). We can just return a task that will
-                    // be complete when the execution finishes.
+                    // this is just a Task (no results). Because of this, we can return a continuation
+                    // from our resultTask that does nothing.
 
-                    result = resultTask;
+                    result = resultTask.ContinueWith(_ => { });
                     return true;
                 }
 
@@ -184,15 +190,12 @@ namespace CodeOnlyStoredProcedure.Dynamic
                                       .Invoke(this, new object[0]);
                     return true;
                 }
-                else if (retType.FullName.StartsWith("System.Tuple`") &&
+                else if (retType.FullName.StartsWith(tupleName) &&
                          retType.GetGenericArguments().All(t => t.IsEnumeratedType()))
                 {
-                    // if this isn't a tuple of enumerables, we can't convert it
-                    result = CreateMultipleContinuation(retType.GetGenericArguments()
-                                                               .Select(t => t.GetEnumeratedType())
-                                                               .ToArray());
-                    if (result != null)
-                        return true;
+                    // it is a tuple of enumerables
+                    result = CreateMultipleContinuation(retType.GetGenericArguments());
+                    return true;
                 }
             }
             else if (retType.IsEnumeratedType())
@@ -201,15 +204,12 @@ namespace CodeOnlyStoredProcedure.Dynamic
                 result = GetSingleResult(retType.GetGenericArguments().Single());
                 return true;
             }
-            else if (retType.FullName.StartsWith("System.Tuple`") &&
+            else if (retType.FullName.StartsWith(tupleName) &&
                      retType.GetGenericArguments().All(t => t.IsEnumeratedType()))
             {
-                // if this isn't a tuple of enumerables, we can't convert it
-                result = GetMultipleResults(retType.GetGenericArguments()
-                                                   .Select(t => t.GetEnumeratedType())
-                                                   .ToArray());
-                if (result != null)
-                    return true;
+                // it is a tuple of enumerables
+                result = GetMultipleResults(retType.GetGenericArguments());
+                return true;
             }
 
             return base.TryConvert(binder, out result);
@@ -227,36 +227,24 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
         private object GetMultipleResults(Type[] types)
         {
-            var create = typeof(Tuple).GetMethods(BindingFlags.Static | BindingFlags.Public)
-                                      .FirstOrDefault(mi => mi.Name == "Create" &&
-                                                            mi.GetGenericArguments().Count() == types.Length);
+            // no need to protect this index... We have already been asked to cast to a tuple type,
+            // so we know that there is a Create method with this many type parameters
+            var create     = tupleCreates.Value[types.Length];
+            var innerTypes = types.Select(t => t.GetEnumeratedType());
+            var parsed     = resultTask.Result.Parse(innerTypes, transformers);
 
-            if (create == null)
-                return null;
-
-            var parsed = resultTask.Result.Parse(types, transformers);
-
-            return create.MakeGenericMethod(types.Select(t => typeof(IEnumerable<>).MakeGenericType(t)).ToArray())
-                         .Invoke(null, types.Select(t => parsed[t]).ToArray());
+            return create.MakeGenericMethod(types)
+                         .Invoke(null, innerTypes.Select(t => parsed[t]).ToArray());
         }
 
         private Task CreateMultipleContinuation(Type[] types)
         {
-            var create = typeof(Tuple).GetMethods(BindingFlags.Static | BindingFlags.Public)
-                                      .FirstOrDefault(mi => mi.Name == "Create" &&
-                                                            mi.GetGenericArguments().Count() == types.Length);
-
-            var cont = resultTask.GetType()
-                                 .GetMethods(BindingFlags.Instance | BindingFlags.Public)
-                                 .FirstOrDefault(mi => mi.IsGenericMethod && 
-                                                       mi.Name == "ContinueWith" &&
-                                                       mi.GetParameters().Length == 1);
-
-            if (create == null || cont == null)
-                return null;
-
-            var parse = create.MakeGenericMethod(types.Select(t => typeof(IEnumerable<>).MakeGenericType(t)).ToArray());
-            var tuple = parse.ReturnType;
+            // no need to protect this index... We have already been asked to cast to a tuple type,
+            // so we know that there is a Create method with this many type parameters
+            var create     = tupleCreates.Value[types.Length];
+            var parse      = create.MakeGenericMethod(types);
+            var tuple      = parse.ReturnType;
+            var innerTypes = types.Select(t => t.GetEnumeratedType()).ToArray();
 
             var tcs = (ITaskCompleter)Activator.CreateInstance(typeof(TaskCompleter<>).MakeGenericType(tuple));
 
@@ -268,14 +256,16 @@ namespace CodeOnlyStoredProcedure.Dynamic
                         tcs.SetCanceled();
                     else
                     {
-                        var res = r.Result.Parse(types, transformers);
-                        tcs.SetResult(parse.Invoke(null, types.Select(t => res[t]).ToArray()));
+                        var res = r.Result.Parse(innerTypes, transformers);
+                        tcs.SetResult(parse.Invoke(null, innerTypes.Select(t => res[t]).ToArray()));
                     }
                 });
 
             return tcs.Task;
         }
 
+        // this interface and generic implementation are annoyingly necessary. If TaskCompletionSource,
+        // is used directly, we get runtime exceptions about how object doesn't have a Task property.
         private interface ITaskCompleter
         {
             Task Task { get; }
