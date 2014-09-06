@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,6 +20,8 @@ namespace CodeOnlyStoredProcedure
 
         public SimpleTypeRowFactory(Type targetType)
         {
+            Contract.Requires(targetType != null);
+
             this.collectionType = targetType;
 
             if (targetType.IsGenericType && targetType.GetGenericTypeDefinition() == typeof(Nullable<>))

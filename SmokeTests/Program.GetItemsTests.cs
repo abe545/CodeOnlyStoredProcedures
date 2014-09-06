@@ -23,12 +23,13 @@ namespace SmokeTests
                 return false;
 
             Console.Write("Calling usp_GetItems synchronously (Dynamic Syntax) - ");
-            res = db.Database.Connection.Call(timeout).usp_GetItems<Item>();
+            res = db.Database.Connection.Call(timeout).usp_GetItems();
             if (!TestGetItemsResults(res))
                 return false;
 
             Console.Write("Calling usp_GetItems asynchronously (Dynamic Syntax) - ");
-            res = db.Database.Connection.CallAsync(timeout).usp_GetItems<Item>().Result;
+            Task<IEnumerable<Item>> resTask = db.Database.Connection.Call(timeout).usp_GetItems();
+            res = resTask.Result;
             if (!TestGetItemsResults(res))
                 return false;
 

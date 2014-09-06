@@ -27,6 +27,8 @@ namespace CodeOnlyStoredProcedure
     /// classes.</remarks>
     public partial class StoredProcedure
     {
+        internal const int defaultTimeout = 30;
+
         #region Private Fields
         private readonly string schema;
         private readonly string name;
@@ -432,7 +434,7 @@ namespace CodeOnlyStoredProcedure
         /// storedProcedure.Execute(this.Database.Connection);
         /// </code>
         /// </example>
-        public void Execute(IDbConnection connection, int timeout = 30)
+        public void Execute(IDbConnection connection, int timeout = defaultTimeout)
         {
             Contract.Requires(connection != null);
 
@@ -453,7 +455,7 @@ namespace CodeOnlyStoredProcedure
         /// await storedProcedure.ExecuteAsync(this.Database.Connection);
         /// </code>
         /// </example>
-        public Task ExecuteAsync(IDbConnection connection, int timeout = 30)
+        public Task ExecuteAsync(IDbConnection connection, int timeout = defaultTimeout)
         {
             Contract.Requires(connection != null);
             Contract.Ensures (Contract.Result<Task>() != null);
@@ -475,7 +477,7 @@ namespace CodeOnlyStoredProcedure
         /// await storedProcedure.ExecuteAsync(this.Database.Connection, cts.Token);
         /// </code>
         /// </example>
-        public Task ExecuteAsync(IDbConnection connection, CancellationToken token, int timeout = 30)
+        public Task ExecuteAsync(IDbConnection connection, CancellationToken token, int timeout = defaultTimeout)
         {
             Contract.Requires(connection != null);
             Contract.Ensures (Contract.Result<Task>() != null);
@@ -512,7 +514,7 @@ namespace CodeOnlyStoredProcedure
 
         internal virtual object InternalCall(
             IDbConnection connection,
-            int           commandTimeout = 30)
+            int           commandTimeout = defaultTimeout)
         {
             Contract.Requires(connection != null);
 
@@ -523,7 +525,7 @@ namespace CodeOnlyStoredProcedure
         internal virtual object InternalCallAsync(
             IDbConnection     connection,
             CancellationToken token,
-            int               commandTimeout = 30)
+            int               commandTimeout = defaultTimeout)
         {
             Contract.Requires(connection != null);
 
@@ -535,35 +537,17 @@ namespace CodeOnlyStoredProcedure
         internal IDictionary<Type, IList> Execute(
             IDbConnection     connection,
             CancellationToken token,
-            int               commandTimeout = 30,
+            int               commandTimeout = defaultTimeout,
             IEnumerable<Type> outputTypes    = null)
         {
             Contract.Requires(connection != null);
             Contract.Ensures(Contract.Result<IDictionary<Type, IList>>() != null);
 
-            bool shouldClose = false;
+            IDbConnection toClose = null;
             try
             {
-                // if we don't create a new connection, connection.Open may throw
-                // an exception in multi-threaded scenarios. If we don't Open it first,
-                // then the connection may be closed, and it will throw an exception. 
-                // We could track the connection state ourselves, but if any other code
-                // uses the connection (like an EF DbSet), we could possibly close
-                // the connection while a transaction is in process.
-                // By only opening a clone of the connection, we avoid this issue.
-                if (connection is ICloneable)
+                using (var cmd = connection.CreateCommand(schema, name, commandTimeout, out toClose))
                 {
-                    connection = (IDbConnection)((ICloneable)connection).Clone();
-                    connection.Open();
-                    shouldClose = true;
-                }
-
-                using (var cmd = connection.CreateCommand())
-                {
-                    cmd.CommandText    = FullName;
-                    cmd.CommandType    = CommandType.StoredProcedure;
-                    cmd.CommandTimeout = commandTimeout;
-
                     // move parameters to command object
                     // we must clone them first because the framework
                     // throws an exception if a parameter is passed to 
@@ -607,8 +591,8 @@ namespace CodeOnlyStoredProcedure
             }
             finally
             {
-                if (shouldClose)
-                    connection.Close();
+                if (toClose != null)
+                    toClose.Close();
             }
         }
 

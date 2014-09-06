@@ -83,7 +83,8 @@ namespace SmokeTests
             Console.Write("Calling usp_ReturnsOne (Dynamic Syntax) asynchronously - ");
 
             ro = new ReturnsOne();
-            db.Database.Connection.CallAsync(timeout).usp_ReturnsOne(ro).Wait();
+            Task t = db.Database.Connection.Call(timeout).usp_ReturnsOne(ro);
+            t.Wait();
             if (ro.ReturnValue != 1)
             {
                 WriteError("\tusp_ReturnsOne did not set the ReturnValue when called dynamically");
