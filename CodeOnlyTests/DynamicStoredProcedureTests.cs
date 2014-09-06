@@ -18,6 +18,8 @@ namespace CodeOnlyTests
     [TestClass]
     public class DynamicStoredProcedureTests
     {
+        private static IEnumerable<IDataTransformer> transformers = Enumerable.Empty<IDataTransformer>();
+
         [TestClass]
         public class Synchronous
         {
@@ -27,7 +29,7 @@ namespace CodeOnlyTests
             {
                 var ctx = CreatePeople("Foo");
 
-                dynamic toTest = new DynamicStoredProcedure(ctx, CancellationToken.None);
+                dynamic toTest = new DynamicStoredProcedure(ctx, transformers, CancellationToken.None);
 
                 IEnumerable<Person> people = toTest.usp_GetPeople();
 
@@ -44,7 +46,7 @@ namespace CodeOnlyTests
                     parm.Value = 42;
                 });
 
-                dynamic toTest = new DynamicStoredProcedure(ctx, CancellationToken.None);
+                dynamic toTest = new DynamicStoredProcedure(ctx, transformers, CancellationToken.None);
 
                 int retValue;
                 toTest.usp_StoredProc(returnValue: out retValue);
@@ -63,7 +65,7 @@ namespace CodeOnlyTests
                     parm.Value = 42;
                 });
 
-                dynamic toTest = new DynamicStoredProcedure(ctx, CancellationToken.None);
+                dynamic toTest = new DynamicStoredProcedure(ctx, transformers, CancellationToken.None);
 
                 int id = 16;
                 toTest.usp_StoredProc(id: ref id);
@@ -81,7 +83,7 @@ namespace CodeOnlyTests
                     parm.Value = 42;
                 });
 
-                dynamic toTest = new DynamicStoredProcedure(ctx, CancellationToken.None);
+                dynamic toTest = new DynamicStoredProcedure(ctx, transformers, CancellationToken.None);
 
                 int id;
                 toTest.usp_StoredProc(id: out id);
@@ -99,7 +101,7 @@ namespace CodeOnlyTests
                 var cts = new CancellationTokenSource();
                 cts.Cancel();
 
-                dynamic toTest = new DynamicStoredProcedure(ctx, cts.Token);
+                dynamic toTest = new DynamicStoredProcedure(ctx, transformers, cts.Token);
 
                 var value = 13;
                 Task<IEnumerable<Person>> people = toTest.usp_StoredProc(value: value);
@@ -137,7 +139,7 @@ namespace CodeOnlyTests
                 ctx.Setup(c => c.CreateCommand())
                    .Returns(cmd.Object);
 
-                dynamic toTest = new DynamicStoredProcedure(ctx.Object, CancellationToken.None);
+                dynamic toTest = new DynamicStoredProcedure(ctx.Object, transformers, CancellationToken.None);
 
                 Tuple<IEnumerable<Person>, IEnumerable<Family>> results = toTest.usp_GetPeople();
 
@@ -160,7 +162,7 @@ namespace CodeOnlyTests
             {
                 var ctx = CreatePeople("Foo");
 
-                var toTest = new DynamicStoredProcedure(ctx, CancellationToken.None);
+                var toTest = new DynamicStoredProcedure(ctx, transformers, CancellationToken.None);
 
                 var result = GetPeople(toTest).Result;
 
@@ -177,7 +179,7 @@ namespace CodeOnlyTests
                     parm.Value = 42;
                 }, "Foo");
 
-                var toTest = new DynamicStoredProcedure(ctx, CancellationToken.None);
+                var toTest = new DynamicStoredProcedure(ctx, transformers, CancellationToken.None);
 
                 try
                 {
@@ -205,7 +207,7 @@ namespace CodeOnlyTests
                     parm.Value = "Bar";
                 }, "Foo");
 
-                var toTest = new DynamicStoredProcedure(ctx, CancellationToken.None);
+                var toTest = new DynamicStoredProcedure(ctx, transformers, CancellationToken.None);
 
                 try
                 {
@@ -232,7 +234,7 @@ namespace CodeOnlyTests
                     parm.Value = 42M;
                 }, "Foo");
 
-                var toTest = new DynamicStoredProcedure(ctx, CancellationToken.None);
+                var toTest = new DynamicStoredProcedure(ctx, transformers, CancellationToken.None);
 
                 try
                 {
@@ -259,7 +261,7 @@ namespace CodeOnlyTests
                     parm.Value = 42;
                 });
 
-                var toTest = new DynamicStoredProcedure(ctx, CancellationToken.None);
+                var toTest = new DynamicStoredProcedure(ctx, transformers, CancellationToken.None);
 
                 var retValue = new Return();
                 Call(toTest, retValue).Wait();
@@ -278,7 +280,7 @@ namespace CodeOnlyTests
                     parm.Value = 42;
                 });
 
-                var toTest = new DynamicStoredProcedure(ctx, CancellationToken.None);
+                var toTest = new DynamicStoredProcedure(ctx, transformers, CancellationToken.None);
 
                 var inputOutput = new InputOutput { Value = 16 };
 
@@ -297,7 +299,7 @@ namespace CodeOnlyTests
                     parm.Value = 42;
                 });
 
-                var toTest = new DynamicStoredProcedure(ctx, CancellationToken.None);
+                var toTest = new DynamicStoredProcedure(ctx, transformers, CancellationToken.None);
 
                 var output = new Output();
 
@@ -316,7 +318,7 @@ namespace CodeOnlyTests
                     parm.Value = 42;
                 }, "Foo", "Bar");
 
-                var toTest = new DynamicStoredProcedure(ctx, CancellationToken.None);
+                var toTest = new DynamicStoredProcedure(ctx, transformers, CancellationToken.None);
 
                 var retValue = new Return();
                 var people = GetPeople(toTest, retValue).Result;
@@ -336,7 +338,7 @@ namespace CodeOnlyTests
                     parm.Value = 42;
                 }, "Bar", "Baz");
 
-                var toTest = new DynamicStoredProcedure(ctx, CancellationToken.None);
+                var toTest = new DynamicStoredProcedure(ctx, transformers, CancellationToken.None);
 
                 var inout = new InputOutput { Value = 22 };
                 var people = GetPeople(toTest, inout).Result;
@@ -355,7 +357,7 @@ namespace CodeOnlyTests
                     parm.Value = 42;
                 }, "Bar", "Baz");
 
-                var toTest = new DynamicStoredProcedure(ctx, CancellationToken.None);
+                var toTest = new DynamicStoredProcedure(ctx, transformers, CancellationToken.None);
 
                 var output = new Output();
                 var people = GetPeople(toTest, output).Result;
@@ -395,7 +397,7 @@ namespace CodeOnlyTests
                 ctx.Setup(c => c.CreateCommand())
                    .Returns(cmd.Object);
 
-                var toTest = new DynamicStoredProcedure(ctx.Object, CancellationToken.None);
+                var toTest = new DynamicStoredProcedure(ctx.Object, transformers, CancellationToken.None);
                 
                 var results = GetFamilies(toTest).Result;
 
@@ -413,7 +415,7 @@ namespace CodeOnlyTests
                 // sleep so the task won't get inlined
                 var ctx = CreatePeople(_ => Thread.Sleep(25), "Foo");
 
-                var toTest = new DynamicStoredProcedure(ctx, CancellationToken.None);
+                var toTest = new DynamicStoredProcedure(ctx, transformers, CancellationToken.None);
 
                 var res = GetPeopleInBackground(toTest).Result;
 

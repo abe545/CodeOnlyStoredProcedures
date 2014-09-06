@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics.Contracts;
+using System.Linq;
 using System.Threading;
 
 namespace CodeOnlyStoredProcedure
@@ -14,7 +16,7 @@ namespace CodeOnlyStoredProcedure
         /// Calls a StoredProcedure using a dynamic syntax.
         /// </summary>
         /// <param name="connection">The IDbConnection to use to execute the Stored Procedure.</param>
-        /// <param name="timeout">The amount of time in seconds before the stored procedure will be aborted.</param>
+        /// <param name="transformers">The <see cref="IDataTransformer"/>s to use to massage the data in the result set.</param>
         /// <returns>A dynamic object that represents the results from the StoredProcedure execution.</returns>
         /// <remarks>All parameters must be named. However, they can be marked as ref (InputOutput SQL Parameter) or
         /// out (Output SQL Parameter).</remarks>
@@ -23,12 +25,34 @@ namespace CodeOnlyStoredProcedure
         ///                                                  .data_schema // if omitted, defaults to dbo
         ///                                                  .usp_GetPeople(minimumAge: 20);
         /// </example>
-        public static dynamic Call(this IDbConnection connection, int timeout = 30)
+        public static dynamic Call(this IDbConnection connection, params IDataTransformer[] transformers)
         {
             Contract.Requires(connection != null);
             Contract.Ensures(Contract.Result<object>() != null);
 
-            return new DynamicStoredProcedure(connection, CancellationToken.None, timeout);
+            return connection.Call(CancellationToken.None, StoredProcedure.defaultTimeout, transformers);
+        }
+
+        /// <summary>
+        /// Calls a StoredProcedure using a dynamic syntax.
+        /// </summary>
+        /// <param name="connection">The IDbConnection to use to execute the Stored Procedure.</param>
+        /// <param name="timeout">The amount of time in seconds before the stored procedure will be aborted.</param>
+        /// <param name="transformers">The <see cref="IDataTransformer"/>s to use to massage the data in the result set.</param>
+        /// <returns>A dynamic object that represents the results from the StoredProcedure execution.</returns>
+        /// <remarks>All parameters must be named. However, they can be marked as ref (InputOutput SQL Parameter) or
+        /// out (Output SQL Parameter).</remarks>
+        /// <example>Since this uses a dynamic syntax, you can execute StoredProcedures with a much cleaner style:
+        ///     IEnumerable&lt;Person&gt; people = connection.Call(15, new InternAllStringstransformer())
+        ///                                                  .data_schema // if omitted, defaults to dbo
+        ///                                                  .usp_GetPeople(minimumAge: 20);
+        /// </example>
+        public static dynamic Call(this IDbConnection connection, int timeout, params IDataTransformer[] transformers)
+        {
+            Contract.Requires(connection != null);
+            Contract.Ensures(Contract.Result<object>() != null);
+
+            return connection.Call(CancellationToken.None, timeout, transformers);
         }
 
         /// <summary>
@@ -36,7 +60,7 @@ namespace CodeOnlyStoredProcedure
         /// </summary>
         /// <param name="connection">The IDbConnection to use to execute the Stored Procedure.</param>
         /// <param name="token">The <see cref="CancellationToken"/> to use to cancel the execution of the Stored Procedure.</param>
-        /// <param name="timeout">The amount of time in seconds before the stored procedure will be aborted.</param>
+        /// <param name="transformers">The <see cref="IDataTransformer"/>s to use to massage the data in the result set.</param>
         /// <returns>A dynamic object that represents the results from the StoredProcedure execution.</returns>
         /// <remarks>All parameters must be named. However, they can be marked as ref (InputOutput SQL Parameter) or
         /// out (Output SQL Parameter). Unless you try to await (or cast to a Task) the result from the Call().
@@ -47,12 +71,37 @@ namespace CodeOnlyStoredProcedure
         ///                                                  .data_schema // if omitted, defaults to dbo
         ///                                                  .usp_GetPeople(minimumAge: 20);
         /// </example>
-        public static dynamic Call(this IDbConnection connection, CancellationToken token, int timeout = 30)
+        public static dynamic Call(this IDbConnection connection, CancellationToken token, params IDataTransformer[] transformers)
         {
             Contract.Requires(connection != null);
             Contract.Ensures(Contract.Result<object>() != null);
 
-            return new DynamicStoredProcedure(connection, token, timeout);
+            return connection.Call(token, StoredProcedure.defaultTimeout, transformers);
+        }
+
+        /// <summary>
+        /// Calls a StoredProcedure using a dynamic syntax.
+        /// </summary>
+        /// <param name="connection">The IDbConnection to use to execute the Stored Procedure.</param>
+        /// <param name="token">The <see cref="CancellationToken"/> to use to cancel the execution of the Stored Procedure.</param>
+        /// <param name="timeout">The amount of time in seconds before the stored procedure will be aborted.</param>
+        /// <param name="transformers">The <see cref="IDataTransformer"/>s to use to massage the data in the result set.</param>
+        /// <returns>A dynamic object that represents the results from the StoredProcedure execution.</returns>
+        /// <remarks>All parameters must be named. However, they can be marked as ref (InputOutput SQL Parameter) or
+        /// out (Output SQL Parameter). Unless you try to await (or cast to a Task) the result from the Call().
+        /// Since .NET has no easy way of returning multiple items from a Task, attempting to do so
+        /// will fail.</remarks>
+        /// <example>Since this uses a dynamic syntax, you can execute StoredProcedures with a much cleaner style:
+        ///     IEnumerable&lt;Person&gt; people = connection.Call(token)
+        ///                                                  .data_schema // if omitted, defaults to dbo
+        ///                                                  .usp_GetPeople(minimumAge: 20);
+        /// </example>
+        public static dynamic Call(this IDbConnection connection, CancellationToken token, int timeout, params IDataTransformer[] transformers)
+        {
+            Contract.Requires(connection != null);
+            Contract.Ensures(Contract.Result<object>() != null);
+
+            return new DynamicStoredProcedure(connection, transformers, token, timeout);
         }
 
         /// <summary>

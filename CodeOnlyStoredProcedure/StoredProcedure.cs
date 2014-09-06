@@ -27,6 +27,8 @@ namespace CodeOnlyStoredProcedure
     /// classes.</remarks>
     public partial class StoredProcedure
     {
+        internal const int defaultTimeout = 30;
+
         #region Private Fields
         private readonly string schema;
         private readonly string name;
@@ -432,7 +434,7 @@ namespace CodeOnlyStoredProcedure
         /// storedProcedure.Execute(this.Database.Connection);
         /// </code>
         /// </example>
-        public void Execute(IDbConnection connection, int timeout = 30)
+        public void Execute(IDbConnection connection, int timeout = defaultTimeout)
         {
             Contract.Requires(connection != null);
 
@@ -453,7 +455,7 @@ namespace CodeOnlyStoredProcedure
         /// await storedProcedure.ExecuteAsync(this.Database.Connection);
         /// </code>
         /// </example>
-        public Task ExecuteAsync(IDbConnection connection, int timeout = 30)
+        public Task ExecuteAsync(IDbConnection connection, int timeout = defaultTimeout)
         {
             Contract.Requires(connection != null);
             Contract.Ensures (Contract.Result<Task>() != null);
@@ -475,7 +477,7 @@ namespace CodeOnlyStoredProcedure
         /// await storedProcedure.ExecuteAsync(this.Database.Connection, cts.Token);
         /// </code>
         /// </example>
-        public Task ExecuteAsync(IDbConnection connection, CancellationToken token, int timeout = 30)
+        public Task ExecuteAsync(IDbConnection connection, CancellationToken token, int timeout = defaultTimeout)
         {
             Contract.Requires(connection != null);
             Contract.Ensures (Contract.Result<Task>() != null);
@@ -512,7 +514,7 @@ namespace CodeOnlyStoredProcedure
 
         internal virtual object InternalCall(
             IDbConnection connection,
-            int           commandTimeout = 30)
+            int           commandTimeout = defaultTimeout)
         {
             Contract.Requires(connection != null);
 
@@ -523,7 +525,7 @@ namespace CodeOnlyStoredProcedure
         internal virtual object InternalCallAsync(
             IDbConnection     connection,
             CancellationToken token,
-            int               commandTimeout = 30)
+            int               commandTimeout = defaultTimeout)
         {
             Contract.Requires(connection != null);
 
@@ -535,7 +537,7 @@ namespace CodeOnlyStoredProcedure
         internal IDictionary<Type, IList> Execute(
             IDbConnection     connection,
             CancellationToken token,
-            int               commandTimeout = 30,
+            int               commandTimeout = defaultTimeout,
             IEnumerable<Type> outputTypes    = null)
         {
             Contract.Requires(connection != null);

@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.Diagnostics.Contracts;
 using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -19,6 +20,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
         private readonly Task<IEnumerable<StoredProcedureExtensions.StoredProcedureResult>> resultTask;
         private readonly IDbConnection                                                      connection;
         private readonly IDbCommand                                                         command;
+        private readonly IEnumerable<IDataTransformer>                                      transformers;
         private readonly bool                                                               canBeAsync;
         private readonly CancellationToken                                                  token;
         private          bool                                                               continueOnCaller = true;
@@ -80,17 +82,25 @@ namespace CodeOnlyStoredProcedure.Dynamic
 #endif
 
         public DynamicStoredProcedureResults(
-            IDbConnection connection,
-            string schema,
-            string name,
-            int timeout,
+            IDbConnection                                   connection,
+            string                                          schema,
+            string                                          name,
+            int                                             timeout,
             List<Tuple<SqlParameter, Action<SqlParameter>>> parameters,
-            bool canBeAsync,
-            CancellationToken token)
+            IEnumerable<IDataTransformer>                   transformers,
+            bool                                            canBeAsync,
+            CancellationToken                               token)
         {
-            this.canBeAsync = canBeAsync;
-            this.command    = connection.CreateCommand(schema, name, timeout, out this.connection);
-            this.token      = token;
+            Contract.Requires(connection != null);
+            Contract.Requires(!string.IsNullOrEmpty(schema));
+            Contract.Requires(!string.IsNullOrEmpty(name));
+            Contract.Requires(parameters != null);
+            Contract.Requires(transformers != null);
+
+            this.canBeAsync   = canBeAsync;
+            this.command      = connection.CreateCommand(schema, name, timeout, out this.connection);
+            this.transformers = transformers;
+            this.token        = token;
 
             foreach (var t in parameters)
                 command.Parameters.Add(t.Item1);
@@ -207,9 +217,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
         private object GetSingleResult(Type itemType)
         {
-            return resultTask.Result
-                             .Parse(new[] { itemType },
-                                    Enumerable.Empty<IDataTransformer>())[itemType];
+            return resultTask.Result.Parse(new[] { itemType }, transformers)[itemType];
         }
 
         private Task<IEnumerable<T>> CreateSingleContinuation<T>()
@@ -226,7 +234,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
             if (create == null)
                 return null;
 
-            var parsed = resultTask.Result.Parse(types, Enumerable.Empty<IDataTransformer>());
+            var parsed = resultTask.Result.Parse(types, transformers);
 
             return create.MakeGenericMethod(types.Select(t => typeof(IEnumerable<>).MakeGenericType(t)).ToArray())
                          .Invoke(null, types.Select(t => parsed[t]).ToArray());
@@ -260,7 +268,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
                         tcs.SetCanceled();
                     else
                     {
-                        var res = r.Result.Parse(types, Enumerable.Empty<IDataTransformer>());
+                        var res = r.Result.Parse(types, transformers);
                         tcs.SetResult(parse.Invoke(null, types.Select(t => res[t]).ToArray()));
                     }
                 });

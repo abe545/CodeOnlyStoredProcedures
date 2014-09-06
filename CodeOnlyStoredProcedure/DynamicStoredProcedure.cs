@@ -22,6 +22,7 @@ namespace CodeOnlyStoredProcedure
         private static readonly Func<InvokeMemberBinder, int, CSharpArgumentInfo> getArgumentInfo       = null;
         private static readonly Action<SqlParameter>                              none                  = _ => { };
         private        readonly IDbConnection                                     connection;
+        private        readonly IEnumerable<IDataTransformer>                     transformers;
         private        readonly string                                            schema;
         private        readonly CancellationToken                                 token;
         private        readonly int                                               timeout;
@@ -33,23 +34,26 @@ namespace CodeOnlyStoredProcedure
             getParameterName      = CreateParameterNameGetter();
         }
 
-        public DynamicStoredProcedure(IDbConnection     connection,
-                                      CancellationToken token,
-                                      int               timeout = 30,
-                                      string            schema = "dbo")
+        public DynamicStoredProcedure(IDbConnection                 connection,
+                                      IEnumerable<IDataTransformer> transformers,
+                                      CancellationToken             token,
+                                      int                           timeout = StoredProcedure.defaultTimeout,
+                                      string                        schema  = "dbo")
         {
-            Contract.Requires(connection != null);
+            Contract.Requires(connection   != null);
+            Contract.Requires(transformers != null);
             Contract.Requires(!string.IsNullOrEmpty(schema));
 
-            this.connection = connection;
-            this.schema     = schema;
-            this.token      = token;
-            this.timeout    = timeout;
+            this.connection   = connection;
+            this.transformers = transformers;
+            this.schema       = schema;
+            this.token        = token;
+            this.timeout      = timeout;
         }
 
         public override bool TryGetMember(GetMemberBinder binder, out object result)
         {
-            result = new DynamicStoredProcedure(connection, token, timeout, binder.Name);
+            result = new DynamicStoredProcedure(connection, transformers, token, timeout, binder.Name);
             return true;
         }
 
@@ -105,6 +109,7 @@ namespace CodeOnlyStoredProcedure
                 binder.Name,
                 timeout,
                 parameters,
+                transformers,
                 canBeAsync,
                 token);
 
