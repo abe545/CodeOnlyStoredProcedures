@@ -1,20 +1,19 @@
 ﻿using System;
+using System.Dynamic;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace CodeOnlyStoredProcedure.Dynamic
 {
-    internal class DynamicStoredProcedureResultsAwaiter
+    internal class DynamicStoredProcedureResultsAwaiter : DynamicObject
 #if !NET40
-        : System.Runtime.CompilerServices.INotifyCompletion
+        , System.Runtime.CompilerServices.INotifyCompletion
 #endif
     {
         private readonly DynamicStoredProcedureResults results;
         private readonly Task                          toWait;
         private readonly bool                          continueOnCaller;
-
-        public bool IsCompleted { get { return toWait.IsCompleted; } }
-
+        
         public DynamicStoredProcedureResultsAwaiter(
             DynamicStoredProcedureResults results, 
             Task toWait,
@@ -25,9 +24,26 @@ namespace CodeOnlyStoredProcedure.Dynamic
             this.continueOnCaller = continueOnCaller;
         }
 
-        public dynamic GetResult()
+        public override bool TryGetMember(GetMemberBinder binder, out object result)
         {
-            return results;
+            if (binder.Name == "IsCompleted")
+            {
+                result = toWait.IsCompleted;
+                return true;
+            }
+
+            return base.TryGetMember(binder, out result);
+        }
+
+        public override bool TryInvokeMember(InvokeMemberBinder binder, object[] args, out object result)
+        {
+            if (binder.Name == "GetResult")
+            {
+                result = results;
+                return true;
+            }
+
+            return base.TryInvokeMember(binder, args, out result);
         }
 
         public virtual void OnCompleted(Action continuation)

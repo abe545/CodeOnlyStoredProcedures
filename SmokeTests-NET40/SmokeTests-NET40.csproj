@@ -87,6 +87,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\SmokeTests\Program.AsyncTests.cs">
+      <Link>Program.AsyncTests.cs</Link>
+      <DependentUpon>Program.cs</DependentUpon>
+    </Compile>
     <Compile Include="..\SmokeTests\Program.cs">
       <Link>Program.cs</Link>
     </Compile>

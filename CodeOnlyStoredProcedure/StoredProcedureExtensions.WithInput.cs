@@ -52,6 +52,7 @@ namespace CodeOnlyStoredProcedure
         {
             Contract.Requires(sp                                 != null);
             Contract.Requires(input                              != null);
+            Contract.Requires(inputType                          != null);
             Contract.Ensures (Contract.Result<StoredProcedure>() != null);
 
             foreach (var t in inputType.GetParameters(input))

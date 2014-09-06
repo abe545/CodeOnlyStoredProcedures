@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.Contracts;
 using System.Threading;
 
 namespace CodeOnlyStoredProcedure.Dynamic
@@ -7,6 +8,8 @@ namespace CodeOnlyStoredProcedure.Dynamic
     {
         public static void RunNoException(this Action action)
         {
+            Contract.Requires(action != null);
+
             try
             {
                 action();
@@ -19,13 +22,15 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
         public static void ThrowAsync(this Exception exception, SynchronizationContext targetContext)
         {
+            Contract.Requires(exception != null);
+
             if (targetContext != null)
             {
                 try
                 {
                     targetContext.Post(s =>
                     {
-                        throw PrepareExceptionForRethrow((Exception)s);
+                        throw (Exception)s;
                     }, exception);
                     return;
                 }
@@ -40,14 +45,8 @@ namespace CodeOnlyStoredProcedure.Dynamic
             }
             ThreadPool.QueueUserWorkItem(s =>
             {
-                throw PrepareExceptionForRethrow((Exception)s);
+                throw (Exception)s;
             }, exception);
-        }
-
-        private static Exception PrepareExceptionForRethrow(Exception exception)
-        {
-            // this apparently copies the exception's stack trace so its stack trace isn't overwritten.
-            return exception;
         }
     }
 }
