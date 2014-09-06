@@ -53,7 +53,7 @@ namespace SmokeTests
 
             Console.Write("Calling usp_GetItem synchronously (Dynamic Syntax expecting no results) - ");
 
-            items = db.Database.Connection.Call(timeout).usp_GetItem<Item>(ItemId: 41);
+            items = db.Database.Connection.Call(timeout).usp_GetItem(ItemId: 41);
 
             if (items.Any())
             {
@@ -85,7 +85,8 @@ namespace SmokeTests
 
             Console.Write("Calling usp_GetItem asynchronously (Dynamic Syntax) - ");
 
-            items = db.Database.Connection.CallAsync(timeout).usp_GetItem<Item>(ItemId: 0).Result;
+            Task<IEnumerable<Item>> asyncItems = db.Database.Connection.Call(timeout).usp_GetItem(ItemId: 0);
+            items = asyncItems.Result;
 
             if (!TestGetItemResults(items))
                 return false;

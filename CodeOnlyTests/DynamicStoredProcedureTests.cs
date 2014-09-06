@@ -18,430 +18,540 @@ namespace CodeOnlyTests
     [TestClass]
     public class DynamicStoredProcedureTests
     {
-        [TestMethod]
-        public void CanCallWithoutArguments()
+        [TestClass]
+        public class Synchronous
         {
-            var reader = new Mock<IDataReader>();
-            reader.SetupGet(r => r.FieldCount).Returns(1);
-            reader.Setup(r => r.GetName(0)).Returns("FirstName");
-            reader.SetupSequence(r => r.Read())
-                  .Returns(true)
-                  .Returns(false);
-            reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
-                  .Callback<object[]>(o => o[0] = "Foo");
 
-            var parms = new DataParameterCollection();
-            var cmd = new Mock<IDbCommand>();
-            cmd.Setup(c => c.ExecuteReader())
-               .Returns(reader.Object);
-            cmd.Setup(c => c.Parameters)
-               .Returns(parms);
-
-            var ctx = new Mock<IDbConnection>();
-            ctx.Setup(c => c.CreateCommand())
-               .Returns(cmd.Object);
-            
-            dynamic toTest = new DynamicStoredProcedure(ctx.Object, false, CancellationToken.None);
-
-            IEnumerable<Person> people = toTest.usp_GetPeople<Person>();
-
-            Assert.AreEqual("Foo", people.Single().FirstName);
-        }
-
-        [TestMethod]
-        public void CanCallWithReturnValueFromNonQuery()
-        {
-            var parms = new DataParameterCollection();
-            var cmd = new Mock<IDbCommand>();
-            cmd.Setup(c => c.ExecuteNonQuery())
-               .Callback(() =>
-                   {
-                       var parm = ((SqlParameter)parms[0]);
-                       Assert.AreEqual(ParameterDirection.ReturnValue, parm.Direction, "Not passed as ReturnValue");
-                       parm.Value = 42;
-                   })
-               .Returns(42);
-            cmd.Setup(c => c.Parameters)
-               .Returns(parms);
-
-            var ctx = new Mock<IDbConnection>();
-            ctx.Setup(c => c.CreateCommand())
-               .Returns(cmd.Object);
-
-            dynamic toTest = new DynamicStoredProcedure(ctx.Object, false, CancellationToken.None);
-
-            int retValue;
-            toTest.usp_StoredProc(returnValue: out retValue);
-
-            Assert.AreEqual(42, retValue, "Return value not set.");
-        }
-
-        [TestMethod]
-        public void CanCallWithRefParameterNoQuery()
-        {
-            var parms = new DataParameterCollection();
-            var cmd = new Mock<IDbCommand>();
-            cmd.Setup(c => c.ExecuteNonQuery())
-               .Callback(() =>
-                   {
-                       var parm = ((SqlParameter)parms[0]);
-                       Assert.AreEqual(ParameterDirection.InputOutput, parm.Direction, "Not passed as InputOutput");
-                       Assert.AreEqual(16, (int)parm.Value, "Ref parameter not passed to SP");
-                       parm.Value = 42;
-                   })
-               .Returns(0);
-            cmd.Setup(c => c.Parameters)
-               .Returns(parms);
-
-            var ctx = new Mock<IDbConnection>();
-            ctx.Setup(c => c.CreateCommand())
-               .Returns(cmd.Object);
-
-            dynamic toTest = new DynamicStoredProcedure(ctx.Object, false, CancellationToken.None);
-
-            int id = 16;
-            toTest.usp_StoredProc(id: ref id);
-
-            Assert.AreEqual(42, id, "Ref parameter not set.");
-        }
-
-        [TestMethod]
-        public void CanCallWithOutParameterNoQuery()
-        {
-            var parms = new DataParameterCollection();
-            var cmd = new Mock<IDbCommand>();
-            cmd.Setup(c => c.ExecuteNonQuery())
-               .Callback(() =>
-                   {
-                       var parm = ((SqlParameter)parms[0]);
-                       Assert.AreEqual(ParameterDirection.Output, parm.Direction, "Not passed as Output");
-                       parm.Value = 42;
-                   })
-               .Returns(0);
-            cmd.Setup(c => c.Parameters)
-               .Returns(parms);
-
-            var ctx = new Mock<IDbConnection>();
-            ctx.Setup(c => c.CreateCommand())
-               .Returns(cmd.Object);
-
-            dynamic toTest = new DynamicStoredProcedure(ctx.Object, false, CancellationToken.None);
-
-            int id;
-            toTest.usp_StoredProc(id: out id);
-
-            Assert.AreEqual(42, id, "Out parameter not set.");   
-        }
-
-        [TestMethod]
-        public void CanCallAsyncWithNoArguments()
-        {
-            var reader = new Mock<IDataReader>();
-            reader.SetupGet(r => r.FieldCount).Returns(1);
-            reader.Setup(r => r.GetName(0)).Returns("FirstName");
-            reader.SetupSequence(r => r.Read())
-                  .Returns(true)
-                  .Returns(false);
-            reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
-                  .Callback<object[]>(o => o[0] = "Foo");
-
-            var parms = new DataParameterCollection();
-            var cmd = new Mock<IDbCommand>();
-            cmd.Setup(c => c.ExecuteReader())
-               .Returns(reader.Object);
-            cmd.Setup(c => c.Parameters)
-               .Returns(parms);
-
-            var ctx = new Mock<IDbConnection>();
-            ctx.Setup(c => c.CreateCommand())
-               .Returns(cmd.Object);
-
-            dynamic toTest = new DynamicStoredProcedure(ctx.Object, true, CancellationToken.None);
-
-            Task<IEnumerable<Person>> task = toTest.usp_GetPeople<Person>();
-            task.Wait();
-            Assert.AreEqual("Foo", task.Result.Single().FirstName);
-        }
-
-        [TestMethod]
-        public void CallAsyncWithSimpleReturnValueThrows()
-        {
-            dynamic toTest = new DynamicStoredProcedure(Mock.Of<IDbConnection>(), true, CancellationToken.None);
-
-            int retValue;
-            try
+            [TestMethod]
+            public void CanCallWithoutArguments()
             {
+                var ctx = CreatePeople("Foo");
+
+                dynamic toTest = new DynamicStoredProcedure(ctx, CancellationToken.None);
+
+                IEnumerable<Person> people = toTest.usp_GetPeople();
+
+                Assert.AreEqual("Foo", people.Single().FirstName);
+            }
+
+            [TestMethod]
+            public void CanCallWithReturnValueFromNonQuery()
+            {
+                var ctx = CreatePeople(parms =>
+                {
+                    var parm = ((SqlParameter)parms[0]);
+                    Assert.AreEqual(ParameterDirection.ReturnValue, parm.Direction, "Not passed as ReturnValue");
+                    parm.Value = 42;
+                });
+
+                dynamic toTest = new DynamicStoredProcedure(ctx, CancellationToken.None);
+
+                int retValue;
                 toTest.usp_StoredProc(returnValue: out retValue);
-                Assert.Fail("Expected exception not thrown.");
+
+                Assert.AreEqual(42, retValue, "Return value not set.");
             }
-            catch(NotSupportedException ex)
+
+            [TestMethod]
+            public void CanCallWithRefParameterNoQuery()
             {
-                Assert.AreEqual(DynamicStoredProcedure.asyncParameterDirectionError, ex.Message);
+                var ctx = CreatePeople(parms =>
+                {
+                    var parm = ((SqlParameter)parms[0]);
+                    Assert.AreEqual(ParameterDirection.InputOutput, parm.Direction, "Not passed as InputOutput");
+                    Assert.AreEqual(16, (int)parm.Value, "Ref parameter not passed to SP");
+                    parm.Value = 42;
+                });
+
+                dynamic toTest = new DynamicStoredProcedure(ctx, CancellationToken.None);
+
+                int id = 16;
+                toTest.usp_StoredProc(id: ref id);
+
+                Assert.AreEqual(42, id, "Ref parameter not set.");
             }
-        }
 
-        [TestMethod]
-        public void CallAsyncWithSimpleRefValueThrows()
-        {
-            dynamic toTest = new DynamicStoredProcedure(Mock.Of<IDbConnection>(), true, CancellationToken.None);
-
-            string retValue = "Foo";
-            try
+            [TestMethod]
+            public void CanCallWithOutParameterNoQuery()
             {
-                toTest.usp_StoredProc(id: ref retValue);
-                Assert.Fail("Expected exception not thrown.");
+                var ctx = CreatePeople(parms =>
+                {
+                    var parm = ((SqlParameter)parms[0]);
+                    Assert.AreEqual(ParameterDirection.Output, parm.Direction, "Not passed as Output");
+                    parm.Value = 42;
+                });
+
+                dynamic toTest = new DynamicStoredProcedure(ctx, CancellationToken.None);
+
+                int id;
+                toTest.usp_StoredProc(id: out id);
+
+                Assert.AreEqual(42, id, "Out parameter not set.");
             }
-            catch (NotSupportedException ex)
+
+            [TestMethod]
+            public void CancelledTokenWillNotExecute()
             {
-                Assert.AreEqual(DynamicStoredProcedure.asyncParameterDirectionError, ex.Message);
+                var ctx = CreatePeople(_ =>
+                {
+                    throw new Exception("Should have been cancelled.");
+                });
+                var cts = new CancellationTokenSource();
+                cts.Cancel();
+
+                dynamic toTest = new DynamicStoredProcedure(ctx, cts.Token);
+
+                var value = 13;
+                Task<IEnumerable<Person>> people = toTest.usp_StoredProc(value: value);
+                Assert.AreEqual(TaskStatus.Canceled, people.Status);
             }
-        }
 
-        [TestMethod]
-        public void CallAsyncWithSimpleOutValueThrows()
-        {
-            dynamic toTest = new DynamicStoredProcedure(Mock.Of<IDbConnection>(), true, CancellationToken.None);
-
-            decimal val;
-            try
+            [TestMethod]
+            public void CanGetMultipleResultSets()
             {
-                toTest.usp_StoredProc(value: out val);
-                Assert.Fail("Expected exception not thrown.");
+                int resultSet = 0;
+
+                var reader = new Mock<IDataReader>();
+                reader.SetupGet(r => r.FieldCount).Returns(1);
+                reader.Setup(r => r.GetName(0))
+                      .Returns(() => resultSet == 0 ? "FirstName" : "LastName");
+                reader.SetupSequence(r => r.Read())
+                      .Returns(true)
+                      .Returns(false)
+                      .Returns(true)
+                      .Returns(false);
+                reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
+                      .Callback<object[]>(o => o[0] = resultSet == 0 ? "Foo" : "Bar");
+                reader.Setup(r => r.NextResult())
+                      .Callback(() => ++resultSet)
+                      .Returns(() => resultSet < 2);
+
+                var parms = new DataParameterCollection();
+                var cmd = new Mock<IDbCommand>();
+                cmd.Setup(c => c.ExecuteReader())
+                   .Returns(reader.Object);
+                cmd.Setup(c => c.Parameters)
+                   .Returns(parms);
+
+                var ctx = new Mock<IDbConnection>();
+                ctx.Setup(c => c.CreateCommand())
+                   .Returns(cmd.Object);
+
+                dynamic toTest = new DynamicStoredProcedure(ctx.Object, CancellationToken.None);
+
+                Tuple<IEnumerable<Person>, IEnumerable<Family>> results = toTest.usp_GetPeople();
+
+                Assert.AreEqual("Foo", results.Item1.Single().FirstName, "First result set not returned.");
+                Assert.AreEqual("Bar", results.Item2.Single().LastName, "Second result set not returned.");
             }
-            catch (NotSupportedException ex)
+        }
+
+        [TestClass]
+        public abstract class Asynchronous
+        {
+            protected abstract Task<IEnumerable<Person>> GetPeople(dynamic toTest);
+            protected abstract Task<IEnumerable<Person>> GetPeopleShouldThrow(dynamic toTest, ParameterDirection direction);
+            protected abstract Task<IEnumerable<Person>> GetPeople<T>(dynamic toTest, T args);
+            protected abstract Task<Tuple<IEnumerable<Person>, IEnumerable<Family>>> GetFamilies(dynamic toTest);
+            protected abstract Task Call<T>(dynamic toTest, T args);
+
+            [TestMethod]
+            public void CanCallAsyncWithNoArguments()
             {
-                Assert.AreEqual(DynamicStoredProcedure.asyncParameterDirectionError, ex.Message);
+                var ctx = CreatePeople("Foo");
+
+                var toTest = new DynamicStoredProcedure(ctx, CancellationToken.None);
+
+                var result = GetPeople(toTest).Result;
+
+                Assert.AreEqual("Foo", result.Single().FirstName);
+            }
+
+            [TestMethod]
+            public void CallAsyncWithSimpleReturnValueThrows()
+            {
+                var ctx = CreatePeople(parms =>
+                {
+                    var parm = ((SqlParameter)parms[0]);
+                    Assert.AreEqual(ParameterDirection.ReturnValue, parm.Direction, "Not passed as ReturnValue");
+                    parm.Value = 42;
+                }, "Foo");
+
+                var toTest = new DynamicStoredProcedure(ctx, CancellationToken.None);
+
+                try
+                {
+                    GetPeopleShouldThrow(toTest, ParameterDirection.ReturnValue).Wait();
+                    Assert.Fail("Expected exception not thrown.");
+                }
+                catch (AggregateException ax)
+                {
+                    Assert.AreEqual(DynamicStoredProcedure.asyncParameterDirectionError, ax.InnerException.Message);
+                }
+                catch (NotSupportedException ex)
+                {
+                    Assert.AreEqual(DynamicStoredProcedure.asyncParameterDirectionError, ex.Message);
+                }
+            }
+
+            [TestMethod]
+            public void CallAsyncWithSimpleRefValueThrows()
+            {
+                var ctx = CreatePeople(parms =>
+                {
+                    var parm = ((SqlParameter)parms[0]);
+                    Assert.AreEqual(ParameterDirection.InputOutput, parm.Direction, "Not passed as InputOutput");
+                    Assert.AreEqual("Foo", parm.Value, "Ref value not passed to the stored procedure.");
+                    parm.Value = "Bar";
+                }, "Foo");
+
+                var toTest = new DynamicStoredProcedure(ctx, CancellationToken.None);
+
+                try
+                {
+                    GetPeopleShouldThrow(toTest, ParameterDirection.InputOutput).Wait();
+                    Assert.Fail("Expected exception not thrown.");
+                }
+                catch (AggregateException ax)
+                {
+                    Assert.AreEqual(DynamicStoredProcedure.asyncParameterDirectionError, ax.InnerException.Message);
+                }
+                catch (NotSupportedException ex)
+                {
+                    Assert.AreEqual(DynamicStoredProcedure.asyncParameterDirectionError, ex.Message);
+                }
+            }
+
+            [TestMethod]
+            public void CallAsyncWithSimpleOutValueThrows()
+            {
+                var ctx = CreatePeople(parms =>
+                {
+                    var parm = ((SqlParameter)parms[0]);
+                    Assert.AreEqual(ParameterDirection.Output, parm.Direction, "Not passed as Output");
+                    parm.Value = 42M;
+                }, "Foo");
+
+                var toTest = new DynamicStoredProcedure(ctx, CancellationToken.None);
+
+                try
+                {
+                    GetPeopleShouldThrow(toTest, ParameterDirection.Output).Wait();
+                    Assert.Fail("Expected exception not thrown.");
+                }
+                catch (AggregateException ax)
+                {
+                    Assert.AreEqual(DynamicStoredProcedure.asyncParameterDirectionError, ax.InnerException.Message);
+                }
+                catch (NotSupportedException ex)
+                {
+                    Assert.AreEqual(DynamicStoredProcedure.asyncParameterDirectionError, ex.Message);
+                }
+            }
+
+            [TestMethod]
+            public void CanCallAsyncWithReturnValueFromNonQuery()
+            {
+                var ctx = CreatePeople(parms =>
+                {
+                    var parm = ((SqlParameter)parms[0]);
+                    Assert.AreEqual(ParameterDirection.ReturnValue, parm.Direction, "Not passed as ReturnValue");
+                    parm.Value = 42;
+                });
+
+                var toTest = new DynamicStoredProcedure(ctx, CancellationToken.None);
+
+                var retValue = new Return();
+                Call(toTest, retValue).Wait();
+
+                Assert.AreEqual(42, retValue.Value, "Return value not set.");
+            }
+
+            [TestMethod]
+            public void CanCallAsyncWithRefParameterNonQuery()
+            {
+                var ctx = CreatePeople(parms =>
+                {
+                    var parm = ((SqlParameter)parms[0]);
+                    Assert.AreEqual(ParameterDirection.InputOutput, parm.Direction, "Not passed as InputOutput");
+                    Assert.AreEqual(16, (int)parm.Value, "Ref parameter not passed to SP");
+                    parm.Value = 42;
+                });
+
+                var toTest = new DynamicStoredProcedure(ctx, CancellationToken.None);
+
+                var inputOutput = new InputOutput { Value = 16 };
+
+                Call(toTest, inputOutput).Wait();
+
+                Assert.AreEqual(42, inputOutput.Value, "Ref parameter not set.");
+            }
+
+            [TestMethod]
+            public void CanCallAsyncWithOutParameterNonQuery()
+            {
+                var ctx = CreatePeople(parms =>
+                {
+                    var parm = ((SqlParameter)parms[0]);
+                    Assert.AreEqual(ParameterDirection.Output, parm.Direction, "Not passed as Output");
+                    parm.Value = 42;
+                });
+
+                var toTest = new DynamicStoredProcedure(ctx, CancellationToken.None);
+
+                var output = new Output();
+
+                Call(toTest, output).Wait();
+
+                Assert.AreEqual(42, output.Value, "Out parameter not set.");
+            }
+
+            [TestMethod]
+            public void CanAllAsyncWithReturnValue()
+            {
+                var ctx = CreatePeople(parms =>
+                {
+                    var parm = ((SqlParameter)parms[0]);
+                    Assert.AreEqual(ParameterDirection.ReturnValue, parm.Direction, "Not passed as ReturnValue");
+                    parm.Value = 42;
+                }, "Foo", "Bar");
+
+                var toTest = new DynamicStoredProcedure(ctx, CancellationToken.None);
+
+                var retValue = new Return();
+                var people = GetPeople(toTest, retValue).Result;
+
+                Assert.AreEqual(42, retValue.Value, "Return value not set.");
+                Assert.IsTrue(people.Select(p => p.FirstName).SequenceEqual(new[] { "Foo", "Bar" }));
+            }
+
+            [TestMethod]
+            public void CanAllAsyncWithRefParameterValue()
+            {
+                var ctx = CreatePeople(parms =>
+                {
+                    var parm = ((SqlParameter)parms[0]);
+                    Assert.AreEqual(ParameterDirection.InputOutput, parm.Direction, "Not passed as InputOutput");
+                    Assert.AreEqual(22, (int)parm.Value, "Ref parameter not passed to SP");
+                    parm.Value = 42;
+                }, "Bar", "Baz");
+
+                var toTest = new DynamicStoredProcedure(ctx, CancellationToken.None);
+
+                var inout = new InputOutput { Value = 22 };
+                var people = GetPeople(toTest, inout).Result;
+
+                Assert.AreEqual(42, inout.Value, "Ref parameter not set.");
+                Assert.IsTrue(people.Select(p => p.FirstName).SequenceEqual(new[] { "Bar", "Baz" }));
+            }
+
+            [TestMethod]
+            public void CanAllAsyncWithOutParameterValue()
+            {
+                var ctx = CreatePeople(parms =>
+                {
+                    var parm = ((SqlParameter)parms[0]);
+                    Assert.AreEqual(ParameterDirection.Output, parm.Direction, "Not passed as Output");
+                    parm.Value = 42;
+                }, "Bar", "Baz");
+
+                var toTest = new DynamicStoredProcedure(ctx, CancellationToken.None);
+
+                var output = new Output();
+                var people = GetPeople(toTest, output).Result;
+
+                Assert.AreEqual(42, output.Value, "Out parameter not set.");
+                Assert.IsTrue(people.Select(p => p.FirstName).SequenceEqual(new[] { "Bar", "Baz" }));
+            }
+
+            [TestMethod]
+            public void CanGetMultipleResultSetsAsync()
+            {
+                int resultSet = 0;
+
+                var reader = new Mock<IDataReader>();
+                reader.SetupGet(r => r.FieldCount).Returns(1);
+                reader.Setup(r => r.GetName(0))
+                      .Returns(() => resultSet == 0 ? "FirstName" : "LastName");
+                reader.SetupSequence(r => r.Read())
+                      .Returns(true)
+                      .Returns(false)
+                      .Returns(true)
+                      .Returns(false);
+                reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
+                      .Callback<object[]>(o => o[0] = resultSet == 0 ? "Foo" : "Bar");
+                reader.Setup(r => r.NextResult())
+                      .Callback(() => ++resultSet)
+                      .Returns(() => resultSet < 2);
+
+                var parms = new DataParameterCollection();
+                var cmd = new Mock<IDbCommand>();
+                cmd.Setup(c => c.ExecuteReader())
+                   .Returns(reader.Object);
+                cmd.Setup(c => c.Parameters)
+                   .Returns(parms);
+
+                var ctx = new Mock<IDbConnection>();
+                ctx.Setup(c => c.CreateCommand())
+                   .Returns(cmd.Object);
+
+                var toTest = new DynamicStoredProcedure(ctx.Object, CancellationToken.None);
+                
+                var results = GetFamilies(toTest).Result;
+
+                Assert.AreEqual("Foo", results.Item1.Single().FirstName, "First result set not returned.");
+                Assert.AreEqual("Bar", results.Item2.Single().LastName, "Second result set not returned.");
             }
         }
 
-        [TestMethod]
-        public void CanCallAsyncWithReturnValueFromNonQuery()
+        [TestClass]
+        public class AsyncSyntax : Asynchronous
         {
-            var parms = new DataParameterCollection();
-            var cmd = new Mock<IDbCommand>();
-            cmd.Setup(c => c.ExecuteNonQuery())
-               .Callback(() =>
-               {
-                   var parm = ((SqlParameter)parms[0]);
-                   Assert.AreEqual(ParameterDirection.ReturnValue, parm.Direction, "Not passed as ReturnValue");
-                   parm.Value = 42;
-               })
-               .Returns(42);
-            cmd.Setup(c => c.Parameters)
-               .Returns(parms);
+            protected override async Task<IEnumerable<Person>> GetPeople(dynamic toTest)
+            {
+                return await toTest.usp_GetPeople();
+            }
 
-            var ctx = new Mock<IDbConnection>();
-            ctx.Setup(c => c.CreateCommand())
-               .Returns(cmd.Object);
+            protected async override Task<IEnumerable<Person>> GetPeopleShouldThrow(dynamic toTest, ParameterDirection direction)
+            {
+                switch (direction)
+                {
+                    case ParameterDirection.InputOutput:
+                        string inOutValue = "Foo";
+                        return await toTest.usp_GetPeople(id: ref inOutValue);
 
-            dynamic toTest = new DynamicStoredProcedure(ctx.Object, true, CancellationToken.None);
+                    case ParameterDirection.Output:
+                        decimal outValue;
+                        return await toTest.usp_GetPeople(value: out outValue);
 
-            var retValue = new Return();
-            Task task = toTest.usp_StoredProc(retValue);
-            task.Wait();
+                    case ParameterDirection.ReturnValue:
+                        int returnValue = -1;
+                        return await toTest.usp_GetPeople(returnValue: out returnValue);
+                }
 
-            Assert.AreEqual(42, retValue.Value, "Return value not set.");
+                return null;
+            }
+
+            protected override async Task<IEnumerable<Person>> GetPeople<T>(dynamic toTest, T args)
+            {
+                return await toTest.usp_GetPeople(args);
+            }
+
+            protected override async Task<Tuple<IEnumerable<Person>, IEnumerable<Family>>> GetFamilies(dynamic toTest)
+            {
+                return await toTest.usp_GetFamilies();
+            }
+
+            protected override async Task Call<T>(dynamic toTest, T args)
+            {
+                await toTest.usp_StoredProc(args);
+            }
         }
 
-        [TestMethod]
-        public void CanCallAsyncWithRefParameterNoQuery()
+        [TestClass]
+        public class TaskSyntax : Asynchronous
         {
-            var parms = new DataParameterCollection();
-            var cmd = new Mock<IDbCommand>();
-            cmd.Setup(c => c.ExecuteNonQuery())
-               .Callback(() =>
-               {
-                   var parm = ((SqlParameter)parms[0]);
-                   Assert.AreEqual(ParameterDirection.InputOutput, parm.Direction, "Not passed as InputOutput");
-                   Assert.AreEqual(16, (int)parm.Value, "Ref parameter not passed to SP");
-                   parm.Value = 42;
-               })
-               .Returns(0);
-            cmd.Setup(c => c.Parameters)
-               .Returns(parms);
+            protected override Task<IEnumerable<Person>> GetPeople(dynamic toTest)
+            {
+                return toTest.usp_GetPeople();
+            }
 
-            var ctx = new Mock<IDbConnection>();
-            ctx.Setup(c => c.CreateCommand())
-               .Returns(cmd.Object);
+            protected override Task<IEnumerable<Person>> GetPeopleShouldThrow(dynamic toTest, ParameterDirection direction)
+            {
+                switch (direction)
+                {
+                    case ParameterDirection.InputOutput:
+                        string inOutValue = "Foo";
+                        return toTest.usp_GetPeople(id: ref inOutValue);
 
-            dynamic toTest = new DynamicStoredProcedure(ctx.Object, true, CancellationToken.None);
+                    case ParameterDirection.Output:
+                        decimal outValue;
+                        return toTest.usp_GetPeople(value: out outValue);
 
-            var inputOutput = new InputOutput { Value = 16 };
-            Task task = toTest.usp_StoredProc(inputOutput);
-            task.Wait();
+                    case ParameterDirection.ReturnValue:
+                        int returnValue = -1;
+                        return toTest.usp_GetPeople(returnValue: out returnValue);
+                }
 
-            Assert.AreEqual(42, inputOutput.Value, "Ref parameter not set.");
+                return null;
+            }
+
+            protected override Task<IEnumerable<Person>> GetPeople<T>(dynamic toTest, T args)
+            {
+                return toTest.usp_GetPeople(args);
+            }
+
+            protected override Task<Tuple<IEnumerable<Person>, IEnumerable<Family>>> GetFamilies(dynamic toTest)
+            {
+                return toTest.usp_GetFamilies();
+            }
+
+            protected override Task Call<T>(dynamic toTest, T args)
+            {
+                return toTest.usp_StoredProc(args);
+            }
         }
 
-        [TestMethod]
-        public void CanCallAsyncWithOutParameterNoQuery()
+        private static IDbConnection CreatePeople(params string[] names)
         {
-            var parms = new DataParameterCollection();
-            var cmd = new Mock<IDbCommand>();
-            cmd.Setup(c => c.ExecuteNonQuery())
-               .Callback(() =>
-               {
-                   var parm = ((SqlParameter)parms[0]);
-                   Assert.AreEqual(ParameterDirection.Output, parm.Direction, "Not passed as Output");
-                   parm.Value = 42;
-               })
-               .Returns(0);
-            cmd.Setup(c => c.Parameters)
-               .Returns(parms);
-
-            var ctx = new Mock<IDbConnection>();
-            ctx.Setup(c => c.CreateCommand())
-               .Returns(cmd.Object);
-
-            dynamic toTest = new DynamicStoredProcedure(ctx.Object, true, CancellationToken.None);
-
-            var output = new Output();
-            Task task = toTest.usp_StoredProc(output);
-            task.Wait();
-
-            Assert.AreEqual(42, output.Value, "Out parameter not set.");
+            return CreatePeople(_ => { }, names);
         }
 
-        [TestMethod]
-        public void CancelledTokenWillNotExecute()
+        private static IDbConnection CreatePeople(Action<DataParameterCollection> readerCallback, params string[] names)
         {
-            var cts = new CancellationTokenSource();
-            cts.Cancel();
-            var parms = new DataParameterCollection();
-
             var reader = new Mock<IDataReader>();
             reader.SetupGet(r => r.FieldCount).Returns(1);
             reader.Setup(r => r.GetName(0)).Returns("FirstName");
-            reader.Setup(r => r.Read())
-                  .Throws(new Exception("Should have been cancelled."));
 
-            var cmd = new Mock<IDbCommand>();
-            cmd.Setup(c => c.ExecuteReader())
-               .Returns(reader.Object);
-            cmd.Setup(c => c.Parameters)
-               .Returns(parms);
+            var setup = reader.SetupSequence(r => r.Read());
 
-            var ctx = new Mock<IDbConnection>();
-            ctx.Setup(c => c.CreateCommand())
-               .Returns(cmd.Object);
-
-            dynamic toTest = new DynamicStoredProcedure(ctx.Object, true, cts.Token);
-
-            var value = 13;
-            Task<IEnumerable<Person>> people = toTest.usp_StoredProc<Person>(value: value);
-            Assert.AreEqual(TaskStatus.Canceled, people.Status);
-        }
-
-        [TestMethod]
-        public void CanGetMultipleResultSets()
-        {
-            var reader = new Mock<IDataReader>();
-            reader.SetupGet(r => r.FieldCount).Returns(1);
-            reader.Setup(r => r.GetName(0)).Returns("FirstName");
-            reader.SetupSequence(r => r.Read())
-                  .Returns(true)
-                  .Returns(false);
+            var idx = 0;
             reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
-                  .Callback<object[]>(o => o[0] = "Foo");
-            reader.Setup(r => r.NextResult())
-                  .Callback(() => 
-                    {
-                        reader.Setup(r => r.GetName(0)).Returns("LastName");
-                        reader.SetupSequence(r => r.Read())
-                              .Returns(true)
-                              .Returns(false);
-                        reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
-                              .Callback<object[]>(o => o[0] = "Bar");
-                    })
-                  .Returns(true);
+                  .Callback<object[]>(o => o[0] = names[idx++]);
+
+            for (int i = 0; i < names.Length; ++i)
+                setup = setup.Returns(true);
+
+            setup.Returns(false);
 
             var parms = new DataParameterCollection();
             var cmd = new Mock<IDbCommand>();
             cmd.Setup(c => c.ExecuteReader())
+               .Callback(() => readerCallback(parms))
                .Returns(reader.Object);
-            cmd.Setup(c => c.Parameters)
+            cmd.SetupGet(c => c.Parameters)
                .Returns(parms);
 
             var ctx = new Mock<IDbConnection>();
             ctx.Setup(c => c.CreateCommand())
                .Returns(cmd.Object);
 
-            dynamic toTest = new DynamicStoredProcedure(ctx.Object, false, CancellationToken.None);
-
-            Tuple<IEnumerable<Person>, IEnumerable<Family>> results = toTest.usp_GetPeople<Person, Family>();
-
-            Assert.AreEqual("Foo", results.Item1.Single().FirstName, "First result set not returned.");
-            Assert.AreEqual("Bar", results.Item2.Single().LastName, "Second result set not returned.");
+            return ctx.Object;
         }
 
-        [TestMethod]
-        public void CanGetMultipleResultSetsAsync()
-        {
-            var reader = new Mock<IDataReader>();
-            reader.SetupGet(r => r.FieldCount).Returns(1);
-            reader.Setup(r => r.GetName(0)).Returns("FirstName");
-            reader.SetupSequence(r => r.Read())
-                  .Returns(true)
-                  .Returns(false);
-            reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
-                  .Callback<object[]>(o => o[0] = "Foo");
-            reader.Setup(r => r.NextResult())
-                  .Callback(() =>
-                  {
-                      reader.Setup(r => r.GetName(0)).Returns("LastName");
-                      reader.SetupSequence(r => r.Read())
-                            .Returns(true)
-                            .Returns(false);
-                      reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
-                            .Callback<object[]>(o => o[0] = "Bar");
-                  })
-                  .Returns(true);
-
-            var parms = new DataParameterCollection();
-            var cmd = new Mock<IDbCommand>();
-            cmd.Setup(c => c.ExecuteReader())
-               .Returns(reader.Object);
-            cmd.Setup(c => c.Parameters)
-               .Returns(parms);
-
-            var ctx = new Mock<IDbConnection>();
-            ctx.Setup(c => c.CreateCommand())
-               .Returns(cmd.Object);
-
-            dynamic toTest = new DynamicStoredProcedure(ctx.Object, true, CancellationToken.None);
-
-            Task<Tuple<IEnumerable<Person>, IEnumerable<Family>>> task = toTest.usp_GetPeople<Person, Family>();
-            task.Wait();
-
-            var results = task.Result;
-
-            Assert.AreEqual("Foo", results.Item1.Single().FirstName, "First result set not returned.");
-            Assert.AreEqual("Bar", results.Item2.Single().LastName, "Second result set not returned.");
-        }
-
-        private class Person
+        public class Person
         {
             public string FirstName { get; set; }
         }
 
-        private class Family
+        public class Family
         {
             public string LastName { get; set; }
         }
 
-        private class Return
+        public class Return
         {
             [StoredProcedureParameter(Direction = ParameterDirection.ReturnValue)]
             public int Value { get; set; }
         }
 
-        private class Output
+        public class Output
         {
             [StoredProcedureParameter(Direction = ParameterDirection.Output)]
             public int Value { get; set; }
         }
 
-        private class InputOutput
+        public class InputOutput
         {
             [StoredProcedureParameter(Direction = ParameterDirection.InputOutput)]
             public int Value { get; set; }

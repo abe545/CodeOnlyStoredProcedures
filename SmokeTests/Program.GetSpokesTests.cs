@@ -81,7 +81,7 @@ namespace SmokeTests
 
             Console.Write("Calling usp_GetSpokes asynchronously (Dynamic Syntax) - ");
 
-            spokes = db.Database.Connection.Call(timeout).usp_GetSpokes<int>(minimumSpokes: 4);
+            spokes = db.Database.Connection.Call(timeout).usp_GetSpokes(minimumSpokes: 4);
 
             if (!spokes.SequenceEqual(new[] { 4, 8, 16 }))
             {
@@ -108,7 +108,8 @@ namespace SmokeTests
 
             Console.Write("Calling usp_GetSpokes asynchronously (Dynamic Syntax) - ");
 
-            spokes = db.Database.Connection.CallAsync(timeout).usp_GetSpokes<int>(minimumSpokes: 6).Result;
+            Task<IEnumerable<int>> asyncSpokes = db.Database.Connection.Call(timeout).usp_GetSpokes(minimumSpokes: 6);
+            spokes = asyncSpokes.Result;
 
             if (!spokes.SequenceEqual(new[] { 8, 16 }))
             {
@@ -241,7 +242,8 @@ namespace SmokeTests
 
             Console.Write("Calling usp_GetSpokes (Enum result) asynchronously (Dynamic Syntax) - ");
 
-            spokes2 = db.Database.Connection.CallAsync(timeout).usp_GetSpokes<Spoke>(minimumSpokes: 6).Result;
+            Task<IEnumerable<Spoke>> asyncSpokes2 = db.Database.Connection.Call(timeout).usp_GetSpokes(minimumSpokes: 6);
+            spokes2 = asyncSpokes2.Result;
 
             if (!spokes2.SequenceEqual(new[] { Spoke.Eight, Spoke.Sixteen }))
             {

@@ -143,6 +143,15 @@
     <Compile Include="..\CodeOnlyStoredProcedure\DynamicStoredProcedure.cs">
       <Link>DynamicStoredProcedure.cs</Link>
     </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\Dynamic\DynamicStoredProcedureResults.cs">
+      <Link>Dynamic\DynamicStoredProcedureResults.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\Dynamic\DynamicStoredProcedureResultsAwaiter.cs">
+      <Link>Dynamic\DynamicStoredProcedureResultsAwaiter.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\Dynamic\Extensions.cs">
+      <Link>Dynamic\Extensions.cs</Link>
+    </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\Exceptions\StoredProcedureColumnException.cs">
       <Link>Exceptions\StoredProcedureColumnException.cs</Link>
     </Compile>

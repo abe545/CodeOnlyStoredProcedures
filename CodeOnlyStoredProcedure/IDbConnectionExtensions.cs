@@ -1,4 +1,5 @@
-﻿using System.Data;
+﻿using System;
+using System.Data;
 using System.Diagnostics.Contracts;
 using System.Threading;
 
@@ -10,7 +11,7 @@ namespace CodeOnlyStoredProcedure
     public static class IDbConnectionExtensions
     {
         /// <summary>
-        /// Calls a StoredProcedure using a dynamic syntax
+        /// Calls a StoredProcedure using a dynamic syntax.
         /// </summary>
         /// <param name="connection">The IDbConnection to use to execute the Stored Procedure.</param>
         /// <param name="timeout">The amount of time in seconds before the stored procedure will be aborted.</param>
@@ -20,57 +21,81 @@ namespace CodeOnlyStoredProcedure
         /// <example>Since this uses a dynamic syntax, you can execute StoredProcedures with a much cleaner style:
         ///     IEnumerable&lt;Person&gt; people = connection.Call()
         ///                                                  .data_schema // if omitted, defaults to dbo
-        ///                                                  .usp_GetPeople&lt;Person&gt;(minimumAge: 20);
+        ///                                                  .usp_GetPeople(minimumAge: 20);
         /// </example>
         public static dynamic Call(this IDbConnection connection, int timeout = 30)
         {
             Contract.Requires(connection != null);
             Contract.Ensures(Contract.Result<object>() != null);
 
-            return new DynamicStoredProcedure(connection, false, CancellationToken.None, timeout);
+            return new DynamicStoredProcedure(connection, CancellationToken.None, timeout);
         }
 
         /// <summary>
-        /// Calls a StoredProcedure using a dynamic syntax asynchronously.
-        /// </summary>
-        /// <param name="connection">The IDbConnection to use to execute the Stored Procedure.</param>
-        /// <param name="timeout">The amount of time in seconds before the stored procedure will be aborted.</param>
-        /// <returns>A dynamic object that represents the results from the StoredProcedure execution.</returns>
-        /// <remarks>All parameters must be named. However, they can be marked as ref (InputOutput SQL Parameter) or
-        /// out (Output SQL Parameter).</remarks>
-        /// <example>Since this uses a dynamic syntax, you can execute StoredProcedures with a much cleaner style:
-        ///     IEnumerable&lt;Person&gt; people = connection.CallAsync()
-        ///                                                  .data_schema // if omitted, defaults to dbo
-        ///                                                  .usp_GetPeople&lt;Person&gt;(minimumAge: 20);
-        /// </example>
-        public static dynamic CallAsync(this IDbConnection connection, int timeout = 30)
-        {
-            Contract.Requires(connection != null);
-            Contract.Ensures(Contract.Result<object>() != null);
-
-            return new DynamicStoredProcedure(connection, true, CancellationToken.None, timeout);
-        }
-
-        /// <summary>
-        /// Calls a StoredProcedure using a dynamic syntax asynchronously.
+        /// Calls a StoredProcedure using a dynamic syntax.
         /// </summary>
         /// <param name="connection">The IDbConnection to use to execute the Stored Procedure.</param>
         /// <param name="token">The <see cref="CancellationToken"/> to use to cancel the execution of the Stored Procedure.</param>
         /// <param name="timeout">The amount of time in seconds before the stored procedure will be aborted.</param>
         /// <returns>A dynamic object that represents the results from the StoredProcedure execution.</returns>
         /// <remarks>All parameters must be named. However, they can be marked as ref (InputOutput SQL Parameter) or
-        /// out (Output SQL Parameter).</remarks>
+        /// out (Output SQL Parameter). Unless you try to await (or cast to a Task) the result from the Call().
+        /// Since .NET has no easy way of returning multiple items from a Task, attempting to do so
+        /// will fail.</remarks>
         /// <example>Since this uses a dynamic syntax, you can execute StoredProcedures with a much cleaner style:
-        ///     IEnumerable&lt;Person&gt; people = connection.CallAsync(token)
+        ///     IEnumerable&lt;Person&gt; people = connection.Call(token)
         ///                                                  .data_schema // if omitted, defaults to dbo
-        ///                                                  .usp_GetPeople&lt;Person&gt;(minimumAge: 20);
+        ///                                                  .usp_GetPeople(minimumAge: 20);
         /// </example>
-        public static dynamic CallAsync(this IDbConnection connection, CancellationToken token, int timeout = 30)
+        public static dynamic Call(this IDbConnection connection, CancellationToken token, int timeout = 30)
         {
             Contract.Requires(connection != null);
             Contract.Ensures(Contract.Result<object>() != null);
 
-            return new DynamicStoredProcedure(connection, true, token, timeout);
+            return new DynamicStoredProcedure(connection, token, timeout);
+        }
+
+        /// <summary>
+        /// Creates an <see cref="IDbCommand"/> to execute a stored procedure.
+        /// </summary>
+        /// <param name="connection">The <see cref="IDbConnection"/> to use to execute the
+        /// stored procedure.</param>
+        /// <param name="schema">The schema of the stored procedure to execute.</param>
+        /// <param name="name">The name of the stored procedure to execute.</param>
+        /// <param name="timeout">The amount of time to wait before cancelling the execution.</param>
+        /// <param name="closeAfterExecute">If not null, this <see cref="IDbConnection"/> needs to
+        /// be closed after the command executes.</param>
+        /// <returns>The <see cref="IDbCommand"/> to execute</returns>
+        internal static IDbCommand CreateCommand(
+            this IDbConnection connection, 
+                 string        schema,
+                 string        name,
+                 int           timeout,
+            out  IDbConnection closeAfterExecute)
+        {
+            Contract.Requires(connection != null);
+
+            // if we don't create a new connection, connection.Open may throw
+            // an exception in multi-threaded scenarios. If we don't Open it first,
+            // then the connection may be closed, and it will throw an exception. 
+            // We could track the connection state ourselves, but if any other code
+            // uses the connection (like an EF DbSet), we could possibly close
+            // the connection while a transaction is in process.
+            // By only opening a clone of the connection, we avoid this issue.
+            if (connection is ICloneable)
+            {
+                connection = closeAfterExecute = (IDbConnection)((ICloneable)connection).Clone();
+                connection.Open();
+            }
+            else
+                closeAfterExecute = null;
+
+            var cmd            = connection.CreateCommand();
+            cmd.CommandText    = string.Format("[{0}].[{1}]", schema, name);
+            cmd.CommandType    = CommandType.StoredProcedure;
+            cmd.CommandTimeout = timeout;
+
+            return cmd;
         }
     }
 }

@@ -1,39 +1,39 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.SqlClient;
 using System.Diagnostics.Contracts;
 using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
+using CodeOnlyStoredProcedure.Dynamic;
 using Microsoft.CSharp.RuntimeBinder;
 
 namespace CodeOnlyStoredProcedure
 {
     internal class DynamicStoredProcedure : DynamicObject
     {
-        internal const string asyncParameterDirectionError = "Out and Ref parameters will not work when calling asynchronously. You can get the return value and/or output parameters if you create a class to use as input, and mark the properties with the appropriate StoredProcedureParameterAttribute.";
-        private static readonly Func<InvokeMemberBinder, IList<Type>>             getTypeArguments      = null;
+        internal const string asyncParameterDirectionError = "Can not execute a stored procedure asynchronously if called with a ref or out parameter. You can retrieve output or return values from the stored procedure if you pass in an input class, which the library can parse into the correct properties.";
         private static readonly Func<CSharpArgumentInfo, string>                  getParameterName      = null;
         private static readonly Func<CSharpArgumentInfo, ParameterDirection>      getParameterDirection = null;
         private static readonly Func<InvokeMemberBinder, int, CSharpArgumentInfo> getArgumentInfo       = null;
+        private static readonly Action<SqlParameter>                              none                  = _ => { };
         private        readonly IDbConnection                                     connection;
-        private        readonly bool                                              isAsync;
         private        readonly string                                            schema;
         private        readonly CancellationToken                                 token;
         private        readonly int                                               timeout;
 
-
         static DynamicStoredProcedure()
         {
-            getTypeArguments      = CreateTypeArgumentsGetter();
             getArgumentInfo       = CreateArgumentInfoGetter();
             getParameterDirection = CreateParameterDirectionGetter();
             getParameterName      = CreateParameterNameGetter();
         }
 
         public DynamicStoredProcedure(IDbConnection     connection,
-                                      bool              isAsync, 
                                       CancellationToken token,
                                       int               timeout = 30,
                                       string            schema = "dbo")
@@ -42,7 +42,6 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(!string.IsNullOrEmpty(schema));
 
             this.connection = connection;
-            this.isAsync    = isAsync;
             this.schema     = schema;
             this.token      = token;
             this.timeout    = timeout;
@@ -50,52 +49,15 @@ namespace CodeOnlyStoredProcedure
 
         public override bool TryGetMember(GetMemberBinder binder, out object result)
         {
-            result = new DynamicStoredProcedure(connection, isAsync, token, timeout, binder.Name);
+            result = new DynamicStoredProcedure(connection, token, timeout, binder.Name);
             return true;
         }
 
         public override bool TryInvokeMember(InvokeMemberBinder binder, object[] args, out object result)
         {
-            StoredProcedure sp;
-            var             types = getTypeArguments(binder);
-
-            if (types != null && types.Count > 0)
-            {
-                Type spType;
-
-                switch (types.Count)
-                {
-                    case 1:
-                        spType = typeof(StoredProcedure<>).MakeGenericType(types.ToArray());
-                        break;
-                    case 2:
-                        spType = typeof(StoredProcedure<,>).MakeGenericType(types.ToArray());
-                        break;
-                    case 3:
-                        spType = typeof(StoredProcedure<,,>).MakeGenericType(types.ToArray());
-                        break;
-                    case 4:
-                        spType = typeof(StoredProcedure<,,,>).MakeGenericType(types.ToArray());
-                        break;
-                    case 5:
-                        spType = typeof(StoredProcedure<,,,,>).MakeGenericType(types.ToArray());
-                        break;
-                    case 6:
-                        spType = typeof(StoredProcedure<,,,,,>).MakeGenericType(types.ToArray());
-                        break;
-                    case 7:
-                        spType = typeof(StoredProcedure<,,,,,,>).MakeGenericType(types.ToArray());
-                        break;
-
-                    default:
-                        throw new NotSupportedException("Only 7 result sets are supported, due to limitations in the .NET tuple.");
-                }
-
-                sp = (StoredProcedure)Activator.CreateInstance(spType, schema, binder.Name);
-            }
-            else
-                sp = new StoredProcedure(schema, binder.Name);
-
+            var canBeAsync = true;
+            var parameters = new List<Tuple<SqlParameter, Action<SqlParameter>>>();
+            
             for (int i = 0; i < binder.CallInfo.ArgumentCount; ++i)
             {
                 // the first item in ICSharpInvokeOrInvokeMemberBinder.Arguments seems to be this object (c-style method calling)
@@ -104,57 +66,49 @@ namespace CodeOnlyStoredProcedure
                 var parmName  = getParameterName(argument);
                 var idx       = i;
 
-                if (isAsync && direction != ParameterDirection.Input)
-                    throw new NotSupportedException(asyncParameterDirectionError);
-
                 var argType = args[idx].GetType();
                 if (argType.IsClass && argType != typeof(string))
-                    sp = sp.WithInput(args[idx], argType);
+                {
+                    var item = args[idx];
+                    parameters.AddRange(
+                        argType.GetParameters(item)
+                               .Select(t => Tuple.Create(t.Item2, new Action<SqlParameter>(p => t.Item1.SetValue(item, p.Value, new object[0])))));
+                }
                 else if ("returnvalue".Equals(parmName, StringComparison.InvariantCultureIgnoreCase) && direction != ParameterDirection.Input)
-                    sp = sp.WithReturnValue(r => args[idx] = r);
+                {
+                    parameters.Add(
+                        Tuple.Create(new SqlParameter() { ParameterName = parmName, Direction = ParameterDirection.ReturnValue },
+                                     new Action<SqlParameter>(p => args[idx] = p.Value)));
+                    canBeAsync = false;
+                }
                 else if (direction == ParameterDirection.Output)
-                    sp = sp.WithOutputParameter(parmName, r => args[idx] = r);
+                {
+                    parameters.Add(
+                        Tuple.Create(new SqlParameter() { ParameterName = parmName, Direction = ParameterDirection.Output },
+                                     new Action<SqlParameter>(p => args[idx] = p.Value)));
+                    canBeAsync = false;
+                }
                 else if (direction == ParameterDirection.InputOutput)
-                    sp = sp.WithInputOutputParameter(parmName, args[i], r => args[idx] = r);
+                {
+                    parameters.Add(
+                        Tuple.Create(new SqlParameter(parmName, args[idx]) { Direction = ParameterDirection.InputOutput },
+                                     new Action<SqlParameter>(p => args[idx] = p.Value)));
+                    canBeAsync = false;
+                }
                 else
-                    sp = sp.WithParameter(parmName, args[i]);
+                    parameters.Add(Tuple.Create(new SqlParameter(parmName, args[i]), none));
             }
 
-            if (isAsync)
-            {
-                result = sp.InternalCallAsync(connection, token, timeout);
-                return true;
-            }
-            else
-            {
-                result = sp.InternalCall(connection, timeout);
-                return true;
-            }
-        }
-        
-        private static Func<InvokeMemberBinder, IList<Type>> CreateTypeArgumentsGetter()
-        {
-            var csBinder = typeof(RuntimeBinderException).Assembly
-                                                         .GetType("Microsoft.CSharp.RuntimeBinder.ICSharpInvokeOrInvokeMemberBinder");
+            result = new DynamicStoredProcedureResults(
+                connection,
+                schema,
+                binder.Name,
+                timeout,
+                parameters,
+                canBeAsync,
+                token);
 
-            if (csBinder != null)
-            {
-                var prop = csBinder.GetProperty("TypeArguments");
-
-                if (!prop.CanRead)
-                    return null;
-
-                var objParm = Expression.Parameter(typeof(InvokeMemberBinder), "o");
-
-                return Expression.Lambda<Func<InvokeMemberBinder, IList<Type>>>(
-                    Expression.TypeAs(
-                        Expression.Property(
-                            Expression.TypeAs(objParm, csBinder),
-                            prop.Name),
-                        typeof(IList<Type>)), objParm).Compile();
-            }
-
-            return null;
+            return true;
         }
 
         private static Func<InvokeMemberBinder, int, CSharpArgumentInfo> CreateArgumentInfoGetter()
