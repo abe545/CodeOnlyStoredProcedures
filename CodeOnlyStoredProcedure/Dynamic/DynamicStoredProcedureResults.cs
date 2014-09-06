@@ -7,6 +7,7 @@ using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,25 +21,62 @@ namespace CodeOnlyStoredProcedure.Dynamic
         private readonly IDbCommand                                                         command;
         private readonly bool                                                               canBeAsync;
         private readonly CancellationToken                                                  token;
+        private          bool                                                               continueOnCaller = true;
 
 #if NET40
-        private static Lazy<MethodInfo> getAwaiter = new Lazy<MethodInfo>(() =>
-        {
-            var assembly = Assembly.GetEntryAssembly();
-            var msTasks  = assembly.GetReferencedAssemblies()
-                                    .FirstOrDefault(an => an.Name == "Microsoft.Threading.Tasks");
+        /// <summary>
+        /// The type to use as an awaiter. Because the INotifyCompletion interface is available
+        /// to .NET 4.0 with the Microsoft Async package, we can support awaiting a dynamic
+        /// stored procedure if we implement that interface. I don't want to require async
+        /// for CodeOnlyStoerdProcedure in .NET 4.0, so this is a decent compromise. All the 
+        /// functionality is in the DynamicStoredProcedureResultsAwaiter, so all this dynamic
+        /// type is doing is calling the implementation.
+        /// </summary>
+        private static Lazy<Type> getCompletionType = new Lazy<Type>(() =>
+            {
+                var baseType  = typeof(DynamicStoredProcedureResultsAwaiter);
+                var ifaceType = Type.GetType("System.Runtime.CompilerServices.INotifyCompletion, System.Threading.Tasks");
 
-            if (msTasks == null)
-                throw new NotSupportedException("Can only await a Dynamic Stored Procedure in .NET 4.0 if you reference the Microsoft Async NuGet package.");
+                if (ifaceType == null)
+                    throw new NotSupportedException("Could not find the interface required for using await in .NET 4. Please make sure that System.Threading.Tasks is loaded in your process before trying to await a dynamic stored procedure.");
 
-            var taskAssembly    = Assembly.Load(msTasks);
-            var awaitExtensions = taskAssembly.GetType("AwaitExtensions");
+                var ab = AppDomain.CurrentDomain.DefineDynamicAssembly(
+                    new AssemblyName("CodeOnlyStoredProcedures.Net40Async"),
+                    AssemblyBuilderAccess.Run);
 
-            return awaitExtensions.GetMethods(BindingFlags.Static | BindingFlags.Public)
-                                  .Where(mi => mi.IsGenericMethodDefinition)
-                                  .Where(mi => mi.Name == "GetAwaiter")
-                                  .Single();
-        });
+                var mod  = ab.DefineDynamicModule("CodeOnlyStoredProcedures.Net40Async");
+                var type = mod.DefineType("DynamicStoredProcedureResultsAwaiterImpl", 
+                                          TypeAttributes.Class | TypeAttributes.NotPublic,
+                                          baseType,
+                                          new[] { ifaceType });
+
+                var comp = type.DefineMethod("OnCompleted", MethodAttributes.Public, typeof(void), new[] { typeof(Action) });
+                var il   = comp.GetILGenerator();
+
+                il.Emit(OpCodes.Ldarg_0); // push "this"
+                il.Emit(OpCodes.Ldarg_1); // push continuation Action
+                il.Emit(OpCodes.Call, baseType.GetMethod("OnCompleted"));
+                il.Emit(OpCodes.Ret);
+
+                var ctorArgs = new[] 
+                               {
+                                   typeof(DynamicStoredProcedureResults),
+                                   typeof(Task),
+                                   typeof(bool)
+                               };
+
+                var ctor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, ctorArgs);
+                il       = ctor.GetILGenerator();
+                
+                il.Emit(OpCodes.Ldarg_0); // push "this"
+                il.Emit(OpCodes.Ldarg_1); // push the rest of the parameters
+                il.Emit(OpCodes.Ldarg_2);
+                il.Emit(OpCodes.Ldarg_3);
+                il.Emit(OpCodes.Call, baseType.GetConstructor(ctorArgs));
+                il.Emit(OpCodes.Ret);
+
+                return type.CreateType();
+            });
 #endif
 
         public DynamicStoredProcedureResults(
@@ -77,31 +115,24 @@ namespace CodeOnlyStoredProcedure.Dynamic
             }
         }
 
-        object GetResults()
-        {
-            throw new NotImplementedException();
-        }
-
         public override bool TryInvokeMember(InvokeMemberBinder binder, object[] args, out object result)
         {
             switch (binder.Name)
             {
                 case "ConfigureAwait":
-                    result = new DynamicStoredProcedureResultsAwaiter(this, resultTask, (bool)args[0]);
+                    continueOnCaller = (bool)args[0];
+                    result           = this;
                     return true;
 
                 case "GetAwaiter":
                     if (!canBeAsync)
                         throw new NotSupportedException(DynamicStoredProcedure.asyncParameterDirectionError);
 
-                    var cont = resultTask.ContinueWith(_ => this);
 #if NET40
-                        result = getAwaiter.Value
-                                           .MakeGenericMethod(GetType())
-                                           .Invoke(null, new object[] { cont });
+                    result = Activator.CreateInstance(getCompletionType.Value, this, resultTask, continueOnCaller);
 
 #else
-                    result = new DynamicStoredProcedureResultsAwaiter(this, resultTask);
+                    result = new DynamicStoredProcedureResultsAwaiter(this, resultTask, continueOnCaller);
 #endif
                     return true;
 

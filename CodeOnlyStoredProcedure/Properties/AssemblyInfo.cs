@@ -15,6 +15,7 @@ using System.Runtime.InteropServices;
 
 #if NET40
 [assembly: InternalsVisibleTo("CodeOnlyTests-NET40")]
+[assembly: InternalsVisibleTo("CodeOnlyStoredProcedures.Net40Async")]
 #else
 [assembly: InternalsVisibleTo("CodeOnlyTests")]
 #endif

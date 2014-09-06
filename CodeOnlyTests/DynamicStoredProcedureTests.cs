@@ -407,6 +407,30 @@ namespace CodeOnlyTests
         [TestClass]
         public class AsyncSyntax : Asynchronous
         {
+            [TestMethod]
+            public void ConfigureAwaitControlsThreadContinuationHappensOn()
+            {
+                // sleep so the task won't get inlined
+                var ctx = CreatePeople(_ => Thread.Sleep(25), "Foo");
+
+                var toTest = new DynamicStoredProcedure(ctx, CancellationToken.None);
+
+                var res = GetPeopleInBackground(toTest).Result;
+
+                Assert.AreEqual("Foo", res.Single().FirstName);
+            }
+
+            private async Task<IEnumerable<Person>> GetPeopleInBackground(dynamic toTest)
+            {
+                var entryThread = Thread.CurrentThread;
+
+                var results = await toTest.usp_GetPeople().ConfigureAwait(false);
+
+                Assert.AreNotEqual(entryThread, Thread.CurrentThread);
+
+                return results;
+            }
+
             protected override async Task<IEnumerable<Person>> GetPeople(dynamic toTest)
             {
                 return await toTest.usp_GetPeople();

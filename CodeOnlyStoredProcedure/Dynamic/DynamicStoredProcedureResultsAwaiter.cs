@@ -6,7 +6,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
 {
     internal class DynamicStoredProcedureResultsAwaiter
 #if !NET40
-        : System.Runtime.CompilerServices.ICriticalNotifyCompletion
+        : System.Runtime.CompilerServices.INotifyCompletion
 #endif
     {
         private readonly DynamicStoredProcedureResults results;
@@ -18,19 +18,11 @@ namespace CodeOnlyStoredProcedure.Dynamic
         public DynamicStoredProcedureResultsAwaiter(
             DynamicStoredProcedureResults results, 
             Task toWait,
-            bool continueOnCaller = true)
+            bool continueOnCaller)
         {
             this.results          = results;
             this.toWait           = toWait;
             this.continueOnCaller = continueOnCaller;
-        }
-
-        public void UnsafeOnCompleted(Action continuation)
-        {
-            if (continuation == null)
-                throw new ArgumentNullException("continuation");
-
-            OnCompleted(continuation);
         }
 
         public dynamic GetResult()
@@ -38,13 +30,13 @@ namespace CodeOnlyStoredProcedure.Dynamic
             return results;
         }
 
-        public void OnCompleted(Action continuation)
+        public virtual void OnCompleted(Action continuation)
         {
             if (continuation == null)
                 throw new ArgumentNullException("continuation");
 
-            var sc = continueOnCaller ? SynchronizationContext.Current : null;
-            var taskScheduler = continueOnCaller ? TaskScheduler.Current : TaskScheduler.Default;
+            var sc            = continueOnCaller ? SynchronizationContext.Current : null;
+            var taskScheduler = continueOnCaller ? TaskScheduler         .Current : TaskScheduler.Default;
 
             if (sc != null && sc.GetType() != typeof(SynchronizationContext))
             {
