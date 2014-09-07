@@ -158,6 +158,29 @@ namespace SmokeTests
                 WriteSuccess();
             }
 
+            Console.Write("Awaitng usp_GetExistingPeople - ");
+
+            var pIn = new[] 
+            {
+                new Person { FirstName = "John", LastName = "Doe" },
+                new Person { FirstName = "Jane", LastName = "Doe" }
+            };
+            IEnumerable<Person> ppl = await db.Database.Connection.Call(timeout).usp_GetExistingPeople(people: pIn);
+            if (!TestGetExistingPeopleResults(ppl))
+                return false;
+
+            Console.Write("Awaiting usp_GetExistingPeople (With Input No Attribute) - ");
+
+            ppl = await db.Database.Connection.Call(timeout).usp_GetExistingPeople(new { people = pIn });
+            if (!TestGetExistingPeopleResults(ppl))
+                return false;
+
+            Console.Write("Awaiting usp_GetExistingPeople (With Input With Attribute) - ");
+
+            ppl = await db.Database.Connection.Call(timeout).usp_GetExistingPeople(new PersonInput { People = pIn });
+            if (!TestGetExistingPeopleResults(ppl))
+                return false;
+
             return true;
         }
     }

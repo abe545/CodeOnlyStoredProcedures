@@ -94,6 +94,10 @@
     <Compile Include="..\SmokeTests\Program.cs">
       <Link>Program.cs</Link>
     </Compile>
+    <Compile Include="..\SmokeTests\Program.GetExistingPeopleTests.cs">
+      <Link>Program.GetExistingPeopleTests.cs</Link>
+      <DependentUpon>Program.cs</DependentUpon>
+    </Compile>
     <Compile Include="..\SmokeTests\Program.GetItemsTests.cs">
       <Link>Program.GetItemsTests.cs</Link>
       <DependentUpon>Program.cs</DependentUpon>

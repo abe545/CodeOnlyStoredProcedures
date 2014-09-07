@@ -12,12 +12,13 @@ namespace SmokeTests
 {
     public class SmokeDb : DbContext
     {
-        public StoredProcedure                          ReturnsOne { get; private set; }
-        public StoredProcedure<Item>                    GetItems   { get; private set; }
-        public StoredProcedure<Item>                    GetItem    { get; private set; }
-        public StoredProcedure<Widget, WidgetComponent> GetWidget  { get; private set; }
-        public StoredProcedure<int>                     GetSpokes  { get; private set; }
-        public StoredProcedure<Spoke>                   GetSpokes2 { get; private set; }
+        public StoredProcedure                          ReturnsOne        { get; private set; }
+        public StoredProcedure<Item>                    GetItems          { get; private set; }
+        public StoredProcedure<Item>                    GetItem           { get; private set; }
+        public StoredProcedure<Widget, WidgetComponent> GetWidget         { get; private set; }
+        public StoredProcedure<int>                     GetSpokes         { get; private set; }
+        public StoredProcedure<Spoke>                   GetSpokes2        { get; private set; }
+        public StoredProcedure<Person>                  GetExistingPeople { get; private set; }
 
         static SmokeDb()
         {
@@ -26,12 +27,13 @@ namespace SmokeTests
 
         public SmokeDb()
         {
-            ReturnsOne = new StoredProcedure                         ("usp_ReturnsOne");
-            GetItems   = new StoredProcedure<Item>                   ("usp_GetItems");
-            GetItem    = new StoredProcedure<Item>                   ("usp_GetItem");
-            GetWidget  = new StoredProcedure<Widget, WidgetComponent>("usp_GetWidget");
-            GetSpokes  = new StoredProcedure<int>                    ("usp_GetSpokes");
-            GetSpokes2 = new StoredProcedure<Spoke>                  ("usp_GetSpokes");
+            ReturnsOne        = new StoredProcedure                         ("usp_ReturnsOne");
+            GetItems          = new StoredProcedure<Item>                   ("usp_GetItems");
+            GetItem           = new StoredProcedure<Item>                   ("usp_GetItem");
+            GetWidget         = new StoredProcedure<Widget, WidgetComponent>("usp_GetWidget");
+            GetSpokes         = new StoredProcedure<int>                    ("usp_GetSpokes");
+            GetSpokes2        = new StoredProcedure<Spoke>                  ("usp_GetSpokes");
+            GetExistingPeople = new StoredProcedure<Person>                 ("usp_GetExistingPeople");
         }
     }
 
@@ -61,5 +63,12 @@ namespace SmokeTests
         Four    = 4,
         Eight   = 8,
         Sixteen = 16
+    }
+
+    [TableValuedParameter(TableName = "Person")]
+    public class Person
+    {
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
     }
 }

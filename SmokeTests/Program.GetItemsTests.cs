@@ -71,7 +71,7 @@ namespace SmokeTests
             item = res.Last();
             if (item.ItemId != 1 || item.Name != "Bar")
             {
-                WriteError(string.Format("\tIncorrect first item.\n\t\tExpected 'Bar' [1]\n\t\tActual '{0}' [{1}]", item.Name, item.ItemId));
+                WriteError(string.Format("\tIncorrect last item.\n\t\tExpected 'Bar' [1]\n\t\tActual '{0}' [{1}]", item.Name, item.ItemId));
                 return false;
             }
 

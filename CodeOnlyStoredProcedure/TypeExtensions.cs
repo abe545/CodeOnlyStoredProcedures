@@ -33,12 +33,15 @@ namespace CodeOnlyStoredProcedure
 
         internal static bool IsEnumeratedType(this Type t)
         {
-            return typeof(IEnumerable).IsAssignableFrom(t) && t.IsGenericType;
+            return t.IsArray || typeof(IEnumerable).IsAssignableFrom(t) && t.IsGenericType;
         }
 
         internal static Type GetEnumeratedType(this Type t)
         {
             Contract.Requires(t != null);
+
+            if (t.IsArray)
+                return t.GetElementType();
 
             if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>))
                 return t.GetGenericArguments().Single();
@@ -122,22 +125,31 @@ namespace CodeOnlyStoredProcedure
             foreach (var pi in type.GetMappedProperties())
             {
                 SqlParameter parameter;
-                var tableAttr = pi.GetCustomAttributes(typeof(TableValuedParameterAttribute), false)
+                var tableAttr = pi.GetCustomAttributes(false)
                                   .OfType<TableValuedParameterAttribute>()
                                   .FirstOrDefault();
-                var attr = pi.GetCustomAttributes(typeof(StoredProcedureParameterAttribute), false)
+                var attr = pi.GetCustomAttributes(false)
                              .OfType<StoredProcedureParameterAttribute>()
                              .FirstOrDefault();
+
+                // store table values, scalar value or null
+                var value = pi.GetValue(instance, null);
+                if (tableAttr == null && pi.PropertyType.IsEnumeratedType())
+                {
+                    tableAttr = pi.PropertyType
+                                  .GetEnumeratedType()
+                                  .GetCustomAttributes(false)
+                                  .OfType<TableValuedParameterAttribute>()
+                                  .FirstOrDefault();
+                }
 
                 if (tableAttr != null)
                     parameter = tableAttr.CreateSqlParameter(pi.Name);
                 else if (attr != null)
                     parameter = attr.CreateSqlParameter(pi.Name);
                 else
-                    parameter = new SqlParameter(pi.Name, pi.GetValue(instance, null));
+                    parameter = new SqlParameter(pi.Name, value);
 
-                // store table values, scalar value or null
-                var value = pi.GetValue(instance, null);
                 if (value == null)
                     parameter.Value = DBNull.Value;
                 else if (parameter.SqlDbType == SqlDbType.Structured)

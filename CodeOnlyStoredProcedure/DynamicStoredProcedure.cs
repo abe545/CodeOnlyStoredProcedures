@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -71,7 +72,23 @@ namespace CodeOnlyStoredProcedure
                 var idx       = i;
 
                 var argType = args[idx].GetType();
-                if (argType.IsClass && argType != typeof(string))
+                if (argType.IsEnumeratedType() && argType != typeof(string))
+                {
+                    // it is a TableValuedParameter, so we need to get the SQL Server type name
+                    var itemType = argType.GetEnumeratedType();
+                    var attr     = itemType.GetCustomAttributes(false)
+                                           .OfType<TableValuedParameterAttribute>()
+                                           .FirstOrDefault();
+
+                    if (attr == null)
+                        throw new NotSupportedException("You must apply the TableValuedParameter attribute to a class to use as a Table Valued Parameter when using the dynamic syntax.");
+
+                    var parm   = attr.CreateSqlParameter(parmName);
+                    parm.Value = ((IEnumerable)args[idx]).ToTableValuedParameter(itemType);
+
+                    parameters.Add(Tuple.Create(parm, none));
+                }
+                else if (argType.IsClass && argType != typeof(string))
                 {
                     var item = args[idx];
                     parameters.AddRange(
@@ -81,14 +98,14 @@ namespace CodeOnlyStoredProcedure
                 else if ("returnvalue".Equals(parmName, StringComparison.InvariantCultureIgnoreCase) && direction != ParameterDirection.Input)
                 {
                     parameters.Add(
-                        Tuple.Create(new SqlParameter() { ParameterName = parmName, Direction = ParameterDirection.ReturnValue },
+                        Tuple.Create(new SqlParameter { ParameterName = parmName, Direction = ParameterDirection.ReturnValue },
                                      new Action<SqlParameter>(p => args[idx] = p.Value)));
                     canBeAsync = false;
                 }
                 else if (direction == ParameterDirection.Output)
                 {
                     parameters.Add(
-                        Tuple.Create(new SqlParameter() { ParameterName = parmName, Direction = ParameterDirection.Output },
+                        Tuple.Create(new SqlParameter { ParameterName = parmName, Direction = ParameterDirection.Output },
                                      new Action<SqlParameter>(p => args[idx] = p.Value)));
                     canBeAsync = false;
                 }
