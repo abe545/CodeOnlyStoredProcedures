@@ -1,17 +1,13 @@
-﻿using Microsoft.SqlServer.Server;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Data.SqlClient;
-using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Linq.Expressions;
+using Microsoft.SqlServer.Server;
 
 namespace CodeOnlyStoredProcedure
 {
@@ -35,6 +31,39 @@ namespace CodeOnlyStoredProcedure
                 typeof(Guid)
             };
 
+        internal static IEnumerable<StoredProcedureResult> Execute(this IDbCommand cmd, CancellationToken token)
+        {
+            Contract.Requires(cmd != null);
+            Contract.Ensures(Contract.Result<IEnumerable<StoredProcedureResult>>() != null);
+
+            var results = new List<StoredProcedureResult>();
+            var reader  = cmd.DoExecute(c => c.ExecuteReader(), token);
+
+            do
+            {
+                var rows = new List<object[]>();
+
+                while (reader.Read())
+                {
+                    var values = new object[reader.FieldCount];
+
+                    token.ThrowIfCancellationRequested();
+                    reader.GetValues(values);
+                    rows.Add(values);
+                }
+
+                results.Add(new StoredProcedureResult
+                {
+                    Rows = rows,
+                    ColumnNames = Enumerable.Range(0, reader.FieldCount)
+                                            .Select(i => reader.GetName(i))
+                                            .ToArray()
+                });
+            } while (reader.NextResult());
+
+            return results;
+        }
+
         internal static IDictionary<Type, IList> Execute(
             this IDbCommand               cmd,
             CancellationToken             token,
@@ -46,83 +75,72 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(transformers != null);
             Contract.Ensures (Contract.Result<IDictionary<Type, IList>>() != null);
 
-            var first   = true;
-            var results = new Dictionary<Type, IList>();
-            var reader  = cmd.DoExecute(c => c.ExecuteReader(), token);
+            var results = cmd.Execute(token);
 
             token.ThrowIfCancellationRequested();
 
+            if (results.Count() != outputTypes.Count())
+                throw new InvalidOperationException("The StoredProcedure " + cmd.CommandText + " returned a different number of result sets than expected. Expected results of type " + outputTypes.Select(t => t.Name).Aggregate((s1, s2) => s1 + ", " + s2));
+
+            return results.Parse(outputTypes, transformers);
+        }
+
+        internal static IDictionary<Type, IList> Parse(
+            this IEnumerable<StoredProcedureResult> results,
+                 IEnumerable<Type>                  outputTypes, 
+                 IEnumerable<IDataTransformer>      transformers)
+        {
+            Contract.Requires(results      != null);
+            Contract.Requires(outputTypes  != null);
+            Contract.Requires(transformers != null);
+            Contract.Ensures (Contract.Result<IDictionary<Type, IList>>() != null);
+
+            var spResults = results.ToArray();
+            var output    = new Dictionary<Type, IList>();
+            int i         = 0;
+
             foreach (var currentType in outputTypes)
             {
-                if (first)
-                    first = false;
-                else if (!reader.NextResult())
-                    throw new InvalidOperationException("The StoredProcedure returned a different number of result sets than expected. Expected results of type " + outputTypes.Select(t => t.Name).Aggregate((s1, s2) => s1 + ", " + s2));
-                
-                // process results - repeat this loop for each result set returned
-                // by the stored proc for which we have a result type specified
-                var values = new object[reader.FieldCount];
-                var output = (IList)Activator.CreateInstance (typeof(List<>).MakeGenericType(currentType));
+                var res  = spResults[i];
+                var rows = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(currentType));
+                IRowFactory factory;
 
                 // process the result set
-                if (reader.FieldCount == 1 && (currentType.IsEnum || integralTpes.Contains(currentType)))
-                {
-                    var  targetType = currentType;
-                    bool isNullable = false;
-                    if (currentType.IsGenericType && currentType.GetGenericTypeDefinition() == typeof(Nullable<>))
-                    {
-                        isNullable = true;
-                        targetType = currentType.GetGenericArguments().Single();
-                    }
-
-                    while (reader.Read())
-                    {
-                        token .ThrowIfCancellationRequested();
-                        reader.GetValues(values);
-
-                        var value = values[0];
-                        if (DBNull.Value.Equals(value))
-                            value = null;
-
-                        foreach (var xform in transformers)
-                        {
-                            if (xform.CanTransform(value, targetType, isNullable, Enumerable.Empty<Attribute>()))
-                                value = xform.Transform(value, targetType, isNullable, Enumerable.Empty<Attribute>());
-                        }
-
-                        if (value is string && currentType.IsEnum)
-                            value = Enum.Parse(currentType, (string)value);
-
-                        output.Add(value);
-                    }
-                }
+                if (res.ColumnNames.Length == 1 && (currentType.IsEnum || integralTpes.Contains(currentType)))
+                    factory = new SimpleTypeRowFactory(currentType);
                 else
+                    factory = currentType.CreateRowFactory();
+
+                foreach (var values in res.Rows)
                 {
-                    var row   = currentType.CreateRowFactory();
-                    var names = Enumerable.Range(0, reader.FieldCount)
-                                          .Select(i => reader.GetName(i))
-                                          .ToArray();
 
-                    while (reader.Read())
+                    var row = factory.CreateRow(res.ColumnNames, values, transformers);
+
+                    try
                     {
-                        token .ThrowIfCancellationRequested();
-                        reader.GetValues(values);
-                        output.Add(row.CreateRow(names, values, transformers));
+                        rows.Add(row);
                     }
-
-                    if (output.Count > 0)
+                    catch (ArgumentException)
                     {
-                        // throw an exception if the result set didn't include a mapped property
-                        if (row.UnfoundPropertyNames.Any())
-                            throw new StoredProcedureResultsException(currentType, row.UnfoundPropertyNames.ToArray());
+                        if (factory is SimpleTypeRowFactory)
+                            throw new StoredProcedureColumnException(currentType, row);
+                        else
+                            throw;
                     }
                 }
 
-                results.Add(currentType, output);
+                if (rows.Count > 0)
+                {
+                    // throw an exception if the result set didn't include a mapped property
+                    if (factory.UnfoundPropertyNames.Any())
+                        throw new StoredProcedureResultsException(currentType, factory.UnfoundPropertyNames.ToArray());
+                }
+
+                output.Add(currentType, rows);
+                ++i;
             }
 
-            reader.Close();
-            return results;
+            return output;
         }
 
         internal static T DoExecute<T>(this IDbCommand cmd, Func<IDbCommand, T> exec, CancellationToken token)
@@ -179,7 +197,6 @@ namespace CodeOnlyStoredProcedure
             return res;
         }
 
-        #region Private Helpers
         private static SqlParameter AddPrecisison(this SqlParameter parameter,
             int? size,
             byte? scale,
@@ -194,7 +211,7 @@ namespace CodeOnlyStoredProcedure
             return parameter;
         }
 
-        static IEnumerable<SqlDataRecord> ToTableValuedParameter(this IEnumerable table, Type enumeratedType)
+        internal static IEnumerable<SqlDataRecord> ToTableValuedParameter(this IEnumerable table, Type enumeratedType)
         {
             Contract.Requires(table != null);
             Contract.Requires(enumeratedType != null);
@@ -275,6 +292,11 @@ namespace CodeOnlyStoredProcedure
 
             return recordList;
         }
-        #endregion
+
+        internal class StoredProcedureResult
+        {
+            public string[]              ColumnNames { get; set; }
+            public IEnumerable<object[]> Rows        { get; set; }
+        }
     }
 }

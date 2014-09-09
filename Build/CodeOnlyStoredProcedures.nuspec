@@ -9,7 +9,10 @@
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>A library for easily calling Stored Procedures in .NET. Works great with Entity Framework Code First models. 
 Code Only Stored Procedures will not create any Stored Procedures on your database. Instead, its aim is to make it easy to call your existing stored procedures by writing simple code.</description>
-        <releaseNotes>1.1.0
+        <releaseNotes>1.2.0
+Added a much cleaner syntax for calling stored procedures, by using dynamic objects.
+
+1.1.0
 Improved exceptions so that it is easier to determine why the data returned doesn't map to your model correctly.
 Now ignores read-only properties, so they don't have to be attributed with [NotMapped]
 
@@ -40,10 +43,10 @@ Added data transformation attribute to automatically remove whitespace from stri
         <tags>StoredProcedure EntityFramework EF</tags>
         <dependencies>
             <group targetFramework=".NETFramework4.5">
-                <dependency id="Microsoft.Bcl.Immutable" version="1.0.30" />
+                <dependency id="Microsoft.Bcl.Immutable" version="1.0.34" />
             </group>
             <group targetFramework=".NETFramework4.0">
-                <dependency id="EntityFramework" version="6.1.0" />
+                <dependency id="EntityFramework" version="6.1.1" />
             </group>
         </dependencies>
         <references>

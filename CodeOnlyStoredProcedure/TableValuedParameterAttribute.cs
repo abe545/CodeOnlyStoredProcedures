@@ -5,9 +5,10 @@ using System.Data.SqlClient;
 namespace CodeOnlyStoredProcedure
 {
     /// <summary>
-    /// Attribute used to decorate an input property to denote that it is a Table Valued Parameter.
+    /// Attribute used to decorate an input property (or class that will be passed) to denote that it
+    /// is a Table Valued Parameter.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Property)]
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class)]
     public class TableValuedParameterAttribute : StoredProcedureParameterAttribute
     {
         /// <summary>

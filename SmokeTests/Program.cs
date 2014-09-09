@@ -41,6 +41,18 @@ namespace SmokeTests
                 return -1;
             }
 
+            if (!DoGetExistingPeopleTests(toTest))
+            {
+                Exiting();
+                return -1;
+            }
+
+            if (!RunAsyncTests(toTest).Result)
+            {
+                Exiting();
+                return -1;
+            }
+
             Console.ForegroundColor = ConsoleColor.DarkGreen;
             Console.WriteLine("All tests ran successfully!");
             Exiting();

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CodeOnlyStoredProcedure;
 
 namespace SmokeTests
 {
@@ -18,6 +19,17 @@ namespace SmokeTests
 
             Console.Write("Calling usp_GetItems asynchronously - ");
             res = db.GetItems.ExecuteAsync(db.Database.Connection, timeout).Result;
+            if (!TestGetItemsResults(res))
+                return false;
+
+            Console.Write("Calling usp_GetItems synchronously (Dynamic Syntax) - ");
+            res = db.Database.Connection.Call(timeout).usp_GetItems();
+            if (!TestGetItemsResults(res))
+                return false;
+
+            Console.Write("Calling usp_GetItems asynchronously (Dynamic Syntax) - ");
+            Task<IEnumerable<Item>> resTask = db.Database.Connection.Call(timeout).usp_GetItems();
+            res = resTask.Result;
             if (!TestGetItemsResults(res))
                 return false;
 
@@ -59,7 +71,7 @@ namespace SmokeTests
             item = res.Last();
             if (item.ItemId != 1 || item.Name != "Bar")
             {
-                WriteError(string.Format("\tIncorrect first item.\n\t\tExpected 'Bar' [1]\n\t\tActual '{0}' [{1}]", item.Name, item.ItemId));
+                WriteError(string.Format("\tIncorrect last item.\n\t\tExpected 'Bar' [1]\n\t\tActual '{0}' [{1}]", item.Name, item.ItemId));
                 return false;
             }
 

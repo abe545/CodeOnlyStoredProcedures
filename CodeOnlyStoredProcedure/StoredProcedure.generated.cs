@@ -112,7 +112,7 @@ namespace CodeOnlyStoredProcedure
         /// var results = storedProcedure.Execute(this.Database.Connection);
         /// </code>
         /// </example>
-		public new IEnumerable<T1> Execute(IDbConnection connection, int timeout = 30)
+		public new IEnumerable<T1> Execute(IDbConnection connection, int timeout = defaultTimeout)
 		{
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<IEnumerable<T1>>() != null);
@@ -134,7 +134,7 @@ namespace CodeOnlyStoredProcedure
         /// var results = await storedProcedure.ExecuteAsync(this.Database.Connection);
         /// </code>
         /// </example>
-		public new Task<IEnumerable<T1>> ExecuteAsync(IDbConnection connection, int timeout = 30)
+		public new Task<IEnumerable<T1>> ExecuteAsync(IDbConnection connection, int timeout = defaultTimeout)
 		{
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Task<IEnumerable<T1>>>() != null);
@@ -157,7 +157,7 @@ namespace CodeOnlyStoredProcedure
         /// var results = await storedProcedure.ExecuteAsync(this.Database.Connection, cts.Token);
         /// </code>
         /// </example>
-		public new Task<IEnumerable<T1>> ExecuteAsync(IDbConnection connection, CancellationToken token, int timeout = 30)
+		public new Task<IEnumerable<T1>> ExecuteAsync(IDbConnection connection, CancellationToken token, int timeout = defaultTimeout)
 		{
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Task<IEnumerable<T1>>>() != null);
@@ -190,7 +190,22 @@ namespace CodeOnlyStoredProcedure
 #endif
 		{
 			return new StoredProcedure<T1>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
-		}
+		}		
+
+        internal override object InternalCall(
+            IDbConnection connection,
+            int           commandTimeout = defaultTimeout)
+        {
+            return this.Execute(connection, commandTimeout);
+        }
+
+        internal override object InternalCallAsync(
+            IDbConnection     connection,
+            CancellationToken token,
+            int               commandTimeout = defaultTimeout)
+        {
+            return this.ExecuteAsync(connection, token, commandTimeout);
+        }
 	}
 	#endregion
 
@@ -295,7 +310,7 @@ namespace CodeOnlyStoredProcedure
         /// var results = storedProcedure.Execute(this.Database.Connection);
         /// </code>
         /// </example>
-		public new Tuple<IEnumerable<T1>, IEnumerable<T2>> Execute(IDbConnection connection, int timeout = 30)
+		public new Tuple<IEnumerable<T1>, IEnumerable<T2>> Execute(IDbConnection connection, int timeout = defaultTimeout)
 		{
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Tuple<IEnumerable<T1>, IEnumerable<T2>>>() != null);
@@ -317,7 +332,7 @@ namespace CodeOnlyStoredProcedure
         /// var results = await storedProcedure.ExecuteAsync(this.Database.Connection);
         /// </code>
         /// </example>
-		public new Task<Tuple<IEnumerable<T1>, IEnumerable<T2>>> ExecuteAsync(IDbConnection connection, int timeout = 30)
+		public new Task<Tuple<IEnumerable<T1>, IEnumerable<T2>>> ExecuteAsync(IDbConnection connection, int timeout = defaultTimeout)
 		{
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Task<Tuple<IEnumerable<T1>, IEnumerable<T2>>>>() != null);
@@ -340,7 +355,7 @@ namespace CodeOnlyStoredProcedure
         /// var results = await storedProcedure.ExecuteAsync(this.Database.Connection, cts.Token);
         /// </code>
         /// </example>
-		public new Task<Tuple<IEnumerable<T1>, IEnumerable<T2>>> ExecuteAsync(IDbConnection connection, CancellationToken token, int timeout = 30)
+		public new Task<Tuple<IEnumerable<T1>, IEnumerable<T2>>> ExecuteAsync(IDbConnection connection, CancellationToken token, int timeout = defaultTimeout)
 		{
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Task<Tuple<IEnumerable<T1>, IEnumerable<T2>>>>() != null);
@@ -373,7 +388,22 @@ namespace CodeOnlyStoredProcedure
 #endif
 		{
 			return new StoredProcedure<T1, T2>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
-		}
+		}		
+
+        internal override object InternalCall(
+            IDbConnection connection,
+            int           commandTimeout = defaultTimeout)
+        {
+            return this.Execute(connection, commandTimeout);
+        }
+
+        internal override object InternalCallAsync(
+            IDbConnection     connection,
+            CancellationToken token,
+            int               commandTimeout = defaultTimeout)
+        {
+            return this.ExecuteAsync(connection, token, commandTimeout);
+        }
 	}
 	#endregion
 
@@ -480,7 +510,7 @@ namespace CodeOnlyStoredProcedure
         /// var results = storedProcedure.Execute(this.Database.Connection);
         /// </code>
         /// </example>
-		public new Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>> Execute(IDbConnection connection, int timeout = 30)
+		public new Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>> Execute(IDbConnection connection, int timeout = defaultTimeout)
 		{
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>>>() != null);
@@ -502,7 +532,7 @@ namespace CodeOnlyStoredProcedure
         /// var results = await storedProcedure.ExecuteAsync(this.Database.Connection);
         /// </code>
         /// </example>
-		public new Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>>> ExecuteAsync(IDbConnection connection, int timeout = 30)
+		public new Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>>> ExecuteAsync(IDbConnection connection, int timeout = defaultTimeout)
 		{
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>>>>() != null);
@@ -525,7 +555,7 @@ namespace CodeOnlyStoredProcedure
         /// var results = await storedProcedure.ExecuteAsync(this.Database.Connection, cts.Token);
         /// </code>
         /// </example>
-		public new Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>>> ExecuteAsync(IDbConnection connection, CancellationToken token, int timeout = 30)
+		public new Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>>> ExecuteAsync(IDbConnection connection, CancellationToken token, int timeout = defaultTimeout)
 		{
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>>>>() != null);
@@ -558,7 +588,22 @@ namespace CodeOnlyStoredProcedure
 #endif
 		{
 			return new StoredProcedure<T1, T2, T3>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
-		}
+		}		
+
+        internal override object InternalCall(
+            IDbConnection connection,
+            int           commandTimeout = defaultTimeout)
+        {
+            return this.Execute(connection, commandTimeout);
+        }
+
+        internal override object InternalCallAsync(
+            IDbConnection     connection,
+            CancellationToken token,
+            int               commandTimeout = defaultTimeout)
+        {
+            return this.ExecuteAsync(connection, token, commandTimeout);
+        }
 	}
 	#endregion
 
@@ -667,7 +712,7 @@ namespace CodeOnlyStoredProcedure
         /// var results = storedProcedure.Execute(this.Database.Connection);
         /// </code>
         /// </example>
-		public new Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>> Execute(IDbConnection connection, int timeout = 30)
+		public new Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>> Execute(IDbConnection connection, int timeout = defaultTimeout)
 		{
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>>>() != null);
@@ -689,7 +734,7 @@ namespace CodeOnlyStoredProcedure
         /// var results = await storedProcedure.ExecuteAsync(this.Database.Connection);
         /// </code>
         /// </example>
-		public new Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>>> ExecuteAsync(IDbConnection connection, int timeout = 30)
+		public new Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>>> ExecuteAsync(IDbConnection connection, int timeout = defaultTimeout)
 		{
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>>>>() != null);
@@ -712,7 +757,7 @@ namespace CodeOnlyStoredProcedure
         /// var results = await storedProcedure.ExecuteAsync(this.Database.Connection, cts.Token);
         /// </code>
         /// </example>
-		public new Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>>> ExecuteAsync(IDbConnection connection, CancellationToken token, int timeout = 30)
+		public new Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>>> ExecuteAsync(IDbConnection connection, CancellationToken token, int timeout = defaultTimeout)
 		{
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>>>>() != null);
@@ -745,7 +790,22 @@ namespace CodeOnlyStoredProcedure
 #endif
 		{
 			return new StoredProcedure<T1, T2, T3, T4>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
-		}
+		}		
+
+        internal override object InternalCall(
+            IDbConnection connection,
+            int           commandTimeout = defaultTimeout)
+        {
+            return this.Execute(connection, commandTimeout);
+        }
+
+        internal override object InternalCallAsync(
+            IDbConnection     connection,
+            CancellationToken token,
+            int               commandTimeout = defaultTimeout)
+        {
+            return this.ExecuteAsync(connection, token, commandTimeout);
+        }
 	}
 	#endregion
 
@@ -856,7 +916,7 @@ namespace CodeOnlyStoredProcedure
         /// var results = storedProcedure.Execute(this.Database.Connection);
         /// </code>
         /// </example>
-		public new Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>> Execute(IDbConnection connection, int timeout = 30)
+		public new Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>> Execute(IDbConnection connection, int timeout = defaultTimeout)
 		{
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>>>() != null);
@@ -878,7 +938,7 @@ namespace CodeOnlyStoredProcedure
         /// var results = await storedProcedure.ExecuteAsync(this.Database.Connection);
         /// </code>
         /// </example>
-		public new Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>>> ExecuteAsync(IDbConnection connection, int timeout = 30)
+		public new Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>>> ExecuteAsync(IDbConnection connection, int timeout = defaultTimeout)
 		{
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>>>>() != null);
@@ -901,7 +961,7 @@ namespace CodeOnlyStoredProcedure
         /// var results = await storedProcedure.ExecuteAsync(this.Database.Connection, cts.Token);
         /// </code>
         /// </example>
-		public new Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>>> ExecuteAsync(IDbConnection connection, CancellationToken token, int timeout = 30)
+		public new Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>>> ExecuteAsync(IDbConnection connection, CancellationToken token, int timeout = defaultTimeout)
 		{
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>>>>() != null);
@@ -934,7 +994,22 @@ namespace CodeOnlyStoredProcedure
 #endif
 		{
 			return new StoredProcedure<T1, T2, T3, T4, T5>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
-		}
+		}		
+
+        internal override object InternalCall(
+            IDbConnection connection,
+            int           commandTimeout = defaultTimeout)
+        {
+            return this.Execute(connection, commandTimeout);
+        }
+
+        internal override object InternalCallAsync(
+            IDbConnection     connection,
+            CancellationToken token,
+            int               commandTimeout = defaultTimeout)
+        {
+            return this.ExecuteAsync(connection, token, commandTimeout);
+        }
 	}
 	#endregion
 
@@ -1047,7 +1122,7 @@ namespace CodeOnlyStoredProcedure
         /// var results = storedProcedure.Execute(this.Database.Connection);
         /// </code>
         /// </example>
-		public new Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>> Execute(IDbConnection connection, int timeout = 30)
+		public new Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>> Execute(IDbConnection connection, int timeout = defaultTimeout)
 		{
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>>>() != null);
@@ -1069,7 +1144,7 @@ namespace CodeOnlyStoredProcedure
         /// var results = await storedProcedure.ExecuteAsync(this.Database.Connection);
         /// </code>
         /// </example>
-		public new Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>>> ExecuteAsync(IDbConnection connection, int timeout = 30)
+		public new Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>>> ExecuteAsync(IDbConnection connection, int timeout = defaultTimeout)
 		{
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>>>>() != null);
@@ -1092,7 +1167,7 @@ namespace CodeOnlyStoredProcedure
         /// var results = await storedProcedure.ExecuteAsync(this.Database.Connection, cts.Token);
         /// </code>
         /// </example>
-		public new Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>>> ExecuteAsync(IDbConnection connection, CancellationToken token, int timeout = 30)
+		public new Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>>> ExecuteAsync(IDbConnection connection, CancellationToken token, int timeout = defaultTimeout)
 		{
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>>>>() != null);
@@ -1125,7 +1200,22 @@ namespace CodeOnlyStoredProcedure
 #endif
 		{
 			return new StoredProcedure<T1, T2, T3, T4, T5, T6>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
-		}
+		}		
+
+        internal override object InternalCall(
+            IDbConnection connection,
+            int           commandTimeout = defaultTimeout)
+        {
+            return this.Execute(connection, commandTimeout);
+        }
+
+        internal override object InternalCallAsync(
+            IDbConnection     connection,
+            CancellationToken token,
+            int               commandTimeout = defaultTimeout)
+        {
+            return this.ExecuteAsync(connection, token, commandTimeout);
+        }
 	}
 	#endregion
 
@@ -1240,7 +1330,7 @@ namespace CodeOnlyStoredProcedure
         /// var results = storedProcedure.Execute(this.Database.Connection);
         /// </code>
         /// </example>
-		public new Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>, IEnumerable<T7>> Execute(IDbConnection connection, int timeout = 30)
+		public new Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>, IEnumerable<T7>> Execute(IDbConnection connection, int timeout = defaultTimeout)
 		{
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>, IEnumerable<T7>>>() != null);
@@ -1262,7 +1352,7 @@ namespace CodeOnlyStoredProcedure
         /// var results = await storedProcedure.ExecuteAsync(this.Database.Connection);
         /// </code>
         /// </example>
-		public new Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>, IEnumerable<T7>>> ExecuteAsync(IDbConnection connection, int timeout = 30)
+		public new Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>, IEnumerable<T7>>> ExecuteAsync(IDbConnection connection, int timeout = defaultTimeout)
 		{
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>, IEnumerable<T7>>>>() != null);
@@ -1285,7 +1375,7 @@ namespace CodeOnlyStoredProcedure
         /// var results = await storedProcedure.ExecuteAsync(this.Database.Connection, cts.Token);
         /// </code>
         /// </example>
-		public new Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>, IEnumerable<T7>>> ExecuteAsync(IDbConnection connection, CancellationToken token, int timeout = 30)
+		public new Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>, IEnumerable<T7>>> ExecuteAsync(IDbConnection connection, CancellationToken token, int timeout = defaultTimeout)
 		{
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>, IEnumerable<T7>>>>() != null);
@@ -1318,7 +1408,22 @@ namespace CodeOnlyStoredProcedure
 #endif
 		{
 			return new StoredProcedure<T1, T2, T3, T4, T5, T6, T7>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
-		}
+		}		
+
+        internal override object InternalCall(
+            IDbConnection connection,
+            int           commandTimeout = defaultTimeout)
+        {
+            return this.Execute(connection, commandTimeout);
+        }
+
+        internal override object InternalCallAsync(
+            IDbConnection     connection,
+            CancellationToken token,
+            int               commandTimeout = defaultTimeout)
+        {
+            return this.ExecuteAsync(connection, token, commandTimeout);
+        }
 	}
 	#endregion
 

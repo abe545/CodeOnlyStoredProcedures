@@ -106,11 +106,11 @@
   <ItemGroup>
     <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\EntityFramework.6.1.0\lib\net40\EntityFramework.dll</HintPath>
+      <HintPath>..\packages\EntityFramework.6.1.1\lib\net40\EntityFramework.dll</HintPath>
     </Reference>
     <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\EntityFramework.6.1.0\lib\net40\EntityFramework.SqlServer.dll</HintPath>
+      <HintPath>..\packages\EntityFramework.6.1.1\lib\net40\EntityFramework.SqlServer.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
@@ -140,8 +140,32 @@
     <Compile Include="..\CodeOnlyStoredProcedure\DataTransformerAttributeBase.cs">
       <Link>DataTransformerAttributeBase.cs</Link>
     </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\DynamicStoredProcedure.cs">
+      <Link>DynamicStoredProcedure.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\Dynamic\DynamicStoredProcedureResults.cs">
+      <Link>Dynamic\DynamicStoredProcedureResults.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\Dynamic\DynamicStoredProcedureResultsAwaiter.cs">
+      <Link>Dynamic\DynamicStoredProcedureResultsAwaiter.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\Dynamic\Extensions.cs">
+      <Link>Dynamic\Extensions.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\Exceptions\StoredProcedureColumnException.cs">
+      <Link>Exceptions\StoredProcedureColumnException.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\Exceptions\StoredProcedureException.cs">
+      <Link>Exceptions\StoredProcedureException.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\Exceptions\StoredProcedureResultsException.cs">
+      <Link>Exceptions\StoredProcedureResultsException.cs</Link>
+    </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\IDataTransformer.cs">
       <Link>IDataTransformer.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\IDbConnectionExtensions.cs">
+      <Link>IDbConnectionExtensions.cs</Link>
     </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\NamespaceDoc.cs">
       <Link>NamespaceDoc.cs</Link>
@@ -158,6 +182,9 @@
     <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\RowFactoryCreator.cs">
       <Link>RowFactory\RowFactoryCreator.cs</Link>
     </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\SimpleTypeRowFactory.cs">
+      <Link>RowFactory\SimpleTypeRowFactory.cs</Link>
+    </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedure.cs">
       <Link>StoredProcedure.cs</Link>
     </Compile>
@@ -166,12 +193,6 @@
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>StoredProcedure.tt</DependentUpon>
-    </Compile>
-    <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedureColumnException.cs">
-      <Link>StoredProcedureColumnException.cs</Link>
-    </Compile>
-    <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedureException.cs">
-      <Link>StoredProcedureException.cs</Link>
     </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedureExtensions.cs">
       <Link>StoredProcedureExtensions.cs</Link>
@@ -212,9 +233,6 @@
     </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedureParameterAttribute.cs">
       <Link>StoredProcedureParameterAttribute.cs</Link>
-    </Compile>
-    <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedureResultsException.cs">
-      <Link>StoredProcedureResultsException.cs</Link>
     </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\TableValuedParameterAttribute.cs">
       <Link>TableValuedParameterAttribute.cs</Link>

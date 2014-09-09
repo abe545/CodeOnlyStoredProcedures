@@ -102,9 +102,11 @@
     <DocumentationFile>..\Bin\Release\NET45\CodeOnlyStoredProcedure.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.CSharp" />
     <Reference Include="System" />
-    <Reference Include="System.Collections.Immutable">
-      <HintPath>..\packages\Microsoft.Bcl.Immutable.1.0.30\lib\portable-net45+win8+wp8\System.Collections.Immutable.dll</HintPath>
+    <Reference Include="System.Collections.Immutable, Version=1.0.34.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\Microsoft.Bcl.Immutable.1.0.34\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
     </Reference>
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Core" />
@@ -118,19 +120,25 @@
     <Compile Include="DataTransformation\TrimAllStringsTransformer.cs" />
     <Compile Include="DataTransformation\TrimAttribute.cs" />
     <Compile Include="DataTransformerAttributeBase.cs" />
+    <Compile Include="DynamicStoredProcedure.cs" />
+    <Compile Include="Dynamic\DynamicStoredProcedureResultsAwaiter.cs" />
+    <Compile Include="Dynamic\Extensions.cs" />
+    <Compile Include="Dynamic\DynamicStoredProcedureResults.cs" />
     <Compile Include="IDataTransformer.cs" />
+    <Compile Include="IDbConnectionExtensions.cs" />
     <Compile Include="NamespaceDoc.cs" />
     <Compile Include="RowFactory\DynamicRowFactory.cs" />
     <Compile Include="RowFactory\IRowFactory.cs" />
     <Compile Include="RowFactory\RowFactoryCreator.cs" />
+    <Compile Include="RowFactory\SimpleTypeRowFactory.cs" />
     <Compile Include="StoredProcedure.cs" />
     <Compile Include="StoredProcedure.generated.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>StoredProcedure.tt</DependentUpon>
     </Compile>
-    <Compile Include="StoredProcedureColumnException.cs" />
-    <Compile Include="StoredProcedureException.cs" />
+    <Compile Include="Exceptions\StoredProcedureColumnException.cs" />
+    <Compile Include="Exceptions\StoredProcedureException.cs" />
     <Compile Include="StoredProcedureExtensions.cs" />
     <Compile Include="StoredProcedureExtensions.generated.cs">
       <AutoGen>True</AutoGen>
@@ -157,11 +165,14 @@
       <DependentUpon>StoredProcedureExtensions.cs</DependentUpon>
     </Compile>
     <Compile Include="StoredProcedureParameterAttribute.cs" />
-    <Compile Include="StoredProcedureResultsException.cs" />
+    <Compile Include="Exceptions\StoredProcedureResultsException.cs" />
     <Compile Include="TableValuedParameterAttribute.cs" />
     <Compile Include="TypeExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="StoredProcedure.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>StoredProcedure.generated.cs</LastGenOutput>
@@ -170,7 +181,6 @@
     <None Include="StoredProcedureExtensions.WithResults.tt">
       <DependentUpon>StoredProcedureExtensions.cs</DependentUpon>
     </None>
-    <None Include="packages.config" />
     <Compile Include="StoredProcedureExtensions.WithTableValuedParameter.cs">
       <DependentUpon>StoredProcedureExtensions.cs</DependentUpon>
     </Compile>

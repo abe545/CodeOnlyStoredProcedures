@@ -231,7 +231,7 @@ public class StoredProcedureTemplate : Template
         /// var results = storedProcedure.Execute(this.Database.Connection);
         /// </code>
         /// </example>
-		public new <#+ GetResults(); #> Execute(IDbConnection connection, int timeout = 30)
+		public new <#+ GetResults(); #> Execute(IDbConnection connection, int timeout = defaultTimeout)
 		{
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<<#+ GetResults(); #>>() != null);
@@ -253,7 +253,7 @@ public class StoredProcedureTemplate : Template
         /// var results = await storedProcedure.ExecuteAsync(this.Database.Connection);
         /// </code>
         /// </example>
-		public new Task<<#+ GetResults(); #>> ExecuteAsync(IDbConnection connection, int timeout = 30)
+		public new Task<<#+ GetResults(); #>> ExecuteAsync(IDbConnection connection, int timeout = defaultTimeout)
 		{
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Task<<#+ GetResults(); #>>>() != null);
@@ -276,7 +276,7 @@ public class StoredProcedureTemplate : Template
         /// var results = await storedProcedure.ExecuteAsync(this.Database.Connection, cts.Token);
         /// </code>
         /// </example>
-		public new Task<<#+ GetResults(); #>> ExecuteAsync(IDbConnection connection, CancellationToken token, int timeout = 30)
+		public new Task<<#+ GetResults(); #>> ExecuteAsync(IDbConnection connection, CancellationToken token, int timeout = defaultTimeout)
 		{
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Task<<#+ GetResults(); #>>>() != null);
@@ -309,7 +309,22 @@ public class StoredProcedureTemplate : Template
 #endif
 		{
 			return new StoredProcedure<#+ GetTypes(TypeCount); #>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
-		}
+		}		
+
+        internal override object InternalCall(
+            IDbConnection connection,
+            int           commandTimeout = defaultTimeout)
+        {
+            return this.Execute(connection, commandTimeout);
+        }
+
+        internal override object InternalCallAsync(
+            IDbConnection     connection,
+            CancellationToken token,
+            int               commandTimeout = defaultTimeout)
+        {
+            return this.ExecuteAsync(connection, token, commandTimeout);
+        }
 	}
 	#endregion
 
