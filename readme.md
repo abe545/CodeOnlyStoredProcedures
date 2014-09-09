@@ -26,7 +26,7 @@ Task<IEnumerable<Person>> task = db.Call().usp_GetPeople();
 ```
 
 #### Rather await it?
-Using .NET 4.5 (or the Async NuGet package in 4.0)? That' easy too.
+Using .NET 4.5 (or the Async NuGet package in 4.0)? That's easy too.
 
 ```cs
 IEnumerable<Person> people = await db.Call().usp_GetPeople();
