@@ -14,6 +14,7 @@ namespace CodeOnlyStoredProcedure
 		/// <param name="sp">The <see cref="StoredProcedure" /> to clone.</param>
 		/// <returns>A copy of the <see cref="StoredProcedure" />, but that will return the given results.</returns>
 		public static StoredProcedure<T1> WithResults<T1>(this StoredProcedure sp)
+			where T1: new()
 		{
             Contract.Requires(sp != null);
 			Contract.Requires(sp.GetType() == typeof(StoredProcedure));
@@ -28,6 +29,8 @@ namespace CodeOnlyStoredProcedure
 		/// <param name="sp">The <see cref="StoredProcedure" /> to clone.</param>
 		/// <returns>A copy of the <see cref="StoredProcedure" />, but that will return the given results.</returns>
 		public static StoredProcedure<T1, T2> WithResults<T1, T2>(this StoredProcedure sp)
+			where T1: new()
+			where T2: new()
 		{
             Contract.Requires(sp != null);
 			Contract.Requires(sp.GetType() == typeof(StoredProcedure));
@@ -43,6 +46,9 @@ namespace CodeOnlyStoredProcedure
 		/// <param name="sp">The <see cref="StoredProcedure" /> to clone.</param>
 		/// <returns>A copy of the <see cref="StoredProcedure" />, but that will return the given results.</returns>
 		public static StoredProcedure<T1, T2, T3> WithResults<T1, T2, T3>(this StoredProcedure sp)
+			where T1: new()
+			where T2: new()
+			where T3: new()
 		{
             Contract.Requires(sp != null);
 			Contract.Requires(sp.GetType() == typeof(StoredProcedure));
@@ -59,6 +65,10 @@ namespace CodeOnlyStoredProcedure
 		/// <param name="sp">The <see cref="StoredProcedure" /> to clone.</param>
 		/// <returns>A copy of the <see cref="StoredProcedure" />, but that will return the given results.</returns>
 		public static StoredProcedure<T1, T2, T3, T4> WithResults<T1, T2, T3, T4>(this StoredProcedure sp)
+			where T1: new()
+			where T2: new()
+			where T3: new()
+			where T4: new()
 		{
             Contract.Requires(sp != null);
 			Contract.Requires(sp.GetType() == typeof(StoredProcedure));
@@ -76,6 +86,11 @@ namespace CodeOnlyStoredProcedure
 		/// <param name="sp">The <see cref="StoredProcedure" /> to clone.</param>
 		/// <returns>A copy of the <see cref="StoredProcedure" />, but that will return the given results.</returns>
 		public static StoredProcedure<T1, T2, T3, T4, T5> WithResults<T1, T2, T3, T4, T5>(this StoredProcedure sp)
+			where T1: new()
+			where T2: new()
+			where T3: new()
+			where T4: new()
+			where T5: new()
 		{
             Contract.Requires(sp != null);
 			Contract.Requires(sp.GetType() == typeof(StoredProcedure));
@@ -94,6 +109,12 @@ namespace CodeOnlyStoredProcedure
 		/// <param name="sp">The <see cref="StoredProcedure" /> to clone.</param>
 		/// <returns>A copy of the <see cref="StoredProcedure" />, but that will return the given results.</returns>
 		public static StoredProcedure<T1, T2, T3, T4, T5, T6> WithResults<T1, T2, T3, T4, T5, T6>(this StoredProcedure sp)
+			where T1: new()
+			where T2: new()
+			where T3: new()
+			where T4: new()
+			where T5: new()
+			where T6: new()
 		{
             Contract.Requires(sp != null);
 			Contract.Requires(sp.GetType() == typeof(StoredProcedure));
@@ -113,6 +134,13 @@ namespace CodeOnlyStoredProcedure
 		/// <param name="sp">The <see cref="StoredProcedure" /> to clone.</param>
 		/// <returns>A copy of the <see cref="StoredProcedure" />, but that will return the given results.</returns>
 		public static StoredProcedure<T1, T2, T3, T4, T5, T6, T7> WithResults<T1, T2, T3, T4, T5, T6, T7>(this StoredProcedure sp)
+			where T1: new()
+			where T2: new()
+			where T3: new()
+			where T4: new()
+			where T5: new()
+			where T6: new()
+			where T7: new()
 		{
             Contract.Requires(sp != null);
 			Contract.Requires(sp.GetType() == typeof(StoredProcedure));

@@ -4,7 +4,7 @@ You can declare your stored procedure as a member of your class. If using the En
 {code:c#}
 public class MyDataBase : DbContext
 {
-    private readonly myStoredProc = new StoredProcedure("dbo", "MyStoredProc");
+    private readonly StoredProcedure myStoredProc = new StoredProcedure("dbo", "MyStoredProc");
     
     public void CallMyStoredProc()
     {

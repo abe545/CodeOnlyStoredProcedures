@@ -17,6 +17,15 @@ public class StoredProcedureTemplate : Template
 		Write(">");
 	}
 
+	private void WriteConstraints()
+    {
+		WriteLine("");
+		PushIndent("\t\t");
+        for (int i = 1; i <= TypeCount; i++)
+			WriteLine("where T" + i + ": new()");
+		PopIndent();
+    }
+
 	private void CreateCachedFields()
 	{
 		PushIndent("\t\t");
@@ -135,7 +144,7 @@ public class StoredProcedureTemplate : Template
 	/// <summary>Calls a StoredProcedure that returns <#+ Write(TypeCount.ToString()); #> result set(s).</summary>
 	<#+ WriteTypeParams(); #>
 	public class StoredProcedure<#+ GetTypes(TypeCount); #> : StoredProcedure<#+ GetTypes(TypeCount - 1); #>
-
+	<#+ WriteConstraints(); #>
 	{
 <#+ CreateCachedFields(); #>
 

@@ -16,7 +16,8 @@ namespace CodeOnlyStoredProcedure
 	#region StoredProcedure<T1>
 	/// <summary>Calls a StoredProcedure that returns 1 result set(s).</summary>
 	/// <typeparam name="T1">The type of the first result set returned by the stored procedure.</typeparam>
-	public class StoredProcedure<T1> : StoredProcedure
+	public class StoredProcedure<T1> : StoredProcedure	
+		where T1: new()
 	{
 		private static readonly Type t1 = typeof(T1);
 
@@ -213,7 +214,9 @@ namespace CodeOnlyStoredProcedure
 	/// <summary>Calls a StoredProcedure that returns 2 result set(s).</summary>
 	/// <typeparam name="T1">The type of the first result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T2">The type of the second result set returned by the stored procedure.</typeparam>
-	public class StoredProcedure<T1, T2> : StoredProcedure<T1>
+	public class StoredProcedure<T1, T2> : StoredProcedure<T1>	
+		where T1: new()
+		where T2: new()
 	{
 		private static readonly Type t1 = typeof(T1);
 		private static readonly Type t2 = typeof(T2);
@@ -412,7 +415,10 @@ namespace CodeOnlyStoredProcedure
 	/// <typeparam name="T1">The type of the first result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T2">The type of the second result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T3">The type of the third result set returned by the stored procedure.</typeparam>
-	public class StoredProcedure<T1, T2, T3> : StoredProcedure<T1, T2>
+	public class StoredProcedure<T1, T2, T3> : StoredProcedure<T1, T2>	
+		where T1: new()
+		where T2: new()
+		where T3: new()
 	{
 		private static readonly Type t1 = typeof(T1);
 		private static readonly Type t2 = typeof(T2);
@@ -613,7 +619,11 @@ namespace CodeOnlyStoredProcedure
 	/// <typeparam name="T2">The type of the second result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T3">The type of the third result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T4">The type of the fourth result set returned by the stored procedure.</typeparam>
-	public class StoredProcedure<T1, T2, T3, T4> : StoredProcedure<T1, T2, T3>
+	public class StoredProcedure<T1, T2, T3, T4> : StoredProcedure<T1, T2, T3>	
+		where T1: new()
+		where T2: new()
+		where T3: new()
+		where T4: new()
 	{
 		private static readonly Type t1 = typeof(T1);
 		private static readonly Type t2 = typeof(T2);
@@ -816,7 +826,12 @@ namespace CodeOnlyStoredProcedure
 	/// <typeparam name="T3">The type of the third result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T4">The type of the fourth result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T5">The type of the fifth result set returned by the stored procedure.</typeparam>
-	public class StoredProcedure<T1, T2, T3, T4, T5> : StoredProcedure<T1, T2, T3, T4>
+	public class StoredProcedure<T1, T2, T3, T4, T5> : StoredProcedure<T1, T2, T3, T4>	
+		where T1: new()
+		where T2: new()
+		where T3: new()
+		where T4: new()
+		where T5: new()
 	{
 		private static readonly Type t1 = typeof(T1);
 		private static readonly Type t2 = typeof(T2);
@@ -1021,7 +1036,13 @@ namespace CodeOnlyStoredProcedure
 	/// <typeparam name="T4">The type of the fourth result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T5">The type of the fifth result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T6">The type of the sixth result set returned by the stored procedure.</typeparam>
-	public class StoredProcedure<T1, T2, T3, T4, T5, T6> : StoredProcedure<T1, T2, T3, T4, T5>
+	public class StoredProcedure<T1, T2, T3, T4, T5, T6> : StoredProcedure<T1, T2, T3, T4, T5>	
+		where T1: new()
+		where T2: new()
+		where T3: new()
+		where T4: new()
+		where T5: new()
+		where T6: new()
 	{
 		private static readonly Type t1 = typeof(T1);
 		private static readonly Type t2 = typeof(T2);
@@ -1228,7 +1249,14 @@ namespace CodeOnlyStoredProcedure
 	/// <typeparam name="T5">The type of the fifth result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T6">The type of the sixth result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T7">The type of the seventh result set returned by the stored procedure.</typeparam>
-	public class StoredProcedure<T1, T2, T3, T4, T5, T6, T7> : StoredProcedure<T1, T2, T3, T4, T5, T6>
+	public class StoredProcedure<T1, T2, T3, T4, T5, T6, T7> : StoredProcedure<T1, T2, T3, T4, T5, T6>	
+		where T1: new()
+		where T2: new()
+		where T3: new()
+		where T4: new()
+		where T5: new()
+		where T6: new()
+		where T7: new()
 	{
 		private static readonly Type t1 = typeof(T1);
 		private static readonly Type t2 = typeof(T2);

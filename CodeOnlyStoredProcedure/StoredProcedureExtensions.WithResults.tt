@@ -27,6 +27,14 @@ public class StoredProcedureExtensionsWithResultsTemplate : Template
         }
     }
 
+	private void WriteConstraints()
+    {
+		PushIndent("\t\t\t");
+        for (int i = 1; i <= TypeCount; i++)
+			WriteLine("where T" + i + ": new()");
+		PopIndent();
+    }
+
 	public string GetOrdinal(int i)
     {
         switch (i)
@@ -66,6 +74,7 @@ public class StoredProcedureExtensionsWithResultsTemplate : Template
 		/// <param name="sp">The <see cref="StoredProcedure" /> to clone.</param>
 		/// <returns>A copy of the <see cref="StoredProcedure" />, but that will return the given results.</returns>
 		public static StoredProcedure<#+ GetTypes(TypeCount); #> WithResults<#+ GetTypes(TypeCount); #>(this StoredProcedure sp)
+			<#+ WriteConstraints(); #>
 		{
             Contract.Requires(sp != null);
 			Contract.Requires(sp.GetType() == typeof(StoredProcedure));
