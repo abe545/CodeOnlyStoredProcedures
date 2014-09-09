@@ -30,12 +30,12 @@ public class MyResults
 
 public class MyDataBase : DbContext
 {
-    private readonly myStoredProc<MyResults> = 
+    private readonly StoredProcedure<MyResults> myStoredProc = 
         new StoredProcedure<MyResults>("dbo", "MyStoredProc");
-    private readonly myStoredProc<MyResults, MyResults> = 
+    private readonly StoredProcedure<MyResults, MyResults> myStoredProc2 = 
         new StoredProcedure<MyResults, MyResults>("dbo", "MyStoredProc2");
         
-    public IEnumerable<MyResults>CallMyStoredProc()
+    public IEnumerable<MyResults> CallMyStoredProc()
     {
         return myStoredProc.Execute(this.Database.Connection);
     }
@@ -47,12 +47,12 @@ public class MyDataBase : DbContext
 
     public Tuple<IEnumerable<MyResults>, IEnumerable<MyResults>> CallMyStoredProc2()
     {
-        return myStoredProc.Execute(this.Database.Connection);
+        return myStoredProc2.Execute(this.Database.Connection);
     }
 
     public Task<Tuple<IEnumerable<MyResults>, IEnumerable<MyResults>>> CallMyStoredProc2Async()
     {
-        return myStoredProc.ExecuteAsync(this.Database.Connection);
+        return myStoredProc2.ExecuteAsync(this.Database.Connection);
     }
 }
 {code:c#}
@@ -60,7 +60,7 @@ public class MyDataBase : DbContext
 You can pass input parameters with either of the [Passing Parameters] methods. If you always pass the same parameter to a Stored Procedure, you can use the result of the {{WithParameter}} method as your member variable, and you won't have to set the value every time you call {{Execute}}:
 
 {code:c#}
-private readonly myStoredProc<MyResults> = 
+private readonly StoredProcedure<MyResults> myStoredProc = 
     new StoredProcedure<MyResults>("dbo", "MyStoredProc")
             .WithParameter("parameter", "myApp");
 
