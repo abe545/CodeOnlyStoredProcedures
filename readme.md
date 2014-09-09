@@ -1,66 +1,217 @@
-! Code Only Stored Procedures
-{project:description}
-
+# Code Only Stored Procedures
+A library for easily calling Stored Procedures in .NET. Works great with Entity Framework Code First models. 
 Code Only Stored Procedures will not create any Stored Procedures on your database. Instead, its aim is to make it easy to call your existing stored procedures by writing simple code.
 
-This library will be released solely on NuGet. You can go to the [url:CodeOnlyStoredProcedures NuGet Page|https://www.nuget.org/packages/CodeOnlyStoredProcedures] for more information on releases, or just grab it:
+This library is released via NuGet. You can go to the [CodeOnlyStoredProcedures NuGet Page](https://www.nuget.org/packages/CodeOnlyStoredProcedures) for more information on releases, or just grab it:
 
-{code:powershell}
+```
 Install-Package CodeOnlyStoredProcedures
-{code:powershell}
+```
 
-!! Quick Start
-{code:c#}
+## Usage
+There are a number ways you can use this library to make working with stored procedures easier. First, you're going to need a connection to a Database. If you're using Entity Framework, you can grab it from the `Database.Connection` on your `DbContext`. Otherwise, you can create a new connection however you want. Once you have an `IDbConnection db`, you can start executing those stored procs:
+
+#### Get Results in One line
+The easiest way is to use the dynamic syntax:
+
+```cs
+IEnumerable<Person> people = db.Call().usp_GetPeople();
+```
+
+#### Want it asynchronous?
+Just declare it that way.
+
+```cs
+Task<IEnumerable<Person>> task = db.Call().usp_GetPeople();
+```
+
+#### Rather await it?
+Using .NET 4.5 (or the Async NuGet package in 4.0)? That' easy too.
+
+```cs
+IEnumerable<Person> people = await db.Call().usp_GetPeople();
+```
+
+#### Using the repository pattern?
+Even easier. Your interface is basically doing the work for you.
+
+```cs
+public IEnumerable<Person> GetPeople()
+{
+    return this.db.Call().usp_GetPeople();
+}
+
+public Task<IEnumerable<Person>> GetPeopleAsync()
+{
+    return this.db.Call().usp_GetPeople();
+}
+```
+
+#### What about cancellation?
+All those tasks do need to be cancellable. So, pass your token
+
+```cs
+public Task<IEnumerable<Person>> GetPeopleAsync(CancellationToken token)
+{
+    return this.db.Call(token).usp_GetPeople();
+}
+```
+
+#### What if my database is slow?
+Sometimes, you need to have a longer execution timeout. Just tell us how many seconds you need.
+
+```cs
+IEnumerable<Widget> widgets = db.Call(3600).sp_getAllTheWidgetsInTheWorld();
+```
+
+#### But my procedure takes input!
+Okay, so send it in!
+
+```cs
+IEnumerable<Widget> widgets = db.Call().sp_getWidgets(weight: 42, name: "Frob");
+```
+
+#### What about output parameters?
+Those work. So do Input/Output parameters (you know these keywords, right?).
+
+```cs
+int count;
+int smallest = 15;
+db.Call().sp_getWidgetCount(count: out count, smallest_widget: ref smallest);
+```
+
+#### And if I need the return value?
+This one isn't that tough. It is just an out parameter with a special (case-INseNsiTivE) name.
+
+```cs
+int count;
+db.Call().sp_getWidgetCount(ReturnValue: out count);
+```
+
+#### How can those parameters work when called asynchronously?
+They can't. At least, not the simple way. You can declare a helper class though.
+
+```cs
+private class WidgetParameters
+{
+    [StoredProcedureParameter(Direction = ParameterDirection.ReturnValue)]
+    public int Count { get; set; }
+    [StoredProcedureParameter("smallest_widget", Direction = ParameterDirection.ReturnValue)]
+    public int Smallest { get; set; }
+}
+
+var input = new WidgetParameters { Smallest = 15 };
+await db.Call().sp_getWidgetCount(input);
+```
+
+#### I hate dynamically typed C#!
+Some people hate magically typed C#. I get it. Luckily, you can use magic strings instead!
+
+```cs
+var sp = new StoredProcedure<Person>("dbo", "usp_GetPeople");
+var people = sp.Execute(db);
+```
+
+#### So, what if I don't like that syntax?
+I aim to please. There is a fluent syntax also.
+
+```cs
+var people = StoredProcedure.Create("usp_getPeople")
+                            .WithResults<People>()
+                            .Execute(db);
+```
+
+#### What if I like async though?
+Either the fluent syntax or the class syntax can execute asynchronously:
+
+```cs
+Task<IEnumerable<Person>> StoredProcedure.Create("usp_getPeople")
+                                         .WithResults<People>()
+                                         .ExecuteAsync(token); // yep, you an cancel it!
+```
+
+#### How do I pass parameters this way?
+Well, it isn't as easy, but still pretty simple.
+_It is important to know that a `StoredProcedure` is immutable. This means that if you call any of the following methods on an instance of the class, the original reference will not be modified._
+
+```cs
+var people = StoredProcedure.Create("usp_getPeople")
+                            .WithResults<People>()
+                            .WithParameter("name", "Bob")
+                            .Execute(db);
+```
+
+#### What about return values?
+You must pass an `Action<int>` (be careful if you call this asynchronously that you don't access the result until after the task completes).
+```cs
+int retVal;
+StoredProcedure.Create("sp_getWidgetCount")
+               .WithReturnValue(rv => retVal = rv)
+               .Execute(db);
+```
+
+#### You know we need (input/)ouput parameters, right?
+Yep, and you can use them similarly to return values.
+
+```cs
+int count, smallest;
+StoredProcedure.Create("sp_getWidgetCount")
+               .WithOutputParameter("count", i => count = i)
+               .WithInputOutputParameter("smallest_widget", 15, i => smallest = i)
+               .Execute(db);
+```
+
+#### That seems like a lot to keep track of
+You can create an input class like with the dynamic syntax. It might be easier to pass out or in/out parameters this way.
+
+```cs
+
+private class WidgetParameters
+{
+    [StoredProcedureParameter(Direction = ParameterDirection.ReturnValue)]
+    public int Count { get; set; }
+    [StoredProcedureParameter("smallest_widget", Direction = ParameterDirection.ReturnValue)]
+    public int Smallest { get; set; }
+}
+
+var input = new WidgetParameters { Smallest = 15 };
+StoredProcedure.Create("sp_getWidgetCount")
+               .WithInput(input)
+               .Execute(db);
+```
+
+#### So, what are these data transformations?
+Sometimes, databases return data in a form that isn't _quite_ what you want. These help correct that.
+You can apply them to model properties individually
+
+```cs
+public class Person
+{
+    [Trim]
+    public string FirstName { get; set; }
+    [Trim, Intern]
+    public string LastName  { get; set; }
+}
+```
+
+Or, if you want to apply the same transformer to all properties of a type
+
+```cs
+var people = StoredProcedure.Create("usp_getPeople")
+                            .WithResults<People>()
+                            .WithDataTransformer(new TrimAllStringsTransformer())
+                            .Execute(db);
+```
+
+Currently, there are transformers for interning strings, trimming strings, and automatically converting numeric types (like `double` to `decimal`). These are extensible, in case you have additional use cases.
+
+#### What if the column names are dumb?
+You can rename them on your model.
+
+```cs
 public class Person
 {
     [Column("ResultId")]
     public int Id { get; set; }
-    public DateTime Birthday { get; set; }
-    public string FirstName { get; set; }
-    public string LastName { get; set; }
-    [NotMapped]
-    public string FullName { get { return FirstName + " " + LastName; } }
 }
-
-public class MyModel : DbContext
-{
-    private readonly StoredProcedure<Person> peopleByBirthday = 
-        new StoredProcedure<Person>("dbo", "usp_GetPeopleByBirthday");
-
-    public IEnumerable<Person> GetPeopleByBirthday(DateTime birthday)
-    {
-        return peopleByBirthday.WithInput(new { Birthday = birthday })
-            .Execute(this.Database.Connection);
-    }
-
-    public Task<IEnumerable<Person>> GetPeopleByLastName(string lastName)
-    {
-        // schema defaults to "dbo"
-        return StoredProcedure.Create("usp_GetPeopleByFamilyName")
-            .WithInput("familyName", lastName)
-            .WithResult<Person>()
-            .Execute(this.Database.Connection);
-    }
-}
-{code:c#}
-
-!! Dynamic Syntax
-The new dynamic syntax in 1.2 makes calling your stored procedures a LOT easier
-
-{code:c#}
-public class DynamicModel : DbContext
-{
-    // Just by specifying the result type and parameters, we are able to figure out
-    // how to call the query.
-    public IEnumerable<Person> GetPeopleByBirthday(DateTime birthday)
-    {
-        return Database.Connection.Call().usp_GetPeopleByBirthday(Birthday: birthday);
-    }
-
-    // If you specify the result as a Task, the procedure will be executed asynchronously
-    public Task<IEnumerable<Person>> GetPeopleByLastName(string lastName)
-    {
-        return Database.Connection.Call().usp_GetPeopleByFamilyName(familyName: lastName);
-    }
-}
-{code:c#}
+```
