@@ -3,18 +3,25 @@ public class StoredProcedureTemplate : Template
 {
 	public int TypeCount;
 
-	private void GetTypes(int count)
+	private void GetTypes(int count, bool escapeBrackets = false)
 	{
 		if (count == 0) return;
 
-		Write("<");
+		if (escapeBrackets)
+			Write("&lt;");
+		else
+			Write("<");
 		for (int i = 1; i <= count; ++i)
 		{
 			if (i > 1)
 				Write(", ");
 			Write("T" + i);
 		}
-		Write(">");
+
+		if (escapeBrackets)
+			Write("&gt;");
+		else
+			Write(">");
 	}
 
 	private void CreateCachedFields()
@@ -127,6 +134,19 @@ public class StoredProcedureTemplate : Template
         }
     }
 
+	public void WriteTypeChecks()
+    {
+		PushIndent("\t\t\t");
+
+        for (int i = 1; i <= TypeCount; i++)
+        {
+			WriteLine("if (!t" + i + ".IsValidResultType())");
+			WriteLine("\tthrow new NotSupportedException(\"Stored Procedure result must either be a built in type, or have a parameterless constructor.\");");
+        }
+
+		PopIndent();
+    }
+
     public override string TransformText()
     {
 #>
@@ -135,9 +155,16 @@ public class StoredProcedureTemplate : Template
 	/// <summary>Calls a StoredProcedure that returns <#+ Write(TypeCount.ToString()); #> result set(s).</summary>
 	<#+ WriteTypeParams(); #>
 	public class StoredProcedure<#+ GetTypes(TypeCount); #> : StoredProcedure<#+ GetTypes(TypeCount - 1); #>
-
 	{
 <#+ CreateCachedFields(); #>
+
+		/// <summary>
+		/// Initializes the StoredProcedure<#+ GetTypes(TypeCount, true); #> type.
+		/// </summary>
+		static StoredProcedure()
+		{
+			<#+ WriteTypeChecks(); #>	
+		}
 
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>

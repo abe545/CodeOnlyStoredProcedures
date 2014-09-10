@@ -16,21 +16,6 @@ namespace CodeOnlyStoredProcedure
     /// </summary>
     public static partial class StoredProcedureExtensions
     {
-        private static readonly Type[] integralTpes = new[]
-            {
-                typeof(String),
-                typeof(Int16),
-                typeof(Int32),
-                typeof(Int64),
-                typeof(Decimal),
-                typeof(Double),
-                typeof(Single),
-                typeof(Boolean),
-                typeof(Byte),
-                typeof(DateTime),
-                typeof(Guid)
-            };
-
         internal static IEnumerable<StoredProcedureResult> Execute(this IDbCommand cmd, CancellationToken token)
         {
             Contract.Requires(cmd != null);
@@ -106,7 +91,7 @@ namespace CodeOnlyStoredProcedure
                 IRowFactory factory;
 
                 // process the result set
-                if (res.ColumnNames.Length == 1 && (currentType.IsEnum || integralTpes.Contains(currentType)))
+                if (res.ColumnNames.Length == 1 && currentType.IsSimpleType())
                     factory = new SimpleTypeRowFactory(currentType);
                 else
                     factory = currentType.CreateRowFactory();

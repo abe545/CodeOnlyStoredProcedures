@@ -64,6 +64,68 @@ namespace CodeOnlyTests
             }
         }
 
+        [TestMethod]
+        public void CanConstructAllGenericStoredProceduresForAllIntegralTypes()
+        {
+            StoredProcedure sp;
+            Type type;
+            int parameterCount = 1;
+
+            foreach (var t in _generics)
+            {
+                foreach (var tt in TypeExtensions.integralTpes)
+                {
+                    type = t.MakeGenericType(Enumerable.Range(0, parameterCount)
+                                                        .Select(_ => tt)
+                                                        .ToArray());
+                    sp = (StoredProcedure)Activator.CreateInstance(type, "usp_Test");
+
+                    // this would have thrown if the type wasn't allowed
+                    Assert.IsNotNull(sp);
+                }
+
+                // try it with an enum value, too
+                type = t.MakeGenericType(Enumerable.Range(0, parameterCount)
+                                                   .Select(_ => typeof(ParameterDirection))
+                                                   .ToArray());
+                sp = (StoredProcedure)Activator.CreateInstance(type, "usp_Test");
+
+                // this would have thrown if the type wasn't allowed
+                Assert.IsNotNull(sp);
+
+                ++parameterCount;
+            }
+        }
+
+        [TestMethod]
+        public void CanNotConstructAnyGenericStoredProcedureForResultWithoutDefaultConstructor()
+        {
+            int parameterCount = 1;
+
+            foreach (var t in _generics)
+            {
+                foreach (var tt in TypeExtensions.integralTpes)
+                {
+                    try
+                    {
+                        var type = t.MakeGenericType(Enumerable.Range(0, parameterCount)
+                                                               .Select(_ => typeof(NoDefaultCtor))
+                                                               .ToArray());
+                        var sp = (StoredProcedure)Activator.CreateInstance(type, "usp_Test");
+                        Assert.Fail("Expected exception not thrown.");
+                    }
+                    catch(TypeInitializationException ex)
+                    {
+                        Assert.IsInstanceOfType(ex.InnerException, typeof(NotSupportedException));
+                        Assert.AreEqual("Stored Procedure result must either be a built in type, or have a parameterless constructor.",
+                                        ex.InnerException.Message);
+                    }
+                }
+
+                ++parameterCount;
+            }
+        }
+
         private static void TestConstructorWithDefaultSchema(Type type, string name)
         {
             // this will actually call the SP's ctor
@@ -484,6 +546,16 @@ namespace CodeOnlyTests
             Assert.AreEqual(String.Format("[{0}].[{1}]", schema, name), proc.FullName);
             Assert.AreEqual(parmCount, proc.Parameters.Count());
             Assert.AreEqual(outputCount, proc.OutputParameterSetters.Count());
+        }
+
+        private class NoDefaultCtor
+        {
+            public string Id { get; private set; }
+
+            public NoDefaultCtor(string id)
+            {
+                Id = id;
+            }
         }
     }
 }
