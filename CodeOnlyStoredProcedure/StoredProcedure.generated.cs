@@ -16,10 +16,18 @@ namespace CodeOnlyStoredProcedure
 	#region StoredProcedure<T1>
 	/// <summary>Calls a StoredProcedure that returns 1 result set(s).</summary>
 	/// <typeparam name="T1">The type of the first result set returned by the stored procedure.</typeparam>
-	public class StoredProcedure<T1> : StoredProcedure	
-		where T1: new()
-	{
+	public class StoredProcedure<T1> : StoredProcedure	{
 		private static readonly Type t1 = typeof(T1);
+
+		/// <summary>
+		/// Initializes the StoredProcedure&lt;T1&gt; type.
+		/// </summary>
+		static StoredProcedure()
+		{
+			if (!t1.IsValidResultType())
+				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
+	
+		}
 
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
@@ -214,12 +222,21 @@ namespace CodeOnlyStoredProcedure
 	/// <summary>Calls a StoredProcedure that returns 2 result set(s).</summary>
 	/// <typeparam name="T1">The type of the first result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T2">The type of the second result set returned by the stored procedure.</typeparam>
-	public class StoredProcedure<T1, T2> : StoredProcedure<T1>	
-		where T1: new()
-		where T2: new()
-	{
+	public class StoredProcedure<T1, T2> : StoredProcedure<T1>	{
 		private static readonly Type t1 = typeof(T1);
 		private static readonly Type t2 = typeof(T2);
+
+		/// <summary>
+		/// Initializes the StoredProcedure&lt;T1, T2&gt; type.
+		/// </summary>
+		static StoredProcedure()
+		{
+			if (!t1.IsValidResultType())
+				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
+			if (!t2.IsValidResultType())
+				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
+	
+		}
 
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
@@ -415,14 +432,24 @@ namespace CodeOnlyStoredProcedure
 	/// <typeparam name="T1">The type of the first result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T2">The type of the second result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T3">The type of the third result set returned by the stored procedure.</typeparam>
-	public class StoredProcedure<T1, T2, T3> : StoredProcedure<T1, T2>	
-		where T1: new()
-		where T2: new()
-		where T3: new()
-	{
+	public class StoredProcedure<T1, T2, T3> : StoredProcedure<T1, T2>	{
 		private static readonly Type t1 = typeof(T1);
 		private static readonly Type t2 = typeof(T2);
 		private static readonly Type t3 = typeof(T3);
+
+		/// <summary>
+		/// Initializes the StoredProcedure&lt;T1, T2, T3&gt; type.
+		/// </summary>
+		static StoredProcedure()
+		{
+			if (!t1.IsValidResultType())
+				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
+			if (!t2.IsValidResultType())
+				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
+			if (!t3.IsValidResultType())
+				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
+	
+		}
 
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
@@ -619,16 +646,27 @@ namespace CodeOnlyStoredProcedure
 	/// <typeparam name="T2">The type of the second result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T3">The type of the third result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T4">The type of the fourth result set returned by the stored procedure.</typeparam>
-	public class StoredProcedure<T1, T2, T3, T4> : StoredProcedure<T1, T2, T3>	
-		where T1: new()
-		where T2: new()
-		where T3: new()
-		where T4: new()
-	{
+	public class StoredProcedure<T1, T2, T3, T4> : StoredProcedure<T1, T2, T3>	{
 		private static readonly Type t1 = typeof(T1);
 		private static readonly Type t2 = typeof(T2);
 		private static readonly Type t3 = typeof(T3);
 		private static readonly Type t4 = typeof(T4);
+
+		/// <summary>
+		/// Initializes the StoredProcedure&lt;T1, T2, T3, T4&gt; type.
+		/// </summary>
+		static StoredProcedure()
+		{
+			if (!t1.IsValidResultType())
+				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
+			if (!t2.IsValidResultType())
+				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
+			if (!t3.IsValidResultType())
+				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
+			if (!t4.IsValidResultType())
+				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
+	
+		}
 
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
@@ -826,18 +864,30 @@ namespace CodeOnlyStoredProcedure
 	/// <typeparam name="T3">The type of the third result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T4">The type of the fourth result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T5">The type of the fifth result set returned by the stored procedure.</typeparam>
-	public class StoredProcedure<T1, T2, T3, T4, T5> : StoredProcedure<T1, T2, T3, T4>	
-		where T1: new()
-		where T2: new()
-		where T3: new()
-		where T4: new()
-		where T5: new()
-	{
+	public class StoredProcedure<T1, T2, T3, T4, T5> : StoredProcedure<T1, T2, T3, T4>	{
 		private static readonly Type t1 = typeof(T1);
 		private static readonly Type t2 = typeof(T2);
 		private static readonly Type t3 = typeof(T3);
 		private static readonly Type t4 = typeof(T4);
 		private static readonly Type t5 = typeof(T5);
+
+		/// <summary>
+		/// Initializes the StoredProcedure&lt;T1, T2, T3, T4, T5&gt; type.
+		/// </summary>
+		static StoredProcedure()
+		{
+			if (!t1.IsValidResultType())
+				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
+			if (!t2.IsValidResultType())
+				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
+			if (!t3.IsValidResultType())
+				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
+			if (!t4.IsValidResultType())
+				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
+			if (!t5.IsValidResultType())
+				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
+	
+		}
 
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
@@ -1036,20 +1086,33 @@ namespace CodeOnlyStoredProcedure
 	/// <typeparam name="T4">The type of the fourth result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T5">The type of the fifth result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T6">The type of the sixth result set returned by the stored procedure.</typeparam>
-	public class StoredProcedure<T1, T2, T3, T4, T5, T6> : StoredProcedure<T1, T2, T3, T4, T5>	
-		where T1: new()
-		where T2: new()
-		where T3: new()
-		where T4: new()
-		where T5: new()
-		where T6: new()
-	{
+	public class StoredProcedure<T1, T2, T3, T4, T5, T6> : StoredProcedure<T1, T2, T3, T4, T5>	{
 		private static readonly Type t1 = typeof(T1);
 		private static readonly Type t2 = typeof(T2);
 		private static readonly Type t3 = typeof(T3);
 		private static readonly Type t4 = typeof(T4);
 		private static readonly Type t5 = typeof(T5);
 		private static readonly Type t6 = typeof(T6);
+
+		/// <summary>
+		/// Initializes the StoredProcedure&lt;T1, T2, T3, T4, T5, T6&gt; type.
+		/// </summary>
+		static StoredProcedure()
+		{
+			if (!t1.IsValidResultType())
+				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
+			if (!t2.IsValidResultType())
+				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
+			if (!t3.IsValidResultType())
+				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
+			if (!t4.IsValidResultType())
+				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
+			if (!t5.IsValidResultType())
+				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
+			if (!t6.IsValidResultType())
+				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
+	
+		}
 
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
@@ -1249,15 +1312,7 @@ namespace CodeOnlyStoredProcedure
 	/// <typeparam name="T5">The type of the fifth result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T6">The type of the sixth result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T7">The type of the seventh result set returned by the stored procedure.</typeparam>
-	public class StoredProcedure<T1, T2, T3, T4, T5, T6, T7> : StoredProcedure<T1, T2, T3, T4, T5, T6>	
-		where T1: new()
-		where T2: new()
-		where T3: new()
-		where T4: new()
-		where T5: new()
-		where T6: new()
-		where T7: new()
-	{
+	public class StoredProcedure<T1, T2, T3, T4, T5, T6, T7> : StoredProcedure<T1, T2, T3, T4, T5, T6>	{
 		private static readonly Type t1 = typeof(T1);
 		private static readonly Type t2 = typeof(T2);
 		private static readonly Type t3 = typeof(T3);
@@ -1265,6 +1320,28 @@ namespace CodeOnlyStoredProcedure
 		private static readonly Type t5 = typeof(T5);
 		private static readonly Type t6 = typeof(T6);
 		private static readonly Type t7 = typeof(T7);
+
+		/// <summary>
+		/// Initializes the StoredProcedure&lt;T1, T2, T3, T4, T5, T6, T7&gt; type.
+		/// </summary>
+		static StoredProcedure()
+		{
+			if (!t1.IsValidResultType())
+				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
+			if (!t2.IsValidResultType())
+				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
+			if (!t3.IsValidResultType())
+				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
+			if (!t4.IsValidResultType())
+				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
+			if (!t5.IsValidResultType())
+				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
+			if (!t6.IsValidResultType())
+				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
+			if (!t7.IsValidResultType())
+				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
+	
+		}
 
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>

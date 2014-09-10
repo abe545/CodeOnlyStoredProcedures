@@ -12,6 +12,21 @@ namespace CodeOnlyStoredProcedure
 {
     internal static class TypeExtensions
     {
+        internal static readonly Type[] integralTpes = new[]
+            {
+                typeof(String),
+                typeof(Int16),
+                typeof(Int32),
+                typeof(Int64),
+                typeof(Decimal),
+                typeof(Double),
+                typeof(Single),
+                typeof(Boolean),
+                typeof(Byte),
+                typeof(DateTime),
+                typeof(Guid)
+            };
+
         internal static IEnumerable<PropertyInfo> GetMappedProperties(
             this Type t, 
                  bool requireWritable = false,
@@ -168,6 +183,19 @@ namespace CodeOnlyStoredProcedure
 
                 yield return Tuple.Create(pi, parameter);
             }
+        }
+
+        public static bool IsSimpleType(this Type type)
+        {
+            return type.IsEnum || integralTpes.Contains(type);
+        }
+
+        public static bool IsValidResultType(this Type type)
+        {
+            if (type.IsSimpleType())
+                return true;
+
+            return type.GetConstructor(new Type[0]) != null;
         }
     }
 }
