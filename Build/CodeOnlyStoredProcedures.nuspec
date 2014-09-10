@@ -9,7 +9,10 @@
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>A library for easily calling Stored Procedures in .NET. Works great with Entity Framework Code First models. 
 Code Only Stored Procedures will not create any Stored Procedures on your database. Instead, its aim is to make it easy to call your existing stored procedures by writing simple code.</description>
-        <releaseNotes>1.2.0
+        <releaseNotes>1.2.1
+Added better exception when a model is missing a public parameterless constructor.
+
+1.2.0
 Added a much cleaner syntax for calling stored procedures, by using dynamic objects.
 
 1.1.0
