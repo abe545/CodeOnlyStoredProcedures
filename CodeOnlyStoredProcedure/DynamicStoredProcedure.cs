@@ -21,7 +21,7 @@ namespace CodeOnlyStoredProcedure
         private static readonly Func<CSharpArgumentInfo, string>                  getParameterName      = null;
         private static readonly Func<CSharpArgumentInfo, ParameterDirection>      getParameterDirection = null;
         private static readonly Func<InvokeMemberBinder, int, CSharpArgumentInfo> getArgumentInfo       = null;
-        private static readonly Action<SqlParameter>                              none                  = _ => { };
+        private static readonly Action<IDbDataParameter>                          none                  = _ => { };
         private        readonly IDbConnection                                     connection;
         private        readonly IEnumerable<IDataTransformer>                     transformers;
         private        readonly string                                            schema;
@@ -61,7 +61,7 @@ namespace CodeOnlyStoredProcedure
         public override bool TryInvokeMember(InvokeMemberBinder binder, object[] args, out object result)
         {
             var canBeAsync = true;
-            var parameters = new List<Tuple<SqlParameter, Action<SqlParameter>>>();
+            var parameters = new List<Tuple<IDbDataParameter, Action<IDbDataParameter>>>();
             
             for (int i = 0; i < binder.CallInfo.ArgumentCount; ++i)
             {
@@ -83,7 +83,7 @@ namespace CodeOnlyStoredProcedure
                     if (attr == null)
                         throw new NotSupportedException("You must apply the TableValuedParameter attribute to a class to use as a Table Valued Parameter when using the dynamic syntax.");
 
-                    var parm   = attr.CreateSqlParameter(parmName);
+                    var parm   = attr.CreateDataParameter(parmName);
                     parm.Value = ((IEnumerable)args[idx]).ToTableValuedParameter(itemType);
 
                     parameters.Add(Tuple.Create(parm, none));
@@ -93,31 +93,31 @@ namespace CodeOnlyStoredProcedure
                     var item = args[idx];
                     parameters.AddRange(
                         argType.GetParameters(item)
-                               .Select(t => Tuple.Create(t.Item2, new Action<SqlParameter>(p => t.Item1.SetValue(item, p.Value, new object[0])))));
+                               .Select(t => Tuple.Create(t.Item2, new Action<IDbDataParameter>(p => t.Item1.SetValue(item, p.Value, new object[0])))));
                 }
                 else if ("returnvalue".Equals(parmName, StringComparison.InvariantCultureIgnoreCase) && direction != ParameterDirection.Input)
                 {
                     parameters.Add(
-                        Tuple.Create(new SqlParameter { ParameterName = parmName, Direction = ParameterDirection.ReturnValue },
-                                     new Action<SqlParameter>(p => args[idx] = p.Value)));
+                        Tuple.Create(new IDbDataParameter { ParameterName = parmName, Direction = ParameterDirection.ReturnValue },
+                                     new Action<IDbDataParameter>(p => args[idx] = p.Value)));
                     canBeAsync = false;
                 }
                 else if (direction == ParameterDirection.Output)
                 {
                     parameters.Add(
-                        Tuple.Create(new SqlParameter { ParameterName = parmName, Direction = ParameterDirection.Output },
-                                     new Action<SqlParameter>(p => args[idx] = p.Value)));
+                        Tuple.Create(new IDbDataParameter { ParameterName = parmName, Direction = ParameterDirection.Output },
+                                     new Action<IDbDataParameter>(p => args[idx] = p.Value)));
                     canBeAsync = false;
                 }
                 else if (direction == ParameterDirection.InputOutput)
                 {
                     parameters.Add(
-                        Tuple.Create(new SqlParameter(parmName, args[idx]) { Direction = ParameterDirection.InputOutput },
-                                     new Action<SqlParameter>(p => args[idx] = p.Value)));
+                        Tuple.Create(new IDbDataParameter(parmName, args[idx]) { Direction = ParameterDirection.InputOutput },
+                                     new Action<IDbDataParameter>(p => args[idx] = p.Value)));
                     canBeAsync = false;
                 }
                 else
-                    parameters.Add(Tuple.Create(new SqlParameter(parmName, args[i]), none));
+                    parameters.Add(Tuple.Create(new IDbDataParameter(parmName, args[i]), none));
             }
 
             result = new DynamicStoredProcedureResults(

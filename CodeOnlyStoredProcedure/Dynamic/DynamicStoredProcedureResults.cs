@@ -87,14 +87,14 @@ namespace CodeOnlyStoredProcedure.Dynamic
 #endif
 
         public DynamicStoredProcedureResults(
-            IDbConnection                                   connection,
-            string                                          schema,
-            string                                          name,
-            int                                             timeout,
-            List<Tuple<SqlParameter, Action<SqlParameter>>> parameters,
-            IEnumerable<IDataTransformer>                   transformers,
-            bool                                            canBeAsync,
-            CancellationToken                               token)
+            IDbConnection                                           connection,
+            string                                                  schema,
+            string                                                  name,
+            int                                                     timeout,
+            List<Tuple<IDbDataParameter, Action<IDbDataParameter>>> parameters,
+            IEnumerable<IDataTransformer>                           transformers,
+            bool                                                    canBeAsync,
+            CancellationToken                                       token)
         {
             Contract.Requires(connection != null);
             Contract.Requires(!string.IsNullOrEmpty(schema));
