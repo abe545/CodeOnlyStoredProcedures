@@ -120,7 +120,8 @@
     <Compile Include="DataTransformation\TrimAllStringsTransformer.cs" />
     <Compile Include="DataTransformation\TrimAttribute.cs" />
     <Compile Include="DataTransformerAttributeBase.cs" />
-    <Compile Include="DynamicStoredProcedure.cs" />
+    <Compile Include="Dynamic\DynamicStoredProcedure.cs" />
+    <Compile Include="Dynamic\DynamicExecutionMode.cs" />
     <Compile Include="Dynamic\DynamicStoredProcedureResultsAwaiter.cs" />
     <Compile Include="Dynamic\Extensions.cs" />
     <Compile Include="Dynamic\DynamicStoredProcedureResults.cs" />

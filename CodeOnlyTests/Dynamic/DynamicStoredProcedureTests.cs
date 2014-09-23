@@ -6,13 +6,14 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CodeOnlyStoredProcedure;
+using CodeOnlyStoredProcedure.Dynamic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 
 #if NET40
-namespace CodeOnlyTests.Net40
+namespace CodeOnlyTests.Net40.Dynamic
 #else
-namespace CodeOnlyTests
+namespace CodeOnlyTests.Dynamic
 #endif
 {
     [TestClass]
