@@ -252,6 +252,8 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
         private object GetMultipleResults(Type[] types)
         {
+            Contract.Requires(types != null);
+
             // no need to protect this index... We have already been asked to cast to a tuple type,
             // so we know that there is a Create method with this many type parameters
             var create     = tupleCreates.Value[types.Length];
@@ -264,6 +266,9 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
         private Task CreateMultipleContinuation(Type[] types)
         {
+            Contract.Requires(types != null);
+            Contract.Ensures (Contract.Result<Task>() != null);
+
             // no need to protect this index... We have already been asked to cast to a tuple type,
             // so we know that there is a Create method with this many type parameters
             var create     = tupleCreates.Value[types.Length];

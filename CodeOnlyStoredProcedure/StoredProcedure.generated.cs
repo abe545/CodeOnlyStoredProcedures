@@ -19,16 +19,6 @@ namespace CodeOnlyStoredProcedure
 	public class StoredProcedure<T1> : StoredProcedure	{
 		private static readonly Type t1 = typeof(T1);
 
-		/// <summary>
-		/// Initializes the StoredProcedure&lt;T1&gt; type.
-		/// </summary>
-		static StoredProcedure()
-		{
-			if (!t1.IsValidResultType())
-				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
-	
-		}
-
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
         /// in the dbo schema.
@@ -37,6 +27,8 @@ namespace CodeOnlyStoredProcedure
 		public StoredProcedure(string name) : base(name)
 		{ 
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
+			Contract.Requires(typeof(T1).IsValidResultType());
+	
 		}
 		
         /// <summary>
@@ -226,18 +218,6 @@ namespace CodeOnlyStoredProcedure
 		private static readonly Type t1 = typeof(T1);
 		private static readonly Type t2 = typeof(T2);
 
-		/// <summary>
-		/// Initializes the StoredProcedure&lt;T1, T2&gt; type.
-		/// </summary>
-		static StoredProcedure()
-		{
-			if (!t1.IsValidResultType())
-				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
-			if (!t2.IsValidResultType())
-				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
-	
-		}
-
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
         /// in the dbo schema.
@@ -246,6 +226,9 @@ namespace CodeOnlyStoredProcedure
 		public StoredProcedure(string name) : base(name)
 		{ 
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
+			Contract.Requires(typeof(T1).IsValidResultType());
+			Contract.Requires(typeof(T2).IsValidResultType());
+	
 		}
 		
         /// <summary>
@@ -437,20 +420,6 @@ namespace CodeOnlyStoredProcedure
 		private static readonly Type t2 = typeof(T2);
 		private static readonly Type t3 = typeof(T3);
 
-		/// <summary>
-		/// Initializes the StoredProcedure&lt;T1, T2, T3&gt; type.
-		/// </summary>
-		static StoredProcedure()
-		{
-			if (!t1.IsValidResultType())
-				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
-			if (!t2.IsValidResultType())
-				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
-			if (!t3.IsValidResultType())
-				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
-	
-		}
-
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
         /// in the dbo schema.
@@ -459,6 +428,10 @@ namespace CodeOnlyStoredProcedure
 		public StoredProcedure(string name) : base(name)
 		{ 
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
+			Contract.Requires(typeof(T1).IsValidResultType());
+			Contract.Requires(typeof(T2).IsValidResultType());
+			Contract.Requires(typeof(T3).IsValidResultType());
+	
 		}
 		
         /// <summary>
@@ -652,22 +625,6 @@ namespace CodeOnlyStoredProcedure
 		private static readonly Type t3 = typeof(T3);
 		private static readonly Type t4 = typeof(T4);
 
-		/// <summary>
-		/// Initializes the StoredProcedure&lt;T1, T2, T3, T4&gt; type.
-		/// </summary>
-		static StoredProcedure()
-		{
-			if (!t1.IsValidResultType())
-				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
-			if (!t2.IsValidResultType())
-				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
-			if (!t3.IsValidResultType())
-				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
-			if (!t4.IsValidResultType())
-				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
-	
-		}
-
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
         /// in the dbo schema.
@@ -676,6 +633,11 @@ namespace CodeOnlyStoredProcedure
 		public StoredProcedure(string name) : base(name)
 		{ 
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
+			Contract.Requires(typeof(T1).IsValidResultType());
+			Contract.Requires(typeof(T2).IsValidResultType());
+			Contract.Requires(typeof(T3).IsValidResultType());
+			Contract.Requires(typeof(T4).IsValidResultType());
+	
 		}
 		
         /// <summary>
@@ -871,24 +833,6 @@ namespace CodeOnlyStoredProcedure
 		private static readonly Type t4 = typeof(T4);
 		private static readonly Type t5 = typeof(T5);
 
-		/// <summary>
-		/// Initializes the StoredProcedure&lt;T1, T2, T3, T4, T5&gt; type.
-		/// </summary>
-		static StoredProcedure()
-		{
-			if (!t1.IsValidResultType())
-				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
-			if (!t2.IsValidResultType())
-				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
-			if (!t3.IsValidResultType())
-				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
-			if (!t4.IsValidResultType())
-				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
-			if (!t5.IsValidResultType())
-				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
-	
-		}
-
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
         /// in the dbo schema.
@@ -897,6 +841,12 @@ namespace CodeOnlyStoredProcedure
 		public StoredProcedure(string name) : base(name)
 		{ 
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
+			Contract.Requires(typeof(T1).IsValidResultType());
+			Contract.Requires(typeof(T2).IsValidResultType());
+			Contract.Requires(typeof(T3).IsValidResultType());
+			Contract.Requires(typeof(T4).IsValidResultType());
+			Contract.Requires(typeof(T5).IsValidResultType());
+	
 		}
 		
         /// <summary>
@@ -1094,26 +1044,6 @@ namespace CodeOnlyStoredProcedure
 		private static readonly Type t5 = typeof(T5);
 		private static readonly Type t6 = typeof(T6);
 
-		/// <summary>
-		/// Initializes the StoredProcedure&lt;T1, T2, T3, T4, T5, T6&gt; type.
-		/// </summary>
-		static StoredProcedure()
-		{
-			if (!t1.IsValidResultType())
-				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
-			if (!t2.IsValidResultType())
-				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
-			if (!t3.IsValidResultType())
-				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
-			if (!t4.IsValidResultType())
-				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
-			if (!t5.IsValidResultType())
-				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
-			if (!t6.IsValidResultType())
-				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
-	
-		}
-
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
         /// in the dbo schema.
@@ -1122,6 +1052,13 @@ namespace CodeOnlyStoredProcedure
 		public StoredProcedure(string name) : base(name)
 		{ 
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
+			Contract.Requires(typeof(T1).IsValidResultType());
+			Contract.Requires(typeof(T2).IsValidResultType());
+			Contract.Requires(typeof(T3).IsValidResultType());
+			Contract.Requires(typeof(T4).IsValidResultType());
+			Contract.Requires(typeof(T5).IsValidResultType());
+			Contract.Requires(typeof(T6).IsValidResultType());
+	
 		}
 		
         /// <summary>
@@ -1321,28 +1258,6 @@ namespace CodeOnlyStoredProcedure
 		private static readonly Type t6 = typeof(T6);
 		private static readonly Type t7 = typeof(T7);
 
-		/// <summary>
-		/// Initializes the StoredProcedure&lt;T1, T2, T3, T4, T5, T6, T7&gt; type.
-		/// </summary>
-		static StoredProcedure()
-		{
-			if (!t1.IsValidResultType())
-				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
-			if (!t2.IsValidResultType())
-				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
-			if (!t3.IsValidResultType())
-				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
-			if (!t4.IsValidResultType())
-				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
-			if (!t5.IsValidResultType())
-				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
-			if (!t6.IsValidResultType())
-				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
-			if (!t7.IsValidResultType())
-				throw new NotSupportedException("Stored Procedure result must either be a built in type, or have a parameterless constructor.");
-	
-		}
-
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
         /// in the dbo schema.
@@ -1351,6 +1266,14 @@ namespace CodeOnlyStoredProcedure
 		public StoredProcedure(string name) : base(name)
 		{ 
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
+			Contract.Requires(typeof(T1).IsValidResultType());
+			Contract.Requires(typeof(T2).IsValidResultType());
+			Contract.Requires(typeof(T3).IsValidResultType());
+			Contract.Requires(typeof(T4).IsValidResultType());
+			Contract.Requires(typeof(T5).IsValidResultType());
+			Contract.Requires(typeof(T6).IsValidResultType());
+			Contract.Requires(typeof(T7).IsValidResultType());
+	
 		}
 		
         /// <summary>

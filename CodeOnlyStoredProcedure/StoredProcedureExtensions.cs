@@ -76,8 +76,8 @@ namespace CodeOnlyStoredProcedure
                  IEnumerable<IDataTransformer>      transformers)
         {
             Contract.Requires(results      != null);
-            Contract.Requires(outputTypes  != null);
-            Contract.Requires(transformers != null);
+            Contract.Requires(outputTypes  != null && Contract.ForAll(outputTypes,  t => t != null));
+            Contract.Requires(transformers != null && Contract.ForAll(transformers, t => t != null));
             Contract.Ensures (Contract.Result<IDictionary<Type, IList>>() != null);
 
             var spResults = results.ToArray();
@@ -94,7 +94,15 @@ namespace CodeOnlyStoredProcedure
                 if (res.ColumnNames.Length == 1 && currentType.IsSimpleType())
                     factory = new SimpleTypeRowFactory(currentType);
                 else
-                    factory = currentType.CreateRowFactory();
+                {
+                    Type impl = currentType;
+                    if (!TypeExtensions.interfaceMap.TryGetValue(currentType, out impl))
+                        impl = currentType;
+
+                    Contract.Assume(impl != null);
+
+                    factory = impl.CreateRowFactory();
+                }
 
                 foreach (var values in res.Rows)
                 {
