@@ -538,47 +538,57 @@ namespace CodeOnlyTests
         [TestMethod]
         public void UnMappedInterface_ThrowsWhenConstructingStoredProcedure()
         {
-            try
+            lock (TypeExtensions.interfaceMap)
             {
-                var sp = new StoredProcedure<Interface>("foo");
-                Assert.Fail("Did not throw exception when constructing an unmapped interface");
-            }
-            catch (Exception ex)
-            {
-                // This exception is a ContractException but, since it isn't a public 
-                // class, we can't catch it directly.
-                Assert.AreEqual("Precondition failed: typeof(T1).IsValidResultType()",
-                                ex.Message);
+                // clear any mapped interfaces
+                TypeExtensions.interfaceMap.Clear();
+                try
+                {
+                    var sp = new StoredProcedure<Interface>("foo");
+                    Assert.Fail("Did not throw exception when constructing an unmapped interface");
+                }
+                catch (Exception ex)
+                {
+                    // This exception is a ContractException but, since it isn't a public 
+                    // class, we can't catch it directly.
+                    Assert.AreEqual("Precondition failed: typeof(T1).IsValidResultType()",
+                                    ex.Message);
+                }
             }
         }
 
         [TestMethod]
         public void MappedInterface_ReturnsImplementationWhenExecuted()
         {
-            StoredProcedure.MapResultType<Interface, InterfaceImpl>();
+            lock (TypeExtensions.interfaceMap)
+            {
+                // clear any mapped interfaces
+                TypeExtensions.interfaceMap.Clear();
+                StoredProcedure.MapResultType<Interface, InterfaceImpl>();
 
-            var con = new Mock<IDbConnection>();
-            var cmd = new Mock<IDbCommand>();
-            var rdr = new Mock<IDataReader>();
+                var con = new Mock<IDbConnection>();
+                var cmd = new Mock<IDbCommand>();
+                var rdr = new Mock<IDataReader>();
 
-            con.Setup(c => c.CreateCommand()).Returns(cmd.Object);
-            cmd.Setup(c => c.ExecuteReader()).Returns(rdr.Object);
-            rdr.SetupGet(r => r.FieldCount).Returns(1);
-            rdr.Setup(r => r.GetName(0)).Returns("Id");
-            rdr.SetupSequence(r => r.Read())
-               .Returns(true)
-               .Returns(false);
-            rdr.Setup(r => r.GetValues(It.IsAny<object[]>()))
-               .Callback((object[] o) => o[0] = "42")
-               .Returns(1);
+                con.Setup(c => c.CreateCommand()).Returns(cmd.Object);
+                cmd.Setup(c => c.ExecuteReader()).Returns(rdr.Object);
+                rdr.SetupGet(r => r.FieldCount).Returns(1);
+                rdr.Setup(r => r.GetName(0)).Returns("Id");
+                rdr.SetupSequence(r => r.Read())
+                   .Returns(true)
+                   .Returns(false);
+                rdr.Setup(r => r.GetValues(It.IsAny<object[]>()))
+                   .Callback((object[] o) => o[0] = "42")
+                   .Returns(1);
 
-            var sp = new StoredProcedure<Interface>("foo", "bar");
+                var sp = new StoredProcedure<Interface>("foo", "bar");
 
-            var res = sp.Execute(con.Object);
+                var res = sp.Execute(con.Object);
 
-            Assert.AreEqual(1, res.Count(), "No results returned");
-            Assert.IsInstanceOfType(res.Single(), typeof(InterfaceImpl));
-            Assert.AreEqual("42", res.Single().Id);
+                Assert.AreEqual(1, res.Count(), "No results returned");
+                Assert.IsInstanceOfType(res.Single(), typeof(InterfaceImpl));
+                Assert.AreEqual("42", res.Single().Id);
+            }
         }
         #endregion
 
