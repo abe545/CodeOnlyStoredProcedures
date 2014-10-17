@@ -15,21 +15,21 @@ There are a number ways you can use this library to make working with stored pro
 The easiest way is to use the dynamic syntax:
 
 ```cs
-IEnumerable<Person> people = db.Call().usp_GetPeople();
+IEnumerable<Person> people = db.Execute().usp_GetPeople();
 ```
 
 #### Want it asynchronous?
-Just declare it that way.
+Just use `ExecuteAsync` it that way.
 
 ```cs
-Task<IEnumerable<Person>> task = db.Call().usp_GetPeople();
+Task<IEnumerable<Person>> task = db.ExecuteAsync().usp_GetPeople();
 ```
 
 #### Rather await it?
 Using .NET 4.5 (or the Async NuGet package in 4.0)? That's easy too.
 
 ```cs
-IEnumerable<Person> people = await db.Call().usp_GetPeople();
+IEnumerable<Person> people = await db.Execute().usp_GetPeople();
 ```
 
 #### Using the repository pattern?
@@ -38,12 +38,12 @@ Even easier. Your interface is basically doing the work for you.
 ```cs
 public IEnumerable<Person> GetPeople()
 {
-    return this.db.Call().usp_GetPeople();
+    return this.db.Execute().usp_GetPeople();
 }
 
 public Task<IEnumerable<Person>> GetPeopleAsync()
 {
-    return this.db.Call().usp_GetPeople();
+    return this.db.ExecuteAsync().usp_GetPeople();
 }
 ```
 
@@ -53,7 +53,7 @@ All those tasks do need to be cancellable. So, pass your token
 ```cs
 public Task<IEnumerable<Person>> GetPeopleAsync(CancellationToken token)
 {
-    return this.db.Call(token).usp_GetPeople();
+    return this.db.ExecuteAsync(token).usp_GetPeople();
 }
 ```
 
@@ -61,14 +61,14 @@ public Task<IEnumerable<Person>> GetPeopleAsync(CancellationToken token)
 Sometimes, you need to have a longer execution timeout. Just tell us how many seconds you need.
 
 ```cs
-IEnumerable<Widget> widgets = db.Call(3600).sp_getAllTheWidgetsInTheWorld();
+IEnumerable<Widget> widgets = db.Execute(3600).sp_getAllTheWidgetsInTheWorld();
 ```
 
 #### But my procedure takes input!
 Okay, so send it in!
 
 ```cs
-IEnumerable<Widget> widgets = db.Call().sp_getWidgets(weight: 42, name: "Frob");
+IEnumerable<Widget> widgets = db.Execute().sp_getWidgets(weight: 42, name: "Frob");
 ```
 
 #### What about output parameters?
@@ -77,7 +77,7 @@ Those work. So do Input/Output parameters (you know these keywords, right?).
 ```cs
 int count;
 int smallest = 15;
-db.Call().sp_getWidgetCount(count: out count, smallest_widget: ref smallest);
+db.Execute().sp_getWidgetCount(count: out count, smallest_widget: ref smallest);
 ```
 
 #### And if I need the return value?
@@ -85,7 +85,7 @@ This one isn't that tough. It is just an out parameter with a special (case-INse
 
 ```cs
 int count;
-db.Call().sp_getWidgetCount(ReturnValue: out count);
+db.Execute().sp_getWidgetCount(ReturnValue: out count);
 ```
 
 #### How can those parameters work when called asynchronously?
@@ -101,7 +101,7 @@ private class WidgetParameters
 }
 
 var input = new WidgetParameters { Smallest = 15 };
-await db.Call().sp_getWidgetCount(input);
+await db.ExecuteAsync().sp_getWidgetCount(input);
 ```
 
 #### I hate dynamically typed C#!
