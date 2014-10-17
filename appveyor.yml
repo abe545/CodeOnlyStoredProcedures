@@ -1,0 +1,37 @@
+version: 1.3.0.{build}
+
+environment:
+  releaseVersion: 1.3.0
+  packageVersion: 1.3.0-pre$APPVEYOR_BUILD_NUMBER
+
+assembly_info:
+  patch: true
+  file: **\AssemblyInfo.cs
+  assembly_version: "$(releaseVersion)"
+  assembly_file_version: "{version}"
+  assembly_informational_version: "$(packageVersion)"
+
+nuget:
+  account_feed: true
+
+platform: Any CPU
+
+configuration: Release
+
+before_build:
+  nuget restore
+
+build:
+  project: CodeOnlyStoredProcedure.sln
+  publish_nuget: true
+  publish_nuget_symbols: true
+
+test:
+  assemblies:
+    - CodeOnlyTests.dll
+    - CodeOnlyTests-NET40.dll
+
+# run smoke tests
+after_test:
+  - .\SmokeTests\bin\Release\SmokeTests.exe
+  - .\SmokeTests-NET40\bin\Release\SmokeTests-NET40.exe
