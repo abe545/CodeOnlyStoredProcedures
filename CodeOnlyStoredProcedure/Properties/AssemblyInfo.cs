@@ -10,8 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyCopyright("Copyright © Abraham Heidebrecht 2013 - 2014")]
 [assembly: ComVisible(false)]
 
-// The assembly version gets set via TeamCity build. To change the version number, update
-// the Version.xml file.
+// The assembly version gets set in VersionInfo.cs
 
 #if NET40
 [assembly: InternalsVisibleTo("CodeOnlyTests-NET40")]

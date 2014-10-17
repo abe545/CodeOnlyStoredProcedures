@@ -6,10 +6,10 @@ environment:
 
 assembly_info:
   patch: true
-  file: '**\AssemblyInfo.cs'
-  assembly_version: "$(releaseVersion)"
-  assembly_file_version: "{version}"
-  assembly_informational_version: "$(packageVersion)"
+  file: VersionInfo.cs
+  assembly_version: $(releaseVersion)
+  assembly_file_version: {version}
+  assembly_informational_version: $(packageVersion)
 
 nuget:
   account_feed: true
@@ -25,7 +25,6 @@ build:
   project: CodeOnlyStoredProcedure.sln
 
 after_build:
-  - ps: $root = Resolve-Path .\Bin; [IO.Directory]::GetFiles($root.Path, '*.*', 'AllDirectories') | % { Push-AppveyorArtifact $_ -FileName $_.Substring($root.Path.Length + 1) -DeploymentName bin }
   - nuget pack CodeOnlyStoredProcedures.nuspec -Symbols -NonInteractive -Verbosity detailed
   - ps: Get-ChildItem .\*.nupkg | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name }
 
