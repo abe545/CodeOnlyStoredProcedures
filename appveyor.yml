@@ -7,9 +7,9 @@ environment:
 assembly_info:
   patch: true
   file: VersionInfo.cs
-  assembly_version: $(releaseVersion)
-  assembly_file_version: {version}
-  assembly_informational_version: $(packageVersion)
+  assembly_version: "$(releaseVersion)"
+  assembly_file_version: "{version}"
+  assembly_informational_version: "$(packageVersion)"
 
 nuget:
   account_feed: true
