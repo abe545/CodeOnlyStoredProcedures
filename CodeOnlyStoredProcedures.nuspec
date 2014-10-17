@@ -61,7 +61,7 @@ Added data transformation attribute to automatically remove whitespace from stri
         </references>
     </metadata>
     <files>
-      <file src=".\Bin\Release\**\CodeOnlyStoredProcedure.*" exclude="..\**\*.old" target="lib" />
-      <file src=".\**\*.cs" exclude="..\*Test*\**\*;..\CodeOnlyStoredProcedure\obj\**\*" target="src" />
+      <file src=".\Bin\Release\**\CodeOnlyStoredProcedure.*" exclude=".\**\*.old" target="lib" />
+      <file src=".\**\*.cs" exclude=".\*Test*\**\*;.\CodeOnlyStoredProcedure\obj\**\*" target="src" />
     </files>
 </package>
