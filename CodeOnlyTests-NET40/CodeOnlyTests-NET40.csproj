@@ -144,6 +144,9 @@
       <Link>StoredProcedureExtensionsTests.WithTableValuedParameter.cs</Link>
       <DependentUpon>StoredProcedureExtensionsTests.cs</DependentUpon>
     </Compile>
+    <Compile Include="..\CodeOnlyTests\StoredProcedureParameterAttributeTests.cs">
+      <Link>StoredProcedureParameterAttributeTests.cs</Link>
+    </Compile>
     <Compile Include="..\CodeOnlyTests\StoredProcedureTests.cs">
       <Link>StoredProcedureTests.cs</Link>
     </Compile>

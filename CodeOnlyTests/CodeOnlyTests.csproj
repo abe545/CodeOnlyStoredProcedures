@@ -98,6 +98,7 @@
     <Compile Include="StoredProcedureExtensionsTests.WithTableValuedParameter.cs">
       <DependentUpon>StoredProcedureExtensionsTests.cs</DependentUpon>
     </Compile>
+    <Compile Include="StoredProcedureParameterAttributeTests.cs" />
     <Compile Include="StoredProcedureTests.cs" />
     <Compile Include="StoredProcedureExtensionsTests.cs" />
     <Compile Include="TestSynchronizationContext.cs" />
