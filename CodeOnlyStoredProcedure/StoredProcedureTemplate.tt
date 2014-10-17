@@ -140,8 +140,7 @@ public class StoredProcedureTemplate : Template
 
         for (int i = 1; i <= TypeCount; i++)
         {
-			WriteLine("if (!t" + i + ".IsValidResultType())");
-			WriteLine("\tthrow new NotSupportedException(\"Stored Procedure result must either be a built in type, or have a parameterless constructor.\");");
+			WriteLine("Contract.Requires(typeof(T" + i + ").IsValidResultType());");
         }
 
 		PopIndent();
@@ -158,14 +157,6 @@ public class StoredProcedureTemplate : Template
 	{
 <#+ CreateCachedFields(); #>
 
-		/// <summary>
-		/// Initializes the StoredProcedure<#+ GetTypes(TypeCount, true); #> type.
-		/// </summary>
-		static StoredProcedure()
-		{
-			<#+ WriteTypeChecks(); #>	
-		}
-
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
         /// in the dbo schema.
@@ -174,6 +165,7 @@ public class StoredProcedureTemplate : Template
 		public StoredProcedure(string name) : base(name)
 		{ 
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
+			<#+ WriteTypeChecks(); #>	
 		}
 		
         /// <summary>

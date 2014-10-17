@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 using CodeOnlyStoredProcedure.Dynamic;
 using Microsoft.CSharp.RuntimeBinder;
 
-namespace CodeOnlyStoredProcedure
+namespace CodeOnlyStoredProcedure.Dynamic
 {
     internal class DynamicStoredProcedure : DynamicObject
     {
@@ -27,6 +27,7 @@ namespace CodeOnlyStoredProcedure
         private        readonly string                                            schema;
         private        readonly CancellationToken                                 token;
         private        readonly int                                               timeout;
+        private        readonly DynamicExecutionMode                              executionMode;
 
         static DynamicStoredProcedure()
         {
@@ -38,30 +39,32 @@ namespace CodeOnlyStoredProcedure
         public DynamicStoredProcedure(IDbConnection                 connection,
                                       IEnumerable<IDataTransformer> transformers,
                                       CancellationToken             token,
-                                      int                           timeout = StoredProcedure.defaultTimeout,
-                                      string                        schema  = "dbo")
+                                      int                           timeout       = StoredProcedure.defaultTimeout,
+                                      string                        schema        = "dbo",
+                                      DynamicExecutionMode          executionMode = DynamicExecutionMode.Any)
         {
             Contract.Requires(connection   != null);
             Contract.Requires(transformers != null);
             Contract.Requires(!string.IsNullOrEmpty(schema));
 
-            this.connection   = connection;
-            this.transformers = transformers;
-            this.schema       = schema;
-            this.token        = token;
-            this.timeout      = timeout;
+            this.connection    = connection;
+            this.transformers  = transformers;
+            this.schema        = schema;
+            this.token         = token;
+            this.timeout       = timeout;
+            this.executionMode = executionMode;
         }
 
         public override bool TryGetMember(GetMemberBinder binder, out object result)
         {
-            result = new DynamicStoredProcedure(connection, transformers, token, timeout, binder.Name);
+            result = new DynamicStoredProcedure(connection, transformers, token, timeout, binder.Name, executionMode);
             return true;
         }
 
         public override bool TryInvokeMember(InvokeMemberBinder binder, object[] args, out object result)
         {
-            var canBeAsync = true;
-            var parameters = new List<Tuple<SqlParameter, Action<SqlParameter>>>();
+            var parameters  = new List<Tuple<SqlParameter, Action<SqlParameter>>>();
+            var callingMode = executionMode;
             
             for (int i = 0; i < binder.CallInfo.ArgumentCount; ++i)
             {
@@ -97,24 +100,27 @@ namespace CodeOnlyStoredProcedure
                 }
                 else if ("returnvalue".Equals(parmName, StringComparison.InvariantCultureIgnoreCase) && direction != ParameterDirection.Input)
                 {
+                    CoerceSynchronousExecutionMode(ref callingMode);
+
                     parameters.Add(
                         Tuple.Create(new SqlParameter { ParameterName = parmName, Direction = ParameterDirection.ReturnValue },
                                      new Action<SqlParameter>(p => args[idx] = p.Value)));
-                    canBeAsync = false;
                 }
                 else if (direction == ParameterDirection.Output)
                 {
+                    CoerceSynchronousExecutionMode(ref callingMode);
+
                     parameters.Add(
                         Tuple.Create(new SqlParameter { ParameterName = parmName, Direction = ParameterDirection.Output },
                                      new Action<SqlParameter>(p => args[idx] = p.Value)));
-                    canBeAsync = false;
                 }
                 else if (direction == ParameterDirection.InputOutput)
                 {
+                    CoerceSynchronousExecutionMode(ref callingMode);
+
                     parameters.Add(
                         Tuple.Create(new SqlParameter(parmName, args[idx]) { Direction = ParameterDirection.InputOutput },
                                      new Action<SqlParameter>(p => args[idx] = p.Value)));
-                    canBeAsync = false;
                 }
                 else
                     parameters.Add(Tuple.Create(new SqlParameter(parmName, args[i]), none));
@@ -127,10 +133,18 @@ namespace CodeOnlyStoredProcedure
                 timeout,
                 parameters,
                 transformers,
-                canBeAsync,
+                callingMode,
                 token);
 
             return true;
+        }
+
+        private static void CoerceSynchronousExecutionMode(ref DynamicExecutionMode executionMode)
+        {
+            if (executionMode == DynamicExecutionMode.Asynchronous)
+                throw new NotSupportedException(asyncParameterDirectionError);
+            
+            executionMode = DynamicExecutionMode.Synchronous;
         }
 
         private static Func<InvokeMemberBinder, int, CSharpArgumentInfo> CreateArgumentInfoGetter()

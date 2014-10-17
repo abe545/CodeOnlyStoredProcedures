@@ -490,6 +490,22 @@ namespace CodeOnlyStoredProcedure
         }
         #endregion
 
+        #region MapResultType
+        /// <summary>
+        /// Adds a mapping for a given interface to an implementation. After doing so,
+        /// any StoredProcedure that returns TInterface will return instances of TImpl
+        /// </summary>
+        /// <typeparam name="TInterface"></typeparam>
+        /// <typeparam name="TImpl"></typeparam>
+        public static void MapResultType<TInterface, TImpl>()
+            where TImpl : TInterface, new()
+        {
+            TypeExtensions.interfaceMap.AddOrUpdate(typeof(TInterface),
+                                                    typeof(TImpl),
+                                                    (_, __) => typeof(TImpl));
+        }
+        #endregion
+
         /// <summary>
         /// Gets the string representation of this StoredProcedure.
         /// </summary>

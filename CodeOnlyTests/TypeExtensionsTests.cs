@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Reflection;
 using CodeOnlyStoredProcedure;
@@ -96,8 +97,106 @@ namespace CodeOnlyTests
         }
         #endregion
 
+        #region IsValidResultType
+        [TestMethod]
+        public void IsValidResultType_ReturnsTrueForString()
+        {
+            Assert.IsTrue(typeof(string).IsValidResultType());
+        }
+
+        [TestMethod]
+        public void IsValidResultType_ReturnsTrueForChar()
+        {
+            Assert.IsTrue(typeof(char).IsValidResultType());
+        }
+
+        [TestMethod]
+        public void IsValidResultType_ReturnsTrueForInt32()
+        {
+            Assert.IsTrue(typeof(Int32).IsValidResultType());
+        }
+
+        [TestMethod]
+        public void IsValidResultType_ReturnsTrueForInt64()
+        {
+            Assert.IsTrue(typeof(Int64).IsValidResultType());
+        }
+
+        [TestMethod]
+        public void IsValidResultType_ReturnsTrueForInt16()
+        {
+            Assert.IsTrue(typeof(Int16).IsValidResultType());
+        }
+
+        [TestMethod]
+        public void IsValidResultType_ReturnsTrueForDouble()
+        {
+            Assert.IsTrue(typeof(Double).IsValidResultType());
+        }
+
+        [TestMethod]
+        public void IsValidResultType_ReturnsTrueForSingle()
+        {
+            Assert.IsTrue(typeof(Single).IsValidResultType());
+        }
+
+        [TestMethod]
+        public void IsValidResultType_ReturnsTrueForDecimal()
+        {
+            Assert.IsTrue(typeof(Decimal).IsValidResultType());
+        }
+
+        [TestMethod]
+        public void IsValidResultType_ReturnsTrueForBoolean()
+        {
+            Assert.IsTrue(typeof(Boolean).IsValidResultType());
+        }
+        
+        [TestMethod]
+        public void IsValidResultType_ReturnsTrueForDateTime()
+        {
+            Assert.IsTrue(typeof(DateTime).IsValidResultType());
+        }
+
+        [TestMethod]
+        public void IsValidResultType_ReturnsTrueForGuid()
+        {
+            Assert.IsTrue(typeof(Guid).IsValidResultType());
+        }
+
+        [TestMethod]
+        public void IsValidResultType_ReturnsFalseForUnmappedInterface()
+        {
+            lock (TypeExtensions.interfaceMap)
+            {
+                // make sure that there is nothing in the map
+                TypeExtensions.interfaceMap.Clear();
+                Assert.IsFalse(typeof(IModel).IsValidResultType());
+            }
+        }
+
+        [TestMethod]
+        public void IsValidResultType_ReturnsTrueForMappedInterface()
+        {
+            lock (TypeExtensions.interfaceMap)
+            {
+                // make sure that there is nothing in the map
+                TypeExtensions.interfaceMap.Clear();
+                TypeExtensions.interfaceMap.TryAdd(typeof(IModel), typeof(Model));
+
+                Assert.IsTrue(typeof(IModel).IsValidResultType());
+            }
+        }
+        #endregion
+
         #region Types To Test With
-        private class Model
+        private interface IModel
+        {
+            string Foo { get; set; }
+            int    Bar { get; set; }
+        }
+
+        private class Model : IModel
         {
             public  string Foo { get; set; }
             public  int    Bar { get; set; }

@@ -103,8 +103,8 @@
     <Compile Include="..\CodeOnlyTests\DataTransformation\TrimAttributeTests.cs">
       <Link>DataTransformation\TrimAttributeTests.cs</Link>
     </Compile>
-    <Compile Include="..\CodeOnlyTests\DynamicStoredProcedureTests.cs">
-      <Link>DynamicStoredProcedureTests.cs</Link>
+    <Compile Include="..\CodeOnlyTests\Dynamic\DynamicStoredProcedureTests.cs">
+      <Link>Dynamic\DynamicStoredProcedureTests.cs</Link>
     </Compile>
     <Compile Include="..\CodeOnlyTests\RowFactory\DyamicRowFactoryTests.cs">
       <Link>RowFactory\DyamicRowFactoryTests.cs</Link>
