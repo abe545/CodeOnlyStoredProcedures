@@ -37,3 +37,19 @@ test:
 after_test:
   - .\SmokeTests\bin\Release\SmokeTests.exe
   - .\SmokeTests-NET40\bin\Release\SmokeTests-NET40.exe
+
+deploy:
+  - provider: NuGet
+    server: 
+      secure: KWCy/cmXPCGCHxgZeYVi0Z5eq7MZCUDzY9oqGs9kpMPNvbAYfK5s0aOS8JwzEOlb699R302QO80G2DiLB7Naow==
+    api_key:
+      secure: BpvfN0VAXhEcYOXAk1rq6OFRg85yKBz4Zc+GMXhdvb8=
+    skip_symbols: true
+    artifact: /.*\.nupkg/
+  - provider: NuGet
+    api_key:
+      secure: YpmJQ9N6F0dfai0xFAoerzB7nruq9NOlhDquhAliwy5cS2A87wU7U+X4Q5eH8vyx
+    skip_symbols: false
+    artifact: /.*\.nupkg/
+    on:
+      branch: master
