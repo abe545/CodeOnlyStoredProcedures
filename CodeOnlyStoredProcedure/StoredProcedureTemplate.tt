@@ -306,7 +306,10 @@ public class StoredProcedureTemplate : Template
 					var results = Execute(connection, token, timeout, new[] { <#+ GetCachedFields(); #> });
 
 					return <#+ ParseResults(); #> 
-				}, token);
+				}, 
+				token,
+                TaskCreationOptions.None,
+                TaskScheduler.Default);
 		}
 		
         /// <summary>

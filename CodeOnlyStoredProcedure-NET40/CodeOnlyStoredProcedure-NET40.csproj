@@ -176,6 +176,9 @@
     <Compile Include="..\CodeOnlyStoredProcedure\Properties\AssemblyInfo.cs">
       <Link>Properties\AssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="..\VersionInfo.cs">
+      <Link>Properties\VersionInfo.cs</Link>
+    </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\DynamicRowFactory.cs">
       <Link>RowFactory\DynamicRowFactory.cs</Link>
     </Compile>
