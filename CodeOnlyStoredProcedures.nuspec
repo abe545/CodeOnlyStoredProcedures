@@ -2,14 +2,18 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
     <metadata>
         <id>CodeOnlyStoredProcedures</id>
-        <version>1.3.1</version>
+        <version>1.3.1-pre</version>
         <title>Code Only Stored Proecedures</title>
         <authors>Abraham Heidebrecht</authors>
         <projectUrl>https://codeonlystoredprocedures.codeplex.com/</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>A library for easily calling Stored Procedures in .NET. Works great with Entity Framework Code First models. 
 Code Only Stored Procedures will not create any Stored Procedures on your database. Instead, its aim is to make it easy to call your existing stored procedures by writing simple code.</description>
-        <releaseNotes>1.3.0
+        <releaseNotes>1.3.1
+Fixed bug where none of the named properties of StoredProcedureParameterAttribute could be set on an object, because they were nullable.
+Fixed bug where calling a stored procedure that returns results asynchronously could block the calling thread.
+
+1.3.0
 Added StoredProcedure.Execute and StoredProcedure.ExecuteAsync methods to more explicitly control dynamic stored procedures.
 Added ability to specify an implementation of an interface, so a StoredProcedure can return an IEnumerable&lt;interface&gt;
 
