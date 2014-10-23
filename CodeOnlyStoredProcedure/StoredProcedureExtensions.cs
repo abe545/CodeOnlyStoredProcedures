@@ -76,8 +76,8 @@ namespace CodeOnlyStoredProcedure
                  IEnumerable<IDataTransformer>      transformers)
         {
             Contract.Requires(results      != null);
-            Contract.Requires(outputTypes  != null);
-            Contract.Requires(transformers != null);
+            Contract.Requires(outputTypes  != null && Contract.ForAll(outputTypes,  t => t != null));
+            Contract.Requires(transformers != null && Contract.ForAll(transformers, t => t != null));
             Contract.Ensures (Contract.Result<IDictionary<Type, IList>>() != null);
 
             var spResults = results.ToArray();
@@ -94,7 +94,15 @@ namespace CodeOnlyStoredProcedure
                 if (res.ColumnNames.Length == 1 && currentType.IsSimpleType())
                     factory = new SimpleTypeRowFactory(currentType);
                 else
-                    factory = currentType.CreateRowFactory();
+                {
+                    Type impl = currentType;
+                    if (!TypeExtensions.interfaceMap.TryGetValue(currentType, out impl))
+                        impl = currentType;
+
+                    Contract.Assume(impl != null);
+
+                    factory = impl.CreateRowFactory();
+                }
 
                 foreach (var values in res.Rows)
                 {
@@ -218,8 +226,8 @@ namespace CodeOnlyStoredProcedure
                 else
                     name = pi.Name;
 
-                if (attr != null && attr.SqlDbType.HasValue)
-                    coltype = attr.SqlDbType.Value;
+                if (attr != null)
+                    coltype = attr.GetSqlDbType(pi.PropertyType);
                 else
                     coltype = pi.PropertyType.InferSqlType();
 
@@ -236,19 +244,19 @@ namespace CodeOnlyStoredProcedure
                     case SqlDbType.NText:
                     case SqlDbType.VarBinary:
                         var size = 50;
-                        if (attr != null && attr.Size.HasValue)
-                            size = attr.Size.Value;
+                        if (attr != null)
+                            size = attr.GetSize(size);
                         column = new SqlMetaData(name, coltype, size);
                         break;
 
                     case SqlDbType.Decimal:
                         byte precision = 10;
-                        byte scale = 2;
+                        byte scale     = 2;
 
                         if (attr != null)
                         {
-                            if (attr.Precision.HasValue) precision = attr.Precision.Value;
-                            if (attr.Scale.HasValue)     scale     = attr.Scale.Value;
+                            precision = attr.GetPrecision(precision);
+                            scale     = attr.GetScale    (scale);
                         }
                         column = new SqlMetaData(name, coltype, precision, scale);
                         break;

@@ -13,8 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeOnlyTests-NET40", "Code
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{E1002D45-1AC1-4D75-9BFE-5BB759C7CC89}"
 	ProjectSection(SolutionItems) = preProject
-		Build\CodeOnlyStoredProcedures.nuspec = Build\CodeOnlyStoredProcedures.nuspec
-		Build\Version.xml = Build\Version.xml
+		appveyor.yml = appveyor.yml
+		CodeOnlyStoredProcedures.nuspec = CodeOnlyStoredProcedures.nuspec
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmokeTests", "SmokeTests\SmokeTests.csproj", "{4924DD1E-BE78-4254-AF20-C57077E61FA7}"

@@ -140,8 +140,11 @@
     <Compile Include="..\CodeOnlyStoredProcedure\DataTransformerAttributeBase.cs">
       <Link>DataTransformerAttributeBase.cs</Link>
     </Compile>
-    <Compile Include="..\CodeOnlyStoredProcedure\DynamicStoredProcedure.cs">
-      <Link>DynamicStoredProcedure.cs</Link>
+    <Compile Include="..\CodeOnlyStoredProcedure\Dynamic\DynamicExecutionMode.cs">
+      <Link>Dynamic\DynamicExecutionMode.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\Dynamic\DynamicStoredProcedure.cs">
+      <Link>Dynamic\DynamicStoredProcedure.cs</Link>
     </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\Dynamic\DynamicStoredProcedureResults.cs">
       <Link>Dynamic\DynamicStoredProcedureResults.cs</Link>
@@ -172,6 +175,9 @@
     </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\Properties\AssemblyInfo.cs">
       <Link>Properties\AssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\VersionInfo.cs">
+      <Link>Properties\VersionInfo.cs</Link>
     </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\DynamicRowFactory.cs">
       <Link>RowFactory\DynamicRowFactory.cs</Link>

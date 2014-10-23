@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
@@ -10,7 +11,10 @@ using System.Reflection;
 
 namespace CodeOnlyStoredProcedure
 {
-    internal static class TypeExtensions
+    /// <summary>
+    /// Contains extension methods that operate on <see cref="Type"/>s.
+    /// </summary>
+    public static class TypeExtensions
     {
         internal static readonly Type[] integralTpes = new[]
             {
@@ -24,8 +28,12 @@ namespace CodeOnlyStoredProcedure
                 typeof(Boolean),
                 typeof(Byte),
                 typeof(DateTime),
+                typeof(Char),
                 typeof(Guid)
             };
+
+        internal static readonly ConcurrentDictionary<Type, Type> interfaceMap =
+            new ConcurrentDictionary<Type, Type>();
 
         internal static IEnumerable<PropertyInfo> GetMappedProperties(
             this Type t, 
@@ -48,6 +56,8 @@ namespace CodeOnlyStoredProcedure
 
         internal static bool IsEnumeratedType(this Type t)
         {
+            Contract.Requires(t != null);
+
             return t.IsArray || typeof(IEnumerable).IsAssignableFrom(t) && t.IsGenericType;
         }
 
@@ -185,14 +195,32 @@ namespace CodeOnlyStoredProcedure
             }
         }
 
+        /// <summary>
+        /// Gets if a given <see cref="Type"/> can be returned as a the result from a single
+        /// column result set. In practice, this returns true for numeric, enum, char, bool, or strings.
+        /// </summary>
+        /// <param name="type">The <see cref="Type"/> to test.</param>
+        /// <returns>True if the Type can be used as the result for a single column stored procedure.</returns>
+        [Pure]
         public static bool IsSimpleType(this Type type)
         {
+            Contract.Requires(type != null);
+
             return type.IsEnum || integralTpes.Contains(type);
         }
 
+        /// <summary>
+        /// Tests to see if a given <see cref="Type"/> can be returned from a <see cref="StoredProcedure" />.
+        /// Will return true for interfaces mapped in <see cref="StoredProcedure.MapResultType"/>
+        /// </summary>
+        /// <param name="type">The <see cref="Type"/> to test.</param>
+        /// <returns>True if a type can be returned from a StoredProcedure.</returns>
+        [Pure]
         public static bool IsValidResultType(this Type type)
         {
-            if (type.IsSimpleType())
+            Contract.Requires(type != null);
+
+            if (type.IsSimpleType() || interfaceMap.ContainsKey(type))
                 return true;
 
             return type.GetConstructor(new Type[0]) != null;

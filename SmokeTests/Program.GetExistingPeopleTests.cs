@@ -70,40 +70,40 @@ namespace SmokeTests
 
             Console.Write("Calling usp_GetExistingPeople synchronously (dynamic syntax) - ");
 
-            res = db.Database.Connection.Call(timeout).usp_GetExistingPeople(people: toTest);
+            res = db.Database.Connection.Execute(timeout).usp_GetExistingPeople(people: toTest);
             if (!TestGetExistingPeopleResults(res))
                 return false;
 
             Console.Write("Calling usp_GetExistingPeople asynchronously (dynamic syntax) - ");
 
             Task<IEnumerable<Person>> task =
-                db.Database.Connection.Call(timeout).usp_GetExistingPeople(people: toTest);
+                db.Database.Connection.ExecuteAsync(timeout).usp_GetExistingPeople(people: toTest);
             res = task.Result;
             if (!TestGetExistingPeopleResults(res))
                 return false;
 
             Console.Write("Calling usp_GetExistingPeople synchronously (dynamic syntax) (With Input No Attribute)  - ");
 
-            res = db.Database.Connection.Call(timeout).usp_GetExistingPeople(new { people = toTest });
+            res = db.Database.Connection.Execute(timeout).usp_GetExistingPeople(new { people = toTest });
             if (!TestGetExistingPeopleResults(res))
                 return false;
 
             Console.Write("Calling usp_GetExistingPeople asynchronously (dynamic syntax)(With Input No Attribute)  - ");
 
-            task = db.Database.Connection.Call(timeout).usp_GetExistingPeople(new { people = toTest });
+            task = db.Database.Connection.ExecuteAsync(timeout).usp_GetExistingPeople(new { people = toTest });
             res = task.Result;
             if (!TestGetExistingPeopleResults(res))
                 return false;
 
             Console.Write("Calling usp_GetExistingPeople synchronously (dynamic syntax) (With Input And Attribute)  - ");
 
-            res = db.Database.Connection.Call(timeout).usp_GetExistingPeople(new PersonInput { People = toTest });
+            res = db.Database.Connection.Execute(timeout).usp_GetExistingPeople(new PersonInput { People = toTest });
             if (!TestGetExistingPeopleResults(res))
                 return false;
 
             Console.Write("Calling usp_GetExistingPeople asynchronously (dynamic syntax)(With Input And Attribute)  - ");
 
-            task = db.Database.Connection.Call(timeout).usp_GetExistingPeople(new PersonInput { People = toTest });
+            task = db.Database.Connection.ExecuteAsync(timeout).usp_GetExistingPeople(new PersonInput { People = toTest });
             res = task.Result;
             if (!TestGetExistingPeopleResults(res))
                 return false;

@@ -12,19 +12,19 @@ namespace SmokeTests
         static async Task<bool> RunAsyncTests(SmokeDb db)
         {
             Console.Write("Awaiting usp_GetItems - ");
-            IEnumerable<Item> items = await db.Database.Connection.Call(timeout).usp_GetItems();
+            IEnumerable<Item> items = await db.Database.Connection.ExecuteAsync(timeout).usp_GetItems();
             if (!TestGetItemsResults(items))
                 return false;
 
             Console.Write("Awaiting usp_GetItem (WithParameter) - ");
 
-            items = await db.Database.Connection.Call(timeout).usp_GetItem(ItemId: 0);
+            items = await db.Database.Connection.ExecuteAsync(timeout).usp_GetItem(ItemId: 0);
             if (!TestGetItemResults(items))
                 return false;
 
             Console.Write("Awaiting usp_GetSpokes (No parameters) - ");
 
-            IEnumerable<int> spokes = await db.Database.Connection.Call(timeout).usp_GetSpokes();
+            IEnumerable<int> spokes = await db.Database.Connection.ExecuteAsync(timeout).usp_GetSpokes();
             if (!spokes.SequenceEqual(new[] { 4, 8, 16 }))
             {
                 WriteError("\treturned the wrong data.");
@@ -35,7 +35,7 @@ namespace SmokeTests
 
             Console.Write("Awaitinging usp_GetSpokes (WithParameter) - ");
 
-            spokes = db.Database.Connection.Call(timeout).usp_GetSpokes(minimumSpokes: 4);
+            spokes = db.Database.Connection.Execute(timeout).usp_GetSpokes(minimumSpokes: 4);
 
             if (!spokes.SequenceEqual(new[] { 4, 8, 16 }))
             {
@@ -47,7 +47,7 @@ namespace SmokeTests
 
             Console.Write("Awaiting usp_GetSpokes (WithInput) - ");
 
-            spokes = db.Database.Connection.Call(timeout).usp_GetSpokes(new { minimumSpokes = 6 });
+            spokes = db.Database.Connection.Execute(timeout).usp_GetSpokes(new { minimumSpokes = 6 });
 
             if (!spokes.SequenceEqual(new[] { 8, 16 }))
             {
@@ -59,7 +59,7 @@ namespace SmokeTests
 
             Console.Write("Awaiting usp_GetSpokes (WithParameter expecting no results) - ");
 
-            spokes = db.Database.Connection.Call(timeout).usp_GetSpokes(minimumSpokes: 24);
+            spokes = db.Database.Connection.Execute(timeout).usp_GetSpokes(minimumSpokes: 24);
 
             if (!spokes.Any())
                 WriteSuccess();
@@ -71,7 +71,7 @@ namespace SmokeTests
 
             Console.Write("Awaiting usp_GetSpokes (Enum result) (No parameters) - ");
 
-            IEnumerable<Spoke> spokes2 = db.Database.Connection.Call(timeout).usp_GetSpokes();
+            IEnumerable<Spoke> spokes2 = db.Database.Connection.Execute(timeout).usp_GetSpokes();
 
             if (!spokes2.SequenceEqual(new[] { Spoke.Four, Spoke.Eight, Spoke.Sixteen }))
             {
@@ -83,7 +83,7 @@ namespace SmokeTests
 
             Console.Write("Awaiting usp_GetSpokes (Enum result) (WithParameter) - ");
 
-            spokes2 = db.Database.Connection.Call(timeout).usp_GetSpokes(minimumSpokes: 4);
+            spokes2 = db.Database.Connection.Execute(timeout).usp_GetSpokes(minimumSpokes: 4);
 
             if (!spokes2.SequenceEqual(new[] { Spoke.Four, Spoke.Eight, Spoke.Sixteen }))
             {
@@ -95,7 +95,7 @@ namespace SmokeTests
 
             Console.Write("Awaiting usp_GetSpokes (Enum result) (WithInput) - ");
 
-            spokes2 = db.Database.Connection.Call(timeout).usp_GetSpokes(new { minimumSpokes = 6 });
+            spokes2 = db.Database.Connection.Execute(timeout).usp_GetSpokes(new { minimumSpokes = 6 });
 
             if (!spokes2.SequenceEqual(new[] { Spoke.Eight, Spoke.Sixteen }))
             {
@@ -122,13 +122,13 @@ namespace SmokeTests
             Console.Write("Awaiting usp_GetWidget (WithParameter) - ");
 
             Tuple<IEnumerable<Widget>, IEnumerable<WidgetComponent>> widgets =
-                db.Database.Connection.Call(timeout).usp_GetWidget(WidgetId: 1);
+                db.Database.Connection.ExecuteAsync(timeout).usp_GetWidget(WidgetId: 1);
 
             if (!TestGetWidgetResults(widgets))
                 return false;
 
             Console.Write("Awaiting usp_GetWidget (WithInput) - ");
-            widgets = db.Database.Connection.Call(timeout).usp_GetWidget(new { WidgetId = 1 });
+            widgets = db.Database.Connection.ExecuteAsync(timeout).usp_GetWidget(new { WidgetId = 1 });
 
             if (!TestGetWidgetResults(widgets))
                 return false;
@@ -136,7 +136,7 @@ namespace SmokeTests
             Console.Write("Awaiting usp_ReturnsOne (With Input argument class) - ");
 
             var ro = new ReturnsOne();
-            await db.Database.Connection.Call(timeout).usp_ReturnsOne(ro);
+            await db.Database.Connection.ExecuteAsync(timeout).usp_ReturnsOne(ro);
             if (ro.ReturnValue != 1)
             {
                 WriteError("\tusp_ReturnsOne did not set the ReturnValue for WithInput");
@@ -149,7 +149,7 @@ namespace SmokeTests
             int retVal;
             try
             {
-                await db.Database.Connection.Call(timeout).usp_ReturnsOne(ReturnValue: out retVal);
+                await db.Database.Connection.ExecuteAsync(timeout).usp_ReturnsOne(ReturnValue: out retVal);
                 WriteError("\tawaiting with an out parameter should have thrown an exception.");
                 return false;
             }
@@ -165,19 +165,19 @@ namespace SmokeTests
                 new Person { FirstName = "John", LastName = "Doe" },
                 new Person { FirstName = "Jane", LastName = "Doe" }
             };
-            IEnumerable<Person> ppl = await db.Database.Connection.Call(timeout).usp_GetExistingPeople(people: pIn);
+            IEnumerable<Person> ppl = await db.Database.Connection.ExecuteAsync(timeout).usp_GetExistingPeople(people: pIn);
             if (!TestGetExistingPeopleResults(ppl))
                 return false;
 
             Console.Write("Awaiting usp_GetExistingPeople (With Input No Attribute) - ");
 
-            ppl = await db.Database.Connection.Call(timeout).usp_GetExistingPeople(new { people = pIn });
+            ppl = await db.Database.Connection.ExecuteAsync(timeout).usp_GetExistingPeople(new { people = pIn });
             if (!TestGetExistingPeopleResults(ppl))
                 return false;
 
             Console.Write("Awaiting usp_GetExistingPeople (With Input With Attribute) - ");
 
-            ppl = await db.Database.Connection.Call(timeout).usp_GetExistingPeople(new PersonInput { People = pIn });
+            ppl = await db.Database.Connection.ExecuteAsync(timeout).usp_GetExistingPeople(new PersonInput { People = pIn });
             if (!TestGetExistingPeopleResults(ppl))
                 return false;
 

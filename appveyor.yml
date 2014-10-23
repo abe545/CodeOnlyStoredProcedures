@@ -1,0 +1,55 @@
+version: 1.3.1.{build}
+
+environment:
+  releaseVersion: 1.3.1
+  packageVersion: 1.3.1
+
+assembly_info:
+  patch: true
+  file: VersionInfo.cs
+  assembly_version: "$(releaseVersion)"
+  assembly_file_version: "{version}"
+  assembly_informational_version: "$(packageVersion)"
+
+nuget:
+  account_feed: true
+
+platform: Any CPU
+
+configuration: Release
+
+before_build:
+  - nuget restore
+
+build:
+  project: CodeOnlyStoredProcedure.sln
+
+after_build:
+  - nuget pack CodeOnlyStoredProcedures.nuspec -Symbols -NonInteractive -Verbosity detailed
+  - ps: Get-ChildItem .\*.nupkg | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name }
+
+test:
+  assemblies:
+    - CodeOnlyTests.dll
+    - CodeOnlyTests-NET40.dll
+
+# run smoke tests
+after_test:
+  - .\SmokeTests\bin\Release\SmokeTests.exe
+  - .\SmokeTests-NET40\bin\Release\SmokeTests-NET40.exe
+
+deploy:
+  - provider: NuGet
+    server: 
+      secure: KWCy/cmXPCGCHxgZeYVi0Z5eq7MZCUDzY9oqGs9kpMPNvbAYfK5s0aOS8JwzEOlb699R302QO80G2DiLB7Naow==
+    api_key:
+      secure: BpvfN0VAXhEcYOXAk1rq6OFRg85yKBz4Zc+GMXhdvb8=
+    skip_symbols: true
+    artifact: /.*\.nupkg/
+  - provider: NuGet
+    api_key:
+      secure: YpmJQ9N6F0dfai0xFAoerzB7nruq9NOlhDquhAliwy5cS2A87wU7U+X4Q5eH8vyx
+    skip_symbols: false
+    artifact: /.*\.nupkg/
+    on:
+      branch: master

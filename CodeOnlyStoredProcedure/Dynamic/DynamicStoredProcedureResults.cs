@@ -26,7 +26,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
         private readonly IDbConnection                                                      connection;
         private readonly IDbCommand                                                         command;
         private readonly IEnumerable<IDataTransformer>                                      transformers;
-        private readonly bool                                                               canBeAsync;
+        private readonly DynamicExecutionMode                                               executionMode;
         private readonly CancellationToken                                                  token;
         private          bool                                                               continueOnCaller = true;
 
@@ -93,7 +93,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
             int                                                     timeout,
             List<Tuple<IDbDataParameter, Action<IDbDataParameter>>> parameters,
             IEnumerable<IDataTransformer>                           transformers,
-            bool                                                    canBeAsync,
+            DynamicExecutionMode                            executionMode,
             CancellationToken                                       token)
         {
             Contract.Requires(connection != null);
@@ -102,7 +102,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
             Contract.Requires(parameters != null);
             Contract.Requires(transformers != null);
 
-            this.canBeAsync   = canBeAsync;
+            this.executionMode = executionMode;
             this.command      = connection.CreateCommand(schema, name, timeout, out this.connection);
             this.transformers = transformers;
             this.token        = token;
@@ -110,6 +110,37 @@ namespace CodeOnlyStoredProcedure.Dynamic
             foreach (var t in parameters)
                 command.Parameters.Add(t.Item1);
 
+
+            if (executionMode == DynamicExecutionMode.Synchronous)
+            {
+                var tcs = new TaskCompletionSource<IEnumerable<StoredProcedureExtensions.StoredProcedureResult>>();
+
+                try
+                {
+                    var res = command.Execute(token);
+
+                    foreach (var x in parameters.Where(t => t.Item1.Direction != ParameterDirection.Input))
+                        x.Item2(x.Item1);
+
+                    tcs.SetResult(res);
+                }
+                catch (AggregateException ag)
+                {
+                    tcs.SetException(ag.Flatten().InnerExceptions);
+                }
+                catch (TaskCanceledException)
+                {
+                    tcs.SetCanceled();
+                }
+                catch (OperationCanceledException)
+                {
+                    tcs.SetCanceled();
+                }
+
+                this.resultTask = tcs.Task;
+            }
+            else
+            {
             this.resultTask = Task.Factory.StartNew(() => command.Execute(token),
                                                     token,
                                                     TaskCreationOptions.None,
@@ -121,12 +152,6 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
                                                return r.Result;
                                            }, token);
-
-            if (!canBeAsync)
-            {
-                // there are out, in/out, or return values, so we must
-                // execute the stored proc before returning. Otherwise, the values won't be set.
-                resultTask.Wait();
             }
         }
 
@@ -140,7 +165,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
                     return true;
 
                 case "GetAwaiter":
-                    if (!canBeAsync)
+                    if (executionMode == DynamicExecutionMode.Synchronous)
                         throw new NotSupportedException(DynamicStoredProcedure.asyncParameterDirectionError);
 
 #if NET40
@@ -167,7 +192,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
             if (taskType.IsAssignableFrom(retType))
             {
-                if (!canBeAsync)
+                if (executionMode == DynamicExecutionMode.Synchronous)
                     throw new NotSupportedException(DynamicStoredProcedure.asyncParameterDirectionError);
 
                 if (retType == taskType)
@@ -227,6 +252,8 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
         private object GetMultipleResults(Type[] types)
         {
+            Contract.Requires(types != null);
+
             // no need to protect this index... We have already been asked to cast to a tuple type,
             // so we know that there is a Create method with this many type parameters
             var create     = tupleCreates.Value[types.Length];
@@ -239,6 +266,9 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
         private Task CreateMultipleContinuation(Type[] types)
         {
+            Contract.Requires(types != null);
+            Contract.Ensures (Contract.Result<Task>() != null);
+
             // no need to protect this index... We have already been asked to cast to a tuple type,
             // so we know that there is a Create method with this many type parameters
             var create     = tupleCreates.Value[types.Length];
