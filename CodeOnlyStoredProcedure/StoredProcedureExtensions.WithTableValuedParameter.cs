@@ -1,7 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Diagnostics.Contracts;
+using System.Linq;
 
 namespace CodeOnlyStoredProcedure
 {
@@ -31,15 +33,7 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(!string.IsNullOrWhiteSpace(tableTypeName));
             Contract.Ensures(Contract.Result<TSP>() != null);
 
-            var p = new SqlParameter
-            {
-                ParameterName = name,
-                SqlDbType = SqlDbType.Structured,
-                TypeName = "[dbo].[" + tableTypeName + "]",
-                Value = table.ToTableValuedParameter(typeof(TRow))
-            };
-
-            return (TSP)sp.CloneWith(p);
+            return (TSP)sp.CloneWith(new TableValuedParameter(name, table, typeof(TRow), tableTypeName));
         }
 
         /// <summary>
@@ -69,16 +63,8 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(!string.IsNullOrWhiteSpace(tableTypeSchema));
             Contract.Requires(!string.IsNullOrWhiteSpace(tableTypeName));
             Contract.Ensures(Contract.Result<TSP>() != null);
-
-            var p = new SqlParameter
-            {
-                ParameterName = name,
-                SqlDbType = SqlDbType.Structured,
-                TypeName = string.Format("[{0}].[{1}]", tableTypeSchema, tableTypeName),
-                Value = table.ToTableValuedParameter(typeof(TRow))
-            };
-
-            return (TSP)sp.CloneWith(p);
+            
+            return (TSP)sp.CloneWith(new TableValuedParameter(name, table, typeof(TRow), tableTypeName, tableTypeSchema));
         }
     }
 }

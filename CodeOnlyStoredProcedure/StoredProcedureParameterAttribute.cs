@@ -1,8 +1,8 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Data;
-using System.Data.SqlClient;
 using System.Diagnostics.Contracts;
+using System.Reflection;
 using Microsoft.SqlServer.Server;
 
 namespace CodeOnlyStoredProcedure
@@ -14,10 +14,10 @@ namespace CodeOnlyStoredProcedure
     [AttributeUsage(AttributeTargets.Property)]
     public class StoredProcedureParameterAttribute : Attribute
     {
-        private int?       size;
-        private byte?      precision;
-        private byte?      scale;
-        private SqlDbType? sqlDbType;
+        protected int?    size;
+        protected byte?   precision;
+        protected byte?   scale;
+        protected DbType? dbType;
 
         /// <summary>
         /// Parameter name override. Default value for parameter name is the name of the 
@@ -62,10 +62,10 @@ namespace CodeOnlyStoredProcedure
         /// Define the SqlDbType for the parameter corresponding to this property. If not set,
         /// the type will be inferred from the property type.
         /// </summary>
-        public SqlDbType SqlDbType
+        public DbType DbType
         {
-            get { return sqlDbType ?? SqlDbType.Variant; }
-            set { sqlDbType = value; }
+            get { return dbType ?? DbType.Object; }
+            set { dbType = value; }
         }
 
         /// <summary>
@@ -77,63 +77,65 @@ namespace CodeOnlyStoredProcedure
         }
 
         /// <summary>
-        /// Creates an <see cref="SqlParameter"/> that will be used to pass data to the <see cref="StoredProcedure"/>.
+        /// Creates an <see cref="IDbDataParameter"/> that will be used to pass data to the <see cref="StoredProcedure"/>.
         /// </summary>
         /// <param name="propertyName">The name of the property that is decorated with this attribute.</param>
-        /// <returns>A <see cref="SqlParameter"/> used to pass the property to the stored procedure.</returns>
-        public virtual SqlParameter CreateSqlParameter(string propertyName)
+        /// <param name="cmd">The <see cref="IDbCommand"/> to create the <see cref="IDbDataParameter"/> for.</param>
+        /// <param name="propertyType">The type of the property that this attribute was applied on.</param>
+        /// <returns>A <see cref="IDbDataParameter"/> used to pass the property to the stored procedure.</returns>
+        public virtual IDbDataParameter CreateDataParameter(string propertyName, IDbCommand cmd, Type propertyType)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(propertyName));
-            Contract.Ensures (Contract.Result<SqlParameter>() != null);
+            Contract.Ensures (Contract.Result<IDbDataParameter>() != null);
 
-            var res = new SqlParameter
-            {
-                ParameterName = Name ?? propertyName,
-                Direction = Direction
-            };
+            var res           = cmd.CreateParameter();
+            res.ParameterName = Name ?? propertyName;
+            res.Direction     = Direction;
 
-            if (size.HasValue)
-                res.Size = size.Value;
-            if (precision.HasValue)
-                res.Precision = precision.Value;
-            if (scale.HasValue)
-                res.Scale = scale.Value;
-            if (sqlDbType.HasValue)
-                res.SqlDbType = sqlDbType.Value;
+            propertyType.SetTypePrecisionAndScale(res, dbType, size, scale, precision);
 
             return res;
         }
 
-        internal SqlDbType GetSqlDbType(Type valueType)
+        internal virtual SqlMetaData CreateSqlMetaData(string propertyName, Type propertyType)
         {
-            if (sqlDbType.HasValue)
-                return sqlDbType.Value;
+            Contract.Requires(propertyType != null);
+            Contract.Requires(!string.IsNullOrWhiteSpace(propertyName));
+            Contract.Ensures(Contract.Result<SqlMetaData>() != null);
 
-            return valueType.InferSqlType();
+            return propertyType.CreateSqlMetaData(Name ?? propertyName, null, size, scale, precision);
         }
 
-        internal int GetSize(int defaultSize)
+        internal virtual IStoredProcedureParameter CreateParameter(object input, PropertyInfo property)
         {
-            if (size.HasValue)
-                return size.Value;
+            switch (Direction)
+            {
+                case ParameterDirection.InputOutput:
+                    return new InputOutputParameter(Name ?? property.Name, 
+                                                    o => property.SetValue(input, o, null), 
+                                                    property.GetValue(input, null),
+                                                    dbType ?? property.PropertyType.InferDbType(),
+                                                    size,
+                                                    scale, 
+                                                    precision);
 
-            return defaultSize;
-        }
+                case ParameterDirection.Output:
+                    return new OutputParameter(Name ?? property.Name,
+                                               o => property.SetValue(input, o, null), 
+                                               dbType ?? property.PropertyType.InferDbType(),
+                                               size,
+                                               scale, 
+                                               precision);
 
-        internal byte GetPrecision(byte defaultPrecision)
-        {
-            if (precision.HasValue)
-                return precision.Value;
+                case ParameterDirection.ReturnValue:
+                    return new ReturnValueParameter(i => property.SetValue(input, i, null));
 
-            return defaultPrecision;
-        }
-
-        internal byte GetScale(byte defaultScale)
-        {
-            if (scale.HasValue)
-                return scale.Value;
-
-            return defaultScale;
+                default:
+                case ParameterDirection.Input:
+                    return new InputParameter(Name ?? property.Name, 
+                                              property.GetValue(input, null), 
+                                              dbType ?? property.PropertyType.InferDbType());
+            }
         }
     }
 }

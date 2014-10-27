@@ -87,14 +87,14 @@ namespace CodeOnlyStoredProcedure.Dynamic
 #endif
 
         public DynamicStoredProcedureResults(
-            IDbConnection                                           connection,
-            string                                                  schema,
-            string                                                  name,
-            int                                                     timeout,
-            List<Tuple<IDbDataParameter, Action<IDbDataParameter>>> parameters,
-            IEnumerable<IDataTransformer>                           transformers,
-            DynamicExecutionMode                            executionMode,
-            CancellationToken                                       token)
+            IDbConnection                   connection,
+            string                          schema,
+            string                          name,
+            int                             timeout,
+            List<IStoredProcedureParameter> parameters,
+            IEnumerable<IDataTransformer>   transformers,
+            DynamicExecutionMode            executionMode,
+            CancellationToken               token)
         {
             Contract.Requires(connection != null);
             Contract.Requires(!string.IsNullOrEmpty(schema));
@@ -107,9 +107,8 @@ namespace CodeOnlyStoredProcedure.Dynamic
             this.transformers = transformers;
             this.token        = token;
 
-            foreach (var t in parameters)
-                command.Parameters.Add(t.Item1);
-
+            foreach (var p in parameters)
+                command.Parameters.Add(p.CreateDbDataParameter(command));
 
             if (executionMode == DynamicExecutionMode.Synchronous)
             {
@@ -118,9 +117,18 @@ namespace CodeOnlyStoredProcedure.Dynamic
                 try
                 {
                     var res = command.Execute(token);
+                    token.ThrowIfCancellationRequested();
 
-                    foreach (var x in parameters.Where(t => t.Item1.Direction != ParameterDirection.Input))
-                        x.Item2(x.Item1);
+                    foreach (IDbDataParameter p in command.Parameters)
+                    {
+                        if (p.Direction != ParameterDirection.Input)
+                        {
+                            var x = parameters.OfType<IOutputStoredProcedureParameter>()
+                                              .FirstOrDefault(sp => sp.ParameterName == p.ParameterName);
+                            if (x != null)
+                                x.TransferOutputValue(p.Value);
+                        }
+                    }
 
                     tcs.SetResult(res);
                 }
@@ -141,17 +149,25 @@ namespace CodeOnlyStoredProcedure.Dynamic
             }
             else
             {
-            this.resultTask = Task.Factory.StartNew(() => command.Execute(token),
-                                                    token,
-                                                    TaskCreationOptions.None,
-                                                    TaskScheduler.Default)
-                                           .ContinueWith(r =>
-                                           {
-                                               foreach (var x in parameters.Where(t => t.Item1.Direction != ParameterDirection.Input))
-                                                   x.Item2(x.Item1);
+                this.resultTask = Task.Factory.StartNew(() => command.Execute(token),
+                                                        token,
+                                                        TaskCreationOptions.None,
+                                                        TaskScheduler.Default)
+                                               .ContinueWith(r =>
+                                               {
+                                                   foreach (IDbDataParameter p in command.Parameters)
+                                                   {
+                                                       if (p.Direction != ParameterDirection.Input)
+                                                       {
+                                                           var x = parameters.OfType<IOutputStoredProcedureParameter>()
+                                                                             .FirstOrDefault(sp => sp.ParameterName == p.ParameterName);
+                                                           if (x != null)
+                                                               x.TransferOutputValue(p.Value);
+                                                       }
+                                                   }
 
-                                               return r.Result;
-                                           }, token);
+                                                   return r.Result;
+                                               }, token);
             }
         }
 

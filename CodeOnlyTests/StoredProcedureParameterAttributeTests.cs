@@ -67,13 +67,13 @@ namespace CodeOnlyTests
         }
 
         [TestMethod]
-        public void SqlDbTypeUsedInCreateSqlParameter()
+        public void DbTypeUsedInCreateSqlParameter()
         {
-            var toTest = new StoredProcedureParameterAttribute { SqlDbType = SqlDbType.Char };
+            var toTest = new StoredProcedureParameterAttribute { DbType = DbType.Char };
 
             var res = toTest.CreateSqlParameter("foo");
 
-            Assert.AreEqual(SqlDbType.Char, res.SqlDbType);
+            Assert.AreEqual(DbType.Char, res.DbType);
         }
     }
 }

@@ -176,6 +176,36 @@
     <Compile Include="..\CodeOnlyStoredProcedure\Properties\AssemblyInfo.cs">
       <Link>Properties\AssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\SqlServerStoredProcedureParameterAttribute.cs">
+      <Link>SqlServerStoredProcedureParameterAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedureParameter.cs">
+      <Link>StoredProcedureParameter.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedureParameters\IInputStoredProcedureParameter.cs">
+      <Link>StoredProcedureParameters\IInputStoredProcedureParameter.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedureParameters\InputOutputParameter.cs">
+      <Link>StoredProcedureParameters\InputOutputParameter.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedureParameters\InputParameter.cs">
+      <Link>StoredProcedureParameters\InputParameter.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedureParameters\IOutputStoredProcedureParameter.cs">
+      <Link>StoredProcedureParameters\IOutputStoredProcedureParameter.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedureParameters\IStoredProcedureParameter.cs">
+      <Link>StoredProcedureParameters\IStoredProcedureParameter.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedureParameters\OutputParameter.cs">
+      <Link>StoredProcedureParameters\OutputParameter.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedureParameters\ReturnValueParameter.cs">
+      <Link>StoredProcedureParameters\ReturnValueParameter.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedureParameters\TableValuedParameter.cs">
+      <Link>StoredProcedureParameters\TableValuedParameter.cs</Link>
+    </Compile>
     <Compile Include="..\VersionInfo.cs">
       <Link>Properties\VersionInfo.cs</Link>
     </Compile>

@@ -2,6 +2,7 @@
 using System.Linq;
 using CodeOnlyStoredProcedure;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using FluentAssertions;
 
 #if NET40
 namespace CodeOnlyTests.Net40
@@ -18,14 +19,12 @@ namespace CodeOnlyTests
 
             var toTest = orig.WithParameter("Foo", "Bar");
 
-            Assert.IsFalse(ReferenceEquals(orig, toTest));
-            Assert.AreEqual(0, orig.Parameters.Count());
-            Assert.AreEqual(1, toTest.Parameters.Count());
+            toTest.Should().NotBeSameAs(orig, "because StoredProcedures should be immutable");
+            orig.Parameters.Should().BeEmpty("because StoredProcedures should be immutable");
 
-            var p = toTest.Parameters.Single();
-            Assert.AreEqual("Foo", p.ParameterName);
-            Assert.AreEqual("Bar", p.Value);
-            Assert.AreEqual(ParameterDirection.Input, p.Direction);
+            var param = toTest.Parameters.Should().ContainSingle(p => p.ParameterName == "Foo", "because we added one Parameter").Which;
+            param.Should().BeOfType<IInputStoredProcedureParameter>().Which.Value.Should().Be("Bar", "because it was passed to WithInputParameter");
+            (param as IOutputStoredProcedureParameter).Should().BeNull("because WithInputParameter should not create output parameters");
         }
 
         [TestMethod]
@@ -33,17 +32,14 @@ namespace CodeOnlyTests
         {
             var orig = new StoredProcedure("Test");
 
-            var toTest = orig.WithParameter("Foo", "Bar", SqlDbType.NChar);
+            var toTest = orig.WithParameter("Foo", "Bar", DbType.String);
 
-            Assert.IsFalse(ReferenceEquals(orig, toTest));
-            Assert.AreEqual(0, orig.Parameters.Count());
-            Assert.AreEqual(1, toTest.Parameters.Count());
+            toTest.Should().NotBeSameAs(orig, "because StoredProcedures should be immutable");
+            orig.Parameters.Should().BeEmpty("because StoredProcedures should be immutable");
 
-            var p = toTest.Parameters.Single();
-            Assert.AreEqual("Foo", p.ParameterName);
-            Assert.AreEqual("Bar", p.Value);
-            Assert.AreEqual(ParameterDirection.Input, p.Direction);
-            Assert.AreEqual(SqlDbType.NChar, p.SqlDbType);
+            var param = toTest.Parameters.Should().ContainSingle(p => p.ParameterName == "Foo", "because we added one Parameter").Which;
+            param.Should().BeOfType<IInputStoredProcedureParameter>().Which.Value.Should().Be("Bar", "because it was passed to WithInputParameter");
+            (param as IOutputStoredProcedureParameter).Should().BeNull("because WithInputParameter should not create output parameters");
         }
 
         [TestMethod]
@@ -53,15 +49,13 @@ namespace CodeOnlyTests
 
             var toTest = orig.WithParameter("Foo", "Bar");
 
-            Assert.AreEqual(typeof(StoredProcedure<int>), toTest.GetType());
-            Assert.IsFalse(ReferenceEquals(orig, toTest));
-            Assert.AreEqual(0, orig.Parameters.Count());
-            Assert.AreEqual(1, toTest.Parameters.Count());
+            toTest.Should().NotBeSameAs(orig, "because StoredProcedures should be immutable");
+            orig.Parameters.Should().BeEmpty("because StoredProcedures should be immutable");
+            toTest.Should().BeOfType<StoredProcedure<int>>("because the original StoredProcedure returned an int also.");
 
-            var p = toTest.Parameters.Single();
-            Assert.AreEqual(ParameterDirection.Input, p.Direction);
-            Assert.AreEqual("Foo", p.ParameterName);
-            Assert.AreEqual("Bar", p.Value);
+            var param = toTest.Parameters.Should().ContainSingle(p => p.ParameterName == "Foo", "because we added one Parameter").Which;
+            param.Should().BeOfType<IInputStoredProcedureParameter>().Which.Value.Should().Be("Bar", "because it was passed to WithInputParameter");
+            (param as IOutputStoredProcedureParameter).Should().BeNull("because WithInputParameter should not create output parameters");
         }
     }
 }

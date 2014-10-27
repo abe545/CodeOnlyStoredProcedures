@@ -63,7 +63,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
         public override bool TryInvokeMember(InvokeMemberBinder binder, object[] args, out object result)
         {
-            var parameters = new List<Tuple<IDbDataParameter, Action<IDbDataParameter>>>();
+            var parameters = new List<IStoredProcedureParameter>();
             var callingMode = executionMode;
             
             for (int i = 0; i < binder.CallInfo.ArgumentCount; ++i)
@@ -86,44 +86,37 @@ namespace CodeOnlyStoredProcedure.Dynamic
                     if (attr == null)
                         throw new NotSupportedException("You must apply the TableValuedParameter attribute to a class to use as a Table Valued Parameter when using the dynamic syntax.");
 
-                    var parm   = attr.CreateDataParameter(parmName);
-                    parm.Value = ((IEnumerable)args[idx]).ToTableValuedParameter(itemType);
-
-                    parameters.Add(Tuple.Create(parm, none));
+                    parameters.Add(
+                        new TableValuedParameter(attr.Name ?? parmName,
+                                                 (IEnumerable)args[idx],
+                                                 itemType,
+                                                 attr.TableName,
+                                                 attr.Schema));
                 }
                 else if (argType.IsClass && argType != typeof(string))
                 {
-                    var item = args[idx];
-                    parameters.AddRange(
-                        argType.GetParameters(item)
-                               .Select(t => Tuple.Create(t.Item2, new Action<IDbDataParameter>(p => t.Item1.SetValue(item, p.Value, new object[0])))));
+                    parameters.AddRange(argType.GetParameters(args[idx]));
                 }
                 else if ("returnvalue".Equals(parmName, StringComparison.InvariantCultureIgnoreCase) && direction != ParameterDirection.Input)
                 {
                     CoerceSynchronousExecutionMode(ref callingMode);
 
-                    parameters.Add(
-                        Tuple.Create(new IDbDataParameter { ParameterName = parmName, Direction = ParameterDirection.ReturnValue },
-                                     new Action<IDbDataParameter>(p => args[idx] = p.Value)));
+                    parameters.Add(new ReturnValueParameter(r => args[idx] = r));
                 }
                 else if (direction == ParameterDirection.Output)
                 {
                     CoerceSynchronousExecutionMode(ref callingMode);
 
-                    parameters.Add(
-                        Tuple.Create(new IDbDataParameter { ParameterName = parmName, Direction = ParameterDirection.Output },
-                                     new Action<IDbDataParameter>(p => args[idx] = p.Value)));
+                    parameters.Add(new OutputParameter(parmName, o => args[idx] = o, argType.InferDbType()));
                 }
                 else if (direction == ParameterDirection.InputOutput)
                 {
                     CoerceSynchronousExecutionMode(ref callingMode);
 
-                    parameters.Add(
-                        Tuple.Create(new IDbDataParameter(parmName, args[idx]) { Direction = ParameterDirection.InputOutput },
-                                     new Action<IDbDataParameter>(p => args[idx] = p.Value)));
+                    parameters.Add(new InputOutputParameter(parmName, o => args[idx] = o, args[idx], argType.InferDbType()));
                 }
                 else
-                    parameters.Add(Tuple.Create(new IDbDataParameter(parmName, args[i]), none));
+                    parameters.Add(new InputParameter(parmName, args[idx], argType.InferDbType()));
             }
 
             result = new DynamicStoredProcedureResults(

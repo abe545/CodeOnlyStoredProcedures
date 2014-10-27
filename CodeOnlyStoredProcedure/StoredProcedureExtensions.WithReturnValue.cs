@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Data;
-using System.Data.SqlClient;
 using System.Diagnostics.Contracts;
 
 namespace CodeOnlyStoredProcedure
@@ -21,13 +20,7 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(returnValue != null);
             Contract.Ensures(Contract.Result<TSP>() != null);
 
-            return (TSP)sp.CloneWith(new SqlParameter
-            {
-                ParameterName = "_Code_Only_Stored_Procedures_Auto_Generated_Return_Value_",
-                Direction = ParameterDirection.ReturnValue,
-                SqlDbType = SqlDbType.Int
-            },
-                o => returnValue((int)o));
+            return (TSP)sp.CloneWith(new ReturnValueParameter(returnValue));
         }
     }
 }
