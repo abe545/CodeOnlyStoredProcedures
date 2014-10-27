@@ -14,10 +14,10 @@ namespace CodeOnlyStoredProcedure
     [AttributeUsage(AttributeTargets.Property)]
     public class StoredProcedureParameterAttribute : Attribute
     {
-        protected int?    size;
-        protected byte?   precision;
-        protected byte?   scale;
-        protected DbType? dbType;
+        private int?    size;
+        private byte?   precision;
+        private byte?   scale;
+        private DbType? dbType;
 
         /// <summary>
         /// Parameter name override. Default value for parameter name is the name of the 
@@ -41,6 +41,11 @@ namespace CodeOnlyStoredProcedure
         }
 
         /// <summary>
+        /// Gets the size that has been explicitly set. Will be null if none has been set.
+        /// </summary>
+        protected int? ExplicitSize { get { return size; } }
+
+        /// <summary>
         /// Size in bytes of returned data. Should be used on output parameters.
         /// </summary>
         public byte Precision
@@ -48,6 +53,11 @@ namespace CodeOnlyStoredProcedure
             get { return precision ?? 0; }
             set { precision = value; }
         }
+
+        /// <summary>
+        /// Get the precision that has been explicitly set. Will be null if none has been set.
+        /// </summary>
+        protected byte? ExplicitPrecision { get { return precision; } }
 
         /// <summary>
         /// Size in bytes of returned data. Should be used on output parameters.
@@ -59,6 +69,11 @@ namespace CodeOnlyStoredProcedure
         }
 
         /// <summary>
+        /// Gets the scale that has been explicitly set. Will be null if none has been set.
+        /// </summary>
+        protected byte? ExplicitScale { get { return scale; } }
+
+        /// <summary>
         /// Define the SqlDbType for the parameter corresponding to this property. If not set,
         /// the type will be inferred from the property type.
         /// </summary>
@@ -67,6 +82,11 @@ namespace CodeOnlyStoredProcedure
             get { return dbType ?? DbType.Object; }
             set { dbType = value; }
         }
+
+        /// <summary>
+        /// Gets the DbType that has been explicitly set. Will be null if none has been set.
+        /// </summary>
+        protected DbType? ExplicitDbType { get { return dbType; } }
 
         /// <summary>
         /// Creates a new StoredProcedureParameterAttribute.
@@ -86,6 +106,8 @@ namespace CodeOnlyStoredProcedure
         public virtual IDbDataParameter CreateDataParameter(string propertyName, IDbCommand cmd, Type propertyType)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(propertyName));
+            Contract.Requires(cmd                                 != null);
+            Contract.Requires(propertyType                        != null);
             Contract.Ensures (Contract.Result<IDbDataParameter>() != null);
 
             var res           = cmd.CreateParameter();

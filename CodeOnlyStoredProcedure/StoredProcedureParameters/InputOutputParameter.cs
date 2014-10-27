@@ -6,22 +6,23 @@ namespace CodeOnlyStoredProcedure
     internal class InputOutputParameter : IInputStoredProcedureParameter, IOutputStoredProcedureParameter
     {
         private readonly Action<object> setter;
-        private readonly DbType?        dbType;
-        private readonly int?           size;
-        private readonly byte?          scale;
-        private readonly byte?          precision;
 
-        public string ParameterName { get; private set; }
-        public object Value         { get; private set; }
+        public   string  ParameterName { get; private set; }
+        public   object  Value         { get; private set; }
+        public   DbType? DbType        { get; private set; }
+        internal int?    Size          { get; private set; }
+        internal byte?   Scale         { get; private set; }
+        internal byte?   Precision     { get; private set; }
 
         public InputOutputParameter(string name, Action<object> setter, object value, DbType? dbType = null, int? size = null, byte? scale = null, byte? precision = null)
         {
             ParameterName  = name;
             this.Value     = value;
-            this.dbType    = dbType;
-            this.size      = size;
-            this.scale     = scale;
-            this.precision = precision;
+            this.DbType    = dbType;
+            this.setter    = setter;
+            this.Size      = size;
+            this.Scale     = scale;
+            this.Precision = precision;
         }
 
         public IDbDataParameter CreateDbDataParameter(IDbCommand command)
@@ -35,10 +36,12 @@ namespace CodeOnlyStoredProcedure
             else
                 parm.Value = Value;
 
-            if (dbType.HasValue)
-                parm.DbType = dbType.Value;
+            if (DbType.HasValue)
+                parm.DbType = DbType.Value;
+            else if (Value != null)
+                parm.DbType = Value.GetType().InferDbType();
 
-            parm.AddPrecisison(size, scale, precision);
+            parm.AddPrecisison(Size, Scale, Precision);
 
             return parm;
         }

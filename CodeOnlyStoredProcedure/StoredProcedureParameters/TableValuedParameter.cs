@@ -7,19 +7,19 @@ namespace CodeOnlyStoredProcedure
 {
     internal class TableValuedParameter : IInputStoredProcedureParameter
     {
-        private readonly string      typeName;
         private readonly IEnumerable values;
         private readonly Type        valueType;
 
-        public string ParameterName { get; private set; }
-        public object Value         { get { return values; } }
+        public   string ParameterName { get; private set; }
+        public   object Value         { get { return values; } }
+        internal string TypeName      { get; private set; }
 
         public TableValuedParameter(string name, IEnumerable values, Type valueType, string tableTypeName, string tableTypeSchema = "dbo")
         {
             ParameterName  = name;
             this.values    = values;
             this.valueType = valueType;
-            this.typeName  = string.Format("[{0}].[{1}]", tableTypeSchema, tableTypeName);
+            this.TypeName  = string.Format("[{0}].[{1}]", tableTypeSchema, tableTypeName);
         }
 
         public IDbDataParameter CreateDbDataParameter(IDbCommand command)
@@ -31,7 +31,7 @@ namespace CodeOnlyStoredProcedure
 
             parm.ParameterName = ParameterName;
             parm.SqlDbType     = SqlDbType.Structured;
-            parm.TypeName      = typeName;
+            parm.TypeName      = TypeName;
             parm.Value         = values.ToTableValuedParameter(valueType);
 
             return parm;

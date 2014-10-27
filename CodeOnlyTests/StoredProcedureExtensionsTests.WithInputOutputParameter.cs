@@ -1,8 +1,7 @@
 ﻿using System.Data;
-using System.Linq;
 using CodeOnlyStoredProcedure;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using FluentAssertions;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 #if NET40
 namespace CodeOnlyTests.Net40
@@ -24,170 +23,135 @@ namespace CodeOnlyTests
             sp.Parameters.Should().BeEmpty("because StoredProcedures should be immutable");
 
             var param = toTest.Parameters.Should().ContainSingle(p => p.ParameterName == "Foo", "because we added one Parameter").Which;
-            param.Should().BeOfType<IInputStoredProcedureParameter>().Which.Value.Should().Be("Bar", "because it was passed to WithInputOutputParameter");
-            param.Should().BeOfType<IOutputStoredProcedureParameter>().Which.Invoking(p => p.TransferOutputValue("Baz")).Invoke();
+            param.Should().BeOfType<InputOutputParameter>().Which.Value.Should().Be("Bar", "because it was passed to WithInputOutputParameter");
+            param.Should().BeOfType<InputOutputParameter>().Which.Invoking(p => p.TransferOutputValue("Baz")).Invoke();
 
             set.Should().Be("Baz", "because we invoked TransferOutputValue with Baz.");
         }
 
-        //[TestMethod]
-        //public void TestWithInputOutputParameterAndDbTypeHasInputAndSetsOutput()
-        //{
-        //    var sp = new StoredProcedure("Test");
+        [TestMethod]
+        public void TestWithInputOutputParameterAndDbTypeHasInputAndSetsOutput()
+        {
+            var sp = new StoredProcedure("Test");
 
-        //    string set = null;
-        //    var toTest = sp.WithInputOutputParameter("Foo", "Bar", s => set = s, DbType.NVarChar);
+            string set = null;
+            var toTest = sp.WithInputOutputParameter("Foo", "Bar", s => set = s, DbType.StringFixedLength);
 
-        //    Assert.IsFalse(ReferenceEquals(sp, toTest));
-        //    Assert.AreEqual(0, sp.Parameters.Count());
-        //    Assert.AreEqual(0, sp.OutputParameterSetters.Count());
+            toTest.Should().NotBeSameAs(sp, "because StoredProcedures should be immutable");
+            sp.Parameters.Should().BeEmpty("because StoredProcedures should be immutable");
 
-        //    var p = toTest.Parameters.Single();
-        //    Assert.AreEqual(ParameterDirection.InputOutput, p.Direction);
-        //    Assert.AreEqual("Bar", p.Value);
-        //    Assert.AreEqual("Foo", p.ParameterName);
-        //    Assert.AreEqual(DbType.NVarChar, p.DbType);
+            var param = toTest.Parameters.Should().ContainSingle(p => p.ParameterName == "Foo", "because we added one Parameter")
+                .Which.Should().BeOfType<InputOutputParameter>().Which;
+            param.Value.Should().Be("Bar", "because it was passed to WithInputOutputParameter");
+            param.DbType.Should().Be(DbType.StringFixedLength, "because it was passed to WithInputOutputParameter");
+            param.Invoking(p => p.TransferOutputValue("Baz")).Invoke();
 
-        //    var output = toTest.OutputParameterSetters.Single();
-        //    output.Value("Bar");
-        //    Assert.AreEqual("Bar", set);
-        //}
+            set.Should().Be("Baz", "because we invoked TransferOutputValue with Baz.");
+        }
 
+        [TestMethod]
+        public void TestWithInputOutputParameterHasInputAndSetsSize()
+        {
+            var sp = new StoredProcedure("Test");
 
-        //[TestMethod]
-        //public void TestWithInputOutputParameterSetsSize()
-        //{
-        //    var sp = new StoredProcedure("Test");
+            string set = null;
+            var toTest = sp.WithInputOutputParameter("Foo", "Bar", s => set = s, size: 11);
 
-        //    string set = null;
-        //    var toTest = sp.WithInputOutputParameter("Foo", "Baz", s => set = s, size: 10);
+            toTest.Should().NotBeSameAs(sp, "because StoredProcedures should be immutable");
+            sp.Parameters.Should().BeEmpty("because StoredProcedures should be immutable");
 
-        //    Assert.IsFalse(ReferenceEquals(sp, toTest));
-        //    Assert.AreEqual(0, sp.Parameters.Count());
-        //    Assert.AreEqual(0, sp.OutputParameterSetters.Count());
+            var param = toTest.Parameters.Should().ContainSingle(p => p.ParameterName == "Foo", "because we added one Parameter")
+                .Which.Should().BeOfType<InputOutputParameter>().Which;
+            param.Value.Should().Be("Bar", "because it was passed to WithInputOutputParameter");
+            param.Size.Should().Be(11, "because it was passed to WithInputOutputParameter");
+        }
 
-        //    var p = toTest.Parameters.Single();
-        //    Assert.AreEqual(ParameterDirection.InputOutput, p.Direction);
-        //    Assert.AreEqual("Foo", p.ParameterName);
-        //    Assert.AreEqual(10, p.Size);
-        //    Assert.AreEqual("Baz", p.Value);
+        [TestMethod]
+        public void TestWithInputOutputParameterAndDbTypeHasInputAndSetsSize()
+        {
+            var sp = new StoredProcedure("Test");
 
-        //    var output = toTest.OutputParameterSetters.Single();
-        //    output.Value("Bar");
-        //    Assert.AreEqual("Bar", set);
-        //}
+            string set = null;
+            var toTest = sp.WithInputOutputParameter("Foo", "Bar", s => set = s, DbType.StringFixedLength, size: 11);
 
-        //[TestMethod]
-        //public void TestWithInputOutputParameterAndDbTypeSetsSize()
-        //{
-        //    var sp = new StoredProcedure("Test");
+            toTest.Should().NotBeSameAs(sp, "because StoredProcedures should be immutable");
+            sp.Parameters.Should().BeEmpty("because StoredProcedures should be immutable");
 
-        //    string set = null;
-        //    var toTest = sp.WithInputOutputParameter("Foo", "Fab", s => set = s, DbType.NVarChar, size: 10);
+            var param = toTest.Parameters.Should().ContainSingle(p => p.ParameterName == "Foo", "because we added one Parameter")
+                .Which.Should().BeOfType<InputOutputParameter>().Which;
+            param.Value.Should().Be("Bar", "because it was passed to WithInputOutputParameter");
+            param.DbType.Should().Be(DbType.StringFixedLength, "because it was passed to WithInputOutputParameter");
+            param.Size.Should().Be(11, "because it was passed to WithInputOutputParameter");
+        }
 
-        //    Assert.IsFalse(ReferenceEquals(sp, toTest));
-        //    Assert.AreEqual(0, sp.Parameters.Count());
-        //    Assert.AreEqual(0, sp.OutputParameterSetters.Count());
+        [TestMethod]
+        public void TestWithInputOutputParameterHasInputAndSetsScale()
+        {
+            var sp = new StoredProcedure("Test");
 
-        //    var p = toTest.Parameters.Single();
-        //    Assert.AreEqual(ParameterDirection.InputOutput, p.Direction);
-        //    Assert.AreEqual("Foo", p.ParameterName);
-        //    Assert.AreEqual(DbType.NVarChar, p.DbType);
-        //    Assert.AreEqual(10, p.Size);
-        //    Assert.AreEqual("Fab", p.Value);
+            string set = null;
+            var toTest = sp.WithInputOutputParameter("Foo", "Bar", s => set = s, scale: 13);
 
-        //    var output = toTest.OutputParameterSetters.Single();
-        //    output.Value("Bar");
-        //    Assert.AreEqual("Bar", set);
-        //}
+            toTest.Should().NotBeSameAs(sp, "because StoredProcedures should be immutable");
+            sp.Parameters.Should().BeEmpty("because StoredProcedures should be immutable");
 
-        //[TestMethod]
-        //public void TestWithInputOutputParameterSetsScale()
-        //{
-        //    var sp = new StoredProcedure("Test");
+            var param = toTest.Parameters.Should().ContainSingle(p => p.ParameterName == "Foo", "because we added one Parameter")
+                .Which.Should().BeOfType<InputOutputParameter>().Which;
+            param.Value.Should().Be("Bar", "because it was passed to WithInputOutputParameter");
+            param.Scale.Should().Be(13, "because it was passed to WithInputOutputParameter");
+        }
 
-        //    decimal set = 0;
-        //    var toTest = sp.WithInputOutputParameter("Foo", 99M, d => set = d, scale: 4);
+        [TestMethod]
+        public void TestWithInputOutputParameterAndDbTypeHasInputAndSetsScale()
+        {
+            var sp = new StoredProcedure("Test");
 
-        //    Assert.IsFalse(ReferenceEquals(sp, toTest));
-        //    Assert.AreEqual(0, sp.Parameters.Count());
-        //    Assert.AreEqual(0, sp.OutputParameterSetters.Count());
+            string set = null;
+            var toTest = sp.WithInputOutputParameter("Foo", "Bar", s => set = s, DbType.StringFixedLength, scale: 13);
 
-        //    var p = toTest.Parameters.Single();
-        //    Assert.AreEqual(ParameterDirection.InputOutput, p.Direction);
-        //    Assert.AreEqual("Foo", p.ParameterName);
-        //    Assert.AreEqual(4, p.Scale);
-        //    Assert.AreEqual(99M, p.Value);
+            toTest.Should().NotBeSameAs(sp, "because StoredProcedures should be immutable");
+            sp.Parameters.Should().BeEmpty("because StoredProcedures should be immutable");
 
-        //    var output = toTest.OutputParameterSetters.Single();
-        //    output.Value(142.13M);
-        //    Assert.AreEqual(142.13M, set);
-        //}
+            var param = toTest.Parameters.Should().ContainSingle(p => p.ParameterName == "Foo", "because we added one Parameter")
+                .Which.Should().BeOfType<InputOutputParameter>().Which;
+            param.Value.Should().Be("Bar", "because it was passed to WithInputOutputParameter");
+            param.DbType.Should().Be(DbType.StringFixedLength, "because it was passed to WithInputOutputParameter");
+            param.Scale.Should().Be(13, "because it was passed to WithInputOutputParameter");
+        }
 
-        //[TestMethod]
-        //public void TestWithInputOutputParameterAndDbTypeSetsScale()
-        //{
-        //    var sp = new StoredProcedure("Test");
+        [TestMethod]
+        public void TestWithInputOutputParameterHasInputAndSetsPrecision()
+        {
+            var sp = new StoredProcedure("Test");
 
-        //    decimal set = 0;
-        //    var toTest = sp.WithInputOutputParameter("Foo", 100M, d => set = d, DbType.Decimal, scale: 4);
+            string set = null;
+            var toTest = sp.WithInputOutputParameter("Foo", "Bar", s => set = s, precision: 3);
 
-        //    Assert.IsFalse(ReferenceEquals(sp, toTest));
-        //    Assert.AreEqual(0, sp.Parameters.Count());
-        //    Assert.AreEqual(0, sp.OutputParameterSetters.Count());
+            toTest.Should().NotBeSameAs(sp, "because StoredProcedures should be immutable");
+            sp.Parameters.Should().BeEmpty("because StoredProcedures should be immutable");
 
-        //    var p = toTest.Parameters.Single();
-        //    Assert.AreEqual(ParameterDirection.InputOutput, p.Direction);
-        //    Assert.AreEqual("Foo", p.ParameterName);
-        //    Assert.AreEqual(4, p.Scale);
-        //    Assert.AreEqual(100M, p.Value);
-        //    Assert.AreEqual(DbType.Decimal, p.DbType);
+            var param = toTest.Parameters.Should().ContainSingle(p => p.ParameterName == "Foo", "because we added one Parameter")
+                .Which.Should().BeOfType<InputOutputParameter>().Which;
+            param.Value.Should().Be("Bar", "because it was passed to WithInputOutputParameter");
+            param.Precision.Should().Be(3, "because it was passed to WithInputOutputParameter");
+        }
 
-        //    var output = toTest.OutputParameterSetters.Single();
-        //    output.Value(12.37M);
-        //    Assert.AreEqual(12.37M, set);
-        //}
+        [TestMethod]
+        public void TestWithInputOutputParameterAndDbTypeHasInputAndSetsPrecision()
+        {
+            var sp = new StoredProcedure("Test");
 
-        //[TestMethod]
-        //public void TestWithInputOutputParameterSetsPrecision()
-        //{
-        //    var sp = new StoredProcedure("Test");
+            string set = null;
+            var toTest = sp.WithInputOutputParameter("Foo", "Bar", s => set = s, DbType.StringFixedLength, precision: 3);
 
-        //    decimal set = 0;
-        //    var toTest = sp.WithInputOutputParameter("Foo", 10M, d => set = d, precision: 11);
+            toTest.Should().NotBeSameAs(sp, "because StoredProcedures should be immutable");
+            sp.Parameters.Should().BeEmpty("because StoredProcedures should be immutable");
 
-        //    Assert.IsFalse(ReferenceEquals(sp, toTest));
-        //    Assert.AreEqual(0, sp.Parameters.Count());
-        //    Assert.AreEqual(0, sp.OutputParameterSetters.Count());
-
-        //    var p = toTest.Parameters.Single();
-        //    Assert.AreEqual(ParameterDirection.InputOutput, p.Direction);
-        //    Assert.AreEqual("Foo", p.ParameterName);
-        //    Assert.AreEqual(11, p.Precision);
-        //    Assert.AreEqual(10M, p.Value);
-
-        //    var output = toTest.OutputParameterSetters.Single();
-        //    output.Value(142.13M);
-        //    Assert.AreEqual(142.13M, set);
-        //}
-
-        //[TestMethod]
-        //public void TestWithInputOutputParameterAndDbTypeSetsPrecision()
-        //{
-        //    var sp = new StoredProcedure("Test");
-
-        //    decimal set = 0;
-        //    var toTest = sp.WithInputOutputParameter("Foo", 13M, d => set = d, DbType.Decimal, precision: 11);
-
-        //    Assert.IsFalse(ReferenceEquals(sp, toTest));
-        //    Assert.AreEqual(0, sp.Parameters.Count());
-
-        //    var p = toTest.Parameters.OfType<IInputStoredProcedureParameter>().OfType<IOutputStoredProcedureParameter>().Single();
-        //    Assert.AreEqual("Foo", p.ParameterName);
-        //    Assert.AreEqual(DbType.Decimal, p.DbType);
-
-        //    p.TransferOutputValue(12.37M);
-        //    Assert.AreEqual(12.37M, set);
-        //}
+            var param = toTest.Parameters.Should().ContainSingle(p => p.ParameterName == "Foo", "because we added one Parameter")
+                .Which.Should().BeOfType<InputOutputParameter>().Which;
+            param.Value.Should().Be("Bar", "because it was passed to WithInputOutputParameter");
+            param.DbType.Should().Be(DbType.StringFixedLength, "because it was passed to WithInputOutputParameter");
+            param.Precision.Should().Be(3, "because it was passed to WithInputOutputParameter");
+        }
     }
 }

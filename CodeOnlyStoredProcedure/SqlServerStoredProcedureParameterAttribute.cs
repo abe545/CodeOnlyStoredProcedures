@@ -49,7 +49,7 @@ namespace CodeOnlyStoredProcedure
 
         internal override SqlMetaData CreateSqlMetaData(string propertyName, Type propertyType)
         {
-            return propertyType.CreateSqlMetaData(Name ?? propertyName, sqlDbType, size, scale, precision);
+            return propertyType.CreateSqlMetaData(Name ?? propertyName, sqlDbType, ExplicitSize, ExplicitScale, ExplicitPrecision);
         }
     }
 }

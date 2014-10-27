@@ -1,5 +1,5 @@
-﻿using System.Linq;
-using CodeOnlyStoredProcedure;
+﻿using CodeOnlyStoredProcedure;
+using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 
@@ -15,26 +15,29 @@ namespace CodeOnlyTests
         public void TestWithDataTransformerStoresTransformer()
         {
             var orig = new StoredProcedure("Test");
-            var xform = new Mock<IDataTransformer>().Object;
+            var xform = Mock.Of<IDataTransformer>();
 
             var toTest = orig.WithDataTransformer(xform);
 
-            Assert.IsFalse(ReferenceEquals(orig, toTest));
-            Assert.AreEqual(xform, toTest.DataTransformers.Single());
+            toTest.Should().NotBeSameAs(orig, "because StoredProcedures should be immutable");
+            orig.DataTransformers.Should().BeEmpty("because StoredProcedures should be immutable");
+
+            toTest.DataTransformers.Should().ContainSingle(dt => ReferenceEquals(dt, xform));
         }
 
         [TestMethod]
         public void TestWithDataTransformerAddsTransformersInOrder()
         {
             var orig = new StoredProcedure("Test");
-            var x1 = new Mock<IDataTransformer>().Object;
-            var x2 = new Mock<IDataTransformer>().Object;
+            var x1 = Mock.Of<IDataTransformer>();
+            var x2 = Mock.Of<IDataTransformer>();
 
             var toTest = orig.WithDataTransformer(x1).WithDataTransformer(x2);
 
-            Assert.AreEqual(2, toTest.DataTransformers.Count());
-            Assert.AreEqual(x1, toTest.DataTransformers.First());
-            Assert.AreEqual(x2, toTest.DataTransformers.Last());
+            toTest.Should().NotBeSameAs(orig, "because StoredProcedures should be immutable");
+            orig.DataTransformers.Should().BeEmpty("because StoredProcedures should be immutable");
+
+            toTest.DataTransformers.Should().ContainInOrder(x1, x2).And.HaveCount(2);
         }
     }
 }

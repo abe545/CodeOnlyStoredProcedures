@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Data;
 using CodeOnlyStoredProcedure;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
+
 
 #if NET40
 namespace CodeOnlyTests.Net40
@@ -16,12 +13,30 @@ namespace CodeOnlyTests
     [TestClass]
     public class StoredProcedureParameterAttributeTests
     {
+        private readonly IDbCommand command;
+
+        public StoredProcedureParameterAttributeTests()
+        {
+            var mock = new Mock<IDbCommand>();
+
+            mock.Setup(c => c.CreateParameter())
+                .Returns(() =>
+                {
+                    var m = new Mock<IDbDataParameter>();
+                    m.SetupAllProperties();
+
+                    return m.Object;
+                });
+
+            command = mock.Object;
+        }
+
         [TestMethod]
         public void ParameterUsedInCreateSqlParameter()
         {
             var toTest = new StoredProcedureParameterAttribute();
 
-            var res = toTest.CreateSqlParameter("foo");
+            var res = toTest.CreateDataParameter("foo", command, typeof(string));
 
             Assert.AreEqual("foo", res.ParameterName);
         }
@@ -31,7 +46,7 @@ namespace CodeOnlyTests
         {
             var toTest = new StoredProcedureParameterAttribute { Direction = ParameterDirection.ReturnValue };
 
-            var res = toTest.CreateSqlParameter("foo");
+            var res = toTest.CreateDataParameter("foo", command, typeof(int));
 
             Assert.AreEqual(ParameterDirection.ReturnValue, res.Direction);
         }
@@ -41,7 +56,7 @@ namespace CodeOnlyTests
         {
             var toTest = new StoredProcedureParameterAttribute { Scale = 15 };
 
-            var res = toTest.CreateSqlParameter("foo");
+            var res = toTest.CreateDataParameter("foo", command, typeof(decimal));
 
             Assert.AreEqual(15, res.Scale);
         }
@@ -51,7 +66,7 @@ namespace CodeOnlyTests
         {
             var toTest = new StoredProcedureParameterAttribute { Precision = 42 };
 
-            var res = toTest.CreateSqlParameter("foo");
+            var res = toTest.CreateDataParameter("foo", command, typeof(decimal));
 
             Assert.AreEqual(42, res.Precision);
         }
@@ -61,7 +76,7 @@ namespace CodeOnlyTests
         {
             var toTest = new StoredProcedureParameterAttribute { Size = 33 };
 
-            var res = toTest.CreateSqlParameter("foo");
+            var res = toTest.CreateDataParameter("foo", command, typeof(string));
 
             Assert.AreEqual(33, res.Size);
         }
@@ -69,11 +84,11 @@ namespace CodeOnlyTests
         [TestMethod]
         public void DbTypeUsedInCreateSqlParameter()
         {
-            var toTest = new StoredProcedureParameterAttribute { DbType = DbType.Char };
+            var toTest = new StoredProcedureParameterAttribute { DbType = DbType.String };
 
-            var res = toTest.CreateSqlParameter("foo");
+            var res = toTest.CreateDataParameter("foo", command, typeof(string));
 
-            Assert.AreEqual(DbType.Char, res.DbType);
+            Assert.AreEqual(DbType.String, res.DbType);
         }
     }
 }

@@ -3,6 +3,7 @@ using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
 using CodeOnlyStoredProcedure;
+using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 
@@ -25,18 +26,10 @@ namespace CodeOnlyTests
                    .Throws(new Exception("ExecuteReader called after token was canceled"));
             command.SetupAllProperties();
 
-            bool exceptionThrown = false;
-            try
-            {
-                command.Object.DoExecute(c => c.ExecuteReader(), cts.Token);
-            }
-            catch (OperationCanceledException)
-            {
-                exceptionThrown = true;
-            }
-
+            command.Object.Invoking(cmd => cmd.DoExecute(c => c.ExecuteReader(), cts.Token))
+                          .ShouldThrow<OperationCanceledException>("because the token is already canceled.");
+            
             command.Verify(d => d.ExecuteReader(), Times.Never);
-            Assert.IsTrue(exceptionThrown, "No TaskCanceledException thrown when token is cancelled");
         }
 
         [TestMethod]
@@ -76,7 +69,7 @@ namespace CodeOnlyTests
             continuation.Wait();
             sema.Release();
             command.Verify(d => d.Cancel(), Times.Once);
-            Assert.IsTrue(isCancelled, "The cancellation was not processed properly");
+            isCancelled.Should().BeTrue("because the operation was cancelled.");
         }
 
         [TestMethod]
@@ -87,22 +80,8 @@ namespace CodeOnlyTests
             command.Setup(d => d.ExecuteReader())
                    .Throws(new Exception("Test Exception"));
 
-            Exception ex = null;
-            try
-            {
-                var toTest = command.Object.DoExecute(c => c.ExecuteReader(), CancellationToken.None);
-            }
-            catch (AggregateException a)
-            {
-                ex = a.InnerException;
-            }
-            catch (Exception e)
-            {
-                ex = e;
-            }
-
-            Assert.IsNotNull(ex);
-            Assert.AreEqual("Test Exception", ex.Message);
+            command.Object.Invoking(cmd => cmd.DoExecute(c => c.ExecuteReader(), CancellationToken.None))
+                .ShouldThrow<Exception>("because ExecuteReader throws.").WithMessage("Test Exception");
         }
 
         [TestMethod]
@@ -114,13 +93,9 @@ namespace CodeOnlyTests
                .Returns(() => new Mock<IDataReader>().Object);
             cmd.SetupAllProperties();
             cmd.Object.CommandTimeout = 1;
-
-            try
-            {
-                cmd.Object.DoExecute(c => c.ExecuteReader(), CancellationToken.None);
-                Assert.Fail("The command was not aborted with a TimeoutException.");
-            }
-            catch (TimeoutException) { }
+            
+            cmd.Object.Invoking(cd => cd.DoExecute(c => c.ExecuteReader(), CancellationToken.None))
+                .ShouldThrow<TimeoutException>("because ExecuteReader does not finish in time.");
 
             cmd.Verify(c => c.Cancel(), Times.Once());
         }

@@ -20,7 +20,7 @@ namespace SmokeTests
             Console.Write("Calling usp_GetExistingPeople synchronously - ");
 
             var res = db.GetExistingPeople
-                        .WithTableValuedParameter("people", toTest, "dbo.Person")
+                        .WithTableValuedParameter("people", toTest, "Person")
                         .Execute(db.Database.Connection, timeout);
             if (!TestGetExistingPeopleResults(res))
                 return false;
@@ -28,7 +28,7 @@ namespace SmokeTests
             Console.Write("Calling usp_GetExistingPeople asynchronously - ");
 
             res = db.GetExistingPeople
-                    .WithTableValuedParameter("people", toTest, "dbo.Person")
+                    .WithTableValuedParameter("people", toTest, "Person")
                     .ExecuteAsync(db.Database.Connection, timeout)
                     .Result;
             if (!TestGetExistingPeopleResults(res))

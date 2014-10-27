@@ -161,7 +161,7 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(parameter != null);
             Contract.Requires(type      != null);
 
-            if (type.GetGenericTypeDefinition() == typeof(Nullable<>))
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
                 type = type.GetGenericArguments().Single();
 
             if (specifiedType != null)

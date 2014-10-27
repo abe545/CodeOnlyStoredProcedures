@@ -1,8 +1,5 @@
-﻿using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using CodeOnlyStoredProcedure;
-using Microsoft.SqlServer.Server;
+﻿using CodeOnlyStoredProcedure;
+using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 #if NET40
@@ -16,79 +13,45 @@ namespace CodeOnlyTests
         [TestMethod]
         public void TestWithTableValuedParameterAddsParameter()
         {
-            var sp = new StoredProcedure("Test");
+            var orig = new StoredProcedure("Test");
 
             var tvp = new[]
-            {
-                new TVPHelper { Name = "Hello", Foo = 0, Bar = 100M },
-                new TVPHelper { Name = "World", Foo = 3, Bar = 331M }
-            };
+                {
+                    new TVPHelper { Name = "Hello", Foo = 0, Bar = 100M },
+                    new TVPHelper { Name = "World", Foo = 3, Bar = 331M }
+                };
 
-            var toTest = sp.WithTableValuedParameter("Bar", tvp, "TVP");
+            var toTest = orig.WithTableValuedParameter("Foo", tvp, "TVP");
 
-            Assert.IsFalse(ReferenceEquals(sp, toTest));
-            Assert.AreEqual(0, sp.Parameters.Count());
-            Assert.AreEqual(0, sp.OutputParameterSetters.Count);
+            toTest.Should().NotBeSameAs(orig, "because StoredProcedures should be immutable");
+            orig.Parameters.Should().BeEmpty("because StoredProcedures should be immutable");
 
-            Assert.AreEqual(0, toTest.OutputParameterSetters.Count);
-            var p = toTest.Parameters.Single();
-            Assert.AreEqual(SqlDbType.Structured, p.SqlDbType);
-            Assert.AreEqual("Bar", p.ParameterName);
-            Assert.AreEqual("[dbo].[TVP]", p.TypeName);
-
-            int i = 0;
-            foreach (var record in (IEnumerable<SqlDataRecord>)p.Value)
-            {
-                Assert.AreEqual("Name", record.GetName(0));
-                Assert.AreEqual(tvp[i].Name, record.GetString(0));
-
-                Assert.AreEqual("Foo", record.GetName(1));
-                Assert.AreEqual(tvp[i].Foo, record.GetInt32(1));
-
-                Assert.AreEqual("Bar", record.GetName(2));
-                Assert.AreEqual(tvp[i].Bar, record.GetDecimal(2));
-
-                ++i;
-            }
+            var param = toTest.Parameters.Should().ContainSingle(p => p.ParameterName == "Foo", "because we added one Parameter")
+                .Which.Should().BeOfType<TableValuedParameter>().Which;
+            param.Value.Should().Be(tvp, "because it was passed to WithInputParameter");
+            param.TypeName.Should().Be("[dbo].[TVP]", "because it was passed to WithInputParameter");
         }
 
         [TestMethod]
         public void TestWithTableValuedParameterWithSchemaAddsParameter()
         {
-            var sp = new StoredProcedure("Test");
+            var orig = new StoredProcedure("Test");
 
             var tvp = new[]
-            {
-                new TVPHelper { Name = "Hello", Foo = 0, Bar = 100M },
-                new TVPHelper { Name = "World", Foo = 3, Bar = 331M }
-            };
+                {
+                    new TVPHelper { Name = "Hello", Foo = 0, Bar = 100M },
+                    new TVPHelper { Name = "World", Foo = 3, Bar = 331M }
+                };
 
-            var toTest = sp.WithTableValuedParameter("Bar", tvp, "TVP", "Table Type");
+            var toTest = orig.WithTableValuedParameter("Foo", tvp, "TVP", "Table Type");
 
-            Assert.IsFalse(ReferenceEquals(sp, toTest));
-            Assert.AreEqual(0, sp.Parameters.Count());
-            Assert.AreEqual(0, sp.OutputParameterSetters.Count);
+            toTest.Should().NotBeSameAs(orig, "because StoredProcedures should be immutable");
+            orig.Parameters.Should().BeEmpty("because StoredProcedures should be immutable");
 
-            Assert.AreEqual(0, toTest.OutputParameterSetters.Count);
-            var p = toTest.Parameters.Single();
-            Assert.AreEqual(SqlDbType.Structured, p.SqlDbType);
-            Assert.AreEqual("Bar", p.ParameterName);
-            Assert.AreEqual("[TVP].[Table Type]", p.TypeName);
-
-            int i = 0;
-            foreach (var record in (IEnumerable<SqlDataRecord>)p.Value)
-            {
-                Assert.AreEqual("Name", record.GetName(0));
-                Assert.AreEqual(tvp[i].Name, record.GetString(0));
-
-                Assert.AreEqual("Foo", record.GetName(1));
-                Assert.AreEqual(tvp[i].Foo, record.GetInt32(1));
-
-                Assert.AreEqual("Bar", record.GetName(2));
-                Assert.AreEqual(tvp[i].Bar, record.GetDecimal(2));
-
-                ++i;
-            }
+            var param = toTest.Parameters.Should().ContainSingle(p => p.ParameterName == "Foo", "because we added one Parameter")
+                .Which.Should().BeOfType<TableValuedParameter>().Which;
+            param.Value.Should().Be(tvp, "because it was passed to WithInputParameter");
+            param.TypeName.Should().Be("[TVP].[Table Type]", "because it was passed to WithInputParameter");
         }
     }
 }
