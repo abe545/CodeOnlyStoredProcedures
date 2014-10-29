@@ -1,5 +1,4 @@
 ﻿using System.Data;
-using System.Data.SqlClient;
 using System.Diagnostics.Contracts;
 
 namespace CodeOnlyStoredProcedure
@@ -23,7 +22,7 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
             Contract.Ensures(Contract.Result<TSP>() != null);
 
-            return (TSP)sp.CloneWith(new SqlParameter(name, value));
+            return (TSP)sp.CloneWith(new InputParameter(name, value));
         }
 
         /// <summary>
@@ -34,17 +33,17 @@ namespace CodeOnlyStoredProcedure
         /// <param name="sp">The StoredProcedure to add the input parameter to</param>
         /// <param name="name">The name that the StoredProcedure expects (without the @).</param>
         /// <param name="value">The value to pass.</param>
-        /// <param name="dbType">The SqlDbType that the StoredProcedure expects.</param>
+        /// <param name="dbType">The <see cref="DbType"/> that the StoredProcedure expects.</param>
         /// <returns>A copy of the StoredProcedure with the input parameter passed.</returns>
         /// <remarks>StoredProcedures are immutable, so all the Fluent API methods return copies.</remarks>
-        public static TSP WithParameter<TSP, TValue>(this TSP sp, string name, TValue value, SqlDbType dbType)
+        public static TSP WithParameter<TSP, TValue>(this TSP sp, string name, TValue value, DbType dbType)
             where TSP : StoredProcedure
         {
             Contract.Requires(sp != null);
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
             Contract.Ensures(Contract.Result<TSP>() != null);
 
-            return (TSP)sp.CloneWith(new SqlParameter(name, value) { SqlDbType = dbType });
+            return (TSP)sp.CloneWith(new InputParameter(name, value, dbType));
         }
     }
 }

@@ -1,8 +1,6 @@
 ﻿using System.Collections.Generic;
-using System.Data;
-using System.Linq;
 using CodeOnlyStoredProcedure;
-using Microsoft.SqlServer.Server;
+using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 #if NET40
@@ -16,119 +14,106 @@ namespace CodeOnlyTests
         [TestMethod]
         public void TestWithInputParsesAnonymousType()
         {
-            var sp = new StoredProcedure("Test");
+            var orig = new StoredProcedure("Test");
 
-            var toTest = sp.WithInput(new
+            var toTest = orig.WithInput(new
             {
                 Id = 1,
                 Name = "Foo"
             });
+            
+            toTest.Should().NotBeSameAs(orig, "because StoredProcedures should be immutable");
+            orig.Parameters.Should().BeEmpty("because StoredProcedures should be immutable");
 
-            Assert.IsFalse(ReferenceEquals(sp, toTest));
-            Assert.AreEqual(0, sp.Parameters.Count());
-            Assert.AreEqual(0, sp.OutputParameterSetters.Count);
-            Assert.AreEqual(2, toTest.Parameters.Count());
-            Assert.AreEqual(0, toTest.OutputParameterSetters.Count);
+            toTest.Parameters.Should().HaveCount(2, "because 2 properties were defined on the anonymous type passed to WithInput");
 
-            var p = toTest.Parameters.First();
-            Assert.AreEqual("Id", p.ParameterName);
-            Assert.AreEqual(1, p.Value);
-            Assert.AreEqual(ParameterDirection.Input, p.Direction);
-
-            p = toTest.Parameters.Last();
-            Assert.AreEqual("Name", p.ParameterName);
-            Assert.AreEqual("Foo", p.Value);
-            Assert.AreEqual(ParameterDirection.Input, p.Direction);
+            toTest.Parameters.Should().ContainSingle(p => p.ParameterName == "Id").Which
+                .Should().BeOfType<InputParameter>().Which.Value.Should().Be(1);
+            toTest.Parameters.Should().ContainSingle(p => p.ParameterName == "Name").Which
+                .Should().BeOfType<InputParameter>().Which.Value.Should().Be("Foo");
         }
 
         [TestMethod]
         public void TestWithInputUsesParameterName()
         {
-            var sp = new StoredProcedure("Test");
+            var orig = new StoredProcedure("Test");
 
             var input = new WithNamedParameter { Foo = "Bar" };
-            var toTest = sp.WithInput(input);
+            var toTest = orig.WithInput(input);
 
-            Assert.IsFalse(ReferenceEquals(sp, toTest));
-            Assert.AreEqual(0, sp.Parameters.Count());
-            Assert.AreEqual(0, sp.OutputParameterSetters.Count);
-            Assert.AreEqual(1, toTest.Parameters.Count());
-            Assert.AreEqual(0, toTest.OutputParameterSetters.Count);
+            toTest.Should().NotBeSameAs(orig, "because StoredProcedures should be immutable");
+            orig.Parameters.Should().BeEmpty("because StoredProcedures should be immutable");
 
-            var p = toTest.Parameters.First();
-            Assert.AreEqual("InputName", p.ParameterName);
-            Assert.AreEqual("Bar", p.Value);
-            Assert.AreEqual(ParameterDirection.Input, p.Direction);
+            toTest.Parameters.Should().HaveCount(1, "because 1 property is defined on the WithNamedParameter, which was passed to WithInput");
+
+            toTest.Parameters.Should().ContainSingle(p => p.ParameterName == "InputName", "because Foo is decorated with a StoredProcedureAttribute renaming it").Which
+                .Should().BeOfType<InputParameter>().Which.Value.Should().Be("Bar");
         }
 
         [TestMethod]
         public void TestWithInputAddsOutputTypes()
         {
-            var sp = new StoredProcedure("Test");
+            var orig = new StoredProcedure("Test");
 
             var output = new WithOutput();
-            var toTest = sp.WithInput(output);
+            var toTest = orig.WithInput(output);
 
-            Assert.IsFalse(ReferenceEquals(sp, toTest));
-            Assert.AreEqual(0, sp.Parameters.Count());
-            Assert.AreEqual(0, sp.OutputParameterSetters.Count);
+            toTest.Should().NotBeSameAs(orig, "because StoredProcedures should be immutable");
+            orig.Parameters.Should().BeEmpty("because StoredProcedures should be immutable");
 
-            var p = toTest.Parameters.Single();
-            Assert.AreEqual("Value", p.ParameterName);
-            Assert.AreEqual(ParameterDirection.Output, p.Direction);
+            toTest.Parameters.Should().HaveCount(1, "because 1 property is defined on the WithOutput, which was passed to WithInput");
 
-            var setter = toTest.OutputParameterSetters.Single();
-            setter.Value("Foo");
-            Assert.AreEqual("Foo", output.Value);
+            toTest.Parameters.Should().ContainSingle(p => p.ParameterName == "Value").Which
+                .Should().BeOfType<OutputParameter>().Which.Invoking(p => p.TransferOutputValue("Frob")).ShouldNotThrow();
+
+            output.Value.Should().Be("Frob", "because it should have been set by the parameter's TransferOutputValue");
         }
 
         [TestMethod]
         public void TestWithInputAddsInputOutputTypes()
         {
-            var sp = new StoredProcedure("Test");
+            var orig = new StoredProcedure("Test");
 
             var inputOutput = new WithInputOutput { Value = 123M };
-            var toTest = sp.WithInput(inputOutput);
+            var toTest = orig.WithInput(inputOutput);
 
-            Assert.IsFalse(ReferenceEquals(sp, toTest));
-            Assert.AreEqual(0, sp.Parameters.Count());
-            Assert.AreEqual(0, sp.OutputParameterSetters.Count);
+            toTest.Should().NotBeSameAs(orig, "because StoredProcedures should be immutable");
+            orig.Parameters.Should().BeEmpty("because StoredProcedures should be immutable");
 
-            var p = toTest.Parameters.Single();
-            Assert.AreEqual("Value", p.ParameterName);
-            Assert.AreEqual(123M, p.Value);
-            Assert.AreEqual(ParameterDirection.InputOutput, p.Direction);
+            toTest.Parameters.Should().HaveCount(1, "because 1 property is defined on the WithInputOutput, which was passed to WithInput");
 
-            var setter = toTest.OutputParameterSetters.Single();
-            setter.Value(99M);
-            Assert.AreEqual(99M, inputOutput.Value);
+            var param = toTest.Parameters.Should().ContainSingle(p => p.ParameterName == "Value").Which
+                .Should().BeOfType<InputOutputParameter>().Which;
+
+            param.Value.Should().Be(123M, "because it was set on the in/out parameter before execution");
+            param.Invoking(p => p.TransferOutputValue(42M)).ShouldNotThrow();
+
+            inputOutput.Value.Should().Be(42M, "because it should have been set by the parameter's TransferOutputValue");
         }
 
         [TestMethod]
         public void TestWithInputAddsReturnValue()
         {
-            var sp = new StoredProcedure("Test");
+            var orig = new StoredProcedure("Test");
 
             var retVal = new WithReturnValue();
-            var toTest = sp.WithInput(retVal);
+            var toTest = orig.WithInput(retVal);
 
-            Assert.IsFalse(ReferenceEquals(sp, toTest));
-            Assert.AreEqual(0, sp.Parameters.Count());
-            Assert.AreEqual(0, sp.OutputParameterSetters.Count);
+            toTest.Should().NotBeSameAs(orig, "because StoredProcedures should be immutable");
+            orig.Parameters.Should().BeEmpty("because StoredProcedures should be immutable");
 
-            var p = toTest.Parameters.Single();
-            Assert.AreEqual("ReturnValue", p.ParameterName);
-            Assert.AreEqual(ParameterDirection.ReturnValue, p.Direction);
+            toTest.Parameters.Should().HaveCount(1, "because 1 property is defined on the WithReturnValue, which was passed to WithInput");
 
-            var setter = toTest.OutputParameterSetters.Single();
-            setter.Value(10);
-            Assert.AreEqual(10, retVal.ReturnValue);
+            toTest.Parameters.Should().ContainSingle(p => true).Which
+                .Should().BeOfType<ReturnValueParameter>().Which.Invoking(p => p.TransferOutputValue(127)).ShouldNotThrow();
+
+            retVal.ReturnValue.Should().Be(127, "because it should have been set when calling TransferOutputValue on the parameter.");
         }
 
         [TestMethod]
         public void TestWithInputSendsTableValuedParameter()
         {
-            var sp = new StoredProcedure("Test");
+            var orig = new StoredProcedure("Test");
 
             var input = new WithTableValuedParameter
             {
@@ -139,33 +124,18 @@ namespace CodeOnlyTests
                 }
             };
 
-            var toTest = sp.WithInput(input);
+            var toTest = orig.WithInput(input);
 
-            Assert.IsFalse(ReferenceEquals(sp, toTest));
-            Assert.AreEqual(0, sp.Parameters.Count());
-            Assert.AreEqual(0, sp.OutputParameterSetters.Count);
+            toTest.Should().NotBeSameAs(orig, "because StoredProcedures should be immutable");
+            orig.Parameters.Should().BeEmpty("because StoredProcedures should be immutable");
 
-            Assert.AreEqual(0, toTest.OutputParameterSetters.Count);
-            var p = toTest.Parameters.Single();
-            Assert.AreEqual(SqlDbType.Structured, p.SqlDbType);
-            Assert.AreEqual("Table", p.ParameterName);
-            Assert.AreEqual("[TEST].[TVP_TEST]", p.TypeName);
+            toTest.Parameters.Should().HaveCount(1, "because 1 property is defined on the WithTableValuedParameter, which was passed to WithInput");
 
-            int i = 0;
-            foreach (var record in (IEnumerable<SqlDataRecord>)p.Value)
-            {
-                var item = input.Table.ElementAt(i);
-                Assert.AreEqual("Name", record.GetName(0));
-                Assert.AreEqual(item.Name, record.GetString(0));
+            var param = toTest.Parameters.Should().ContainSingle(p => p.ParameterName == "Table").Which
+                .Should().BeOfType<TableValuedParameter>().Which;
 
-                Assert.AreEqual("Foo", record.GetName(1));
-                Assert.AreEqual(item.Foo, record.GetInt32(1));
-
-                Assert.AreEqual("Bar", record.GetName(2));
-                Assert.AreEqual(item.Bar, record.GetDecimal(2));
-
-                ++i;
-            }
+            param.Value.Should().BeOfType<List<TVPHelper>>().Which.Should().BeEquivalentTo(input.Table);
+            param.TypeName.Should().Be("[TEST].[TVP_TEST]", "because that is the schema and table type specified on WithTableValuedParameter");
         }
     }
 }

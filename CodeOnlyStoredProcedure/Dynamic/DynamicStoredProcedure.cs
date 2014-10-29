@@ -21,7 +21,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
         private static readonly Func<CSharpArgumentInfo, string>                  getParameterName      = null;
         private static readonly Func<CSharpArgumentInfo, ParameterDirection>      getParameterDirection = null;
         private static readonly Func<InvokeMemberBinder, int, CSharpArgumentInfo> getArgumentInfo       = null;
-        private static readonly Action<SqlParameter>                              none                  = _ => { };
+        private static readonly Action<IDbDataParameter>                          none                  = _ => { };
         private        readonly IDbConnection                                     connection;
         private        readonly IEnumerable<IDataTransformer>                     transformers;
         private        readonly string                                            schema;
@@ -39,7 +39,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
         public DynamicStoredProcedure(IDbConnection                 connection,
                                       IEnumerable<IDataTransformer> transformers,
                                       CancellationToken             token,
-                                      int                           timeout       = StoredProcedure.defaultTimeout,
+                                      int                           timeout = StoredProcedure.defaultTimeout,
                                       string                        schema        = "dbo",
                                       DynamicExecutionMode          executionMode = DynamicExecutionMode.Any)
         {
@@ -47,11 +47,11 @@ namespace CodeOnlyStoredProcedure.Dynamic
             Contract.Requires(transformers != null);
             Contract.Requires(!string.IsNullOrEmpty(schema));
 
-            this.connection    = connection;
-            this.transformers  = transformers;
-            this.schema        = schema;
-            this.token         = token;
-            this.timeout       = timeout;
+            this.connection   = connection;
+            this.transformers = transformers;
+            this.schema       = schema;
+            this.token        = token;
+            this.timeout      = timeout;
             this.executionMode = executionMode;
         }
 
@@ -63,7 +63,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
         public override bool TryInvokeMember(InvokeMemberBinder binder, object[] args, out object result)
         {
-            var parameters  = new List<Tuple<SqlParameter, Action<SqlParameter>>>();
+            var parameters = new List<IStoredProcedureParameter>();
             var callingMode = executionMode;
             
             for (int i = 0; i < binder.CallInfo.ArgumentCount; ++i)
@@ -86,44 +86,37 @@ namespace CodeOnlyStoredProcedure.Dynamic
                     if (attr == null)
                         throw new NotSupportedException("You must apply the TableValuedParameter attribute to a class to use as a Table Valued Parameter when using the dynamic syntax.");
 
-                    var parm   = attr.CreateSqlParameter(parmName);
-                    parm.Value = ((IEnumerable)args[idx]).ToTableValuedParameter(itemType);
-
-                    parameters.Add(Tuple.Create(parm, none));
+                    parameters.Add(
+                        new TableValuedParameter(attr.Name ?? parmName,
+                                                 (IEnumerable)args[idx],
+                                                 itemType,
+                                                 attr.TableName,
+                                                 attr.Schema));
                 }
                 else if (argType.IsClass && argType != typeof(string))
                 {
-                    var item = args[idx];
-                    parameters.AddRange(
-                        argType.GetParameters(item)
-                               .Select(t => Tuple.Create(t.Item2, new Action<SqlParameter>(p => t.Item1.SetValue(item, p.Value, new object[0])))));
+                    parameters.AddRange(argType.GetParameters(args[idx]));
                 }
                 else if ("returnvalue".Equals(parmName, StringComparison.InvariantCultureIgnoreCase) && direction != ParameterDirection.Input)
                 {
                     CoerceSynchronousExecutionMode(ref callingMode);
 
-                    parameters.Add(
-                        Tuple.Create(new SqlParameter { ParameterName = parmName, Direction = ParameterDirection.ReturnValue },
-                                     new Action<SqlParameter>(p => args[idx] = p.Value)));
+                    parameters.Add(new ReturnValueParameter(r => args[idx] = r));
                 }
                 else if (direction == ParameterDirection.Output)
                 {
                     CoerceSynchronousExecutionMode(ref callingMode);
 
-                    parameters.Add(
-                        Tuple.Create(new SqlParameter { ParameterName = parmName, Direction = ParameterDirection.Output },
-                                     new Action<SqlParameter>(p => args[idx] = p.Value)));
+                    parameters.Add(new OutputParameter(parmName, o => args[idx] = o, argType.InferDbType()));
                 }
                 else if (direction == ParameterDirection.InputOutput)
                 {
                     CoerceSynchronousExecutionMode(ref callingMode);
 
-                    parameters.Add(
-                        Tuple.Create(new SqlParameter(parmName, args[idx]) { Direction = ParameterDirection.InputOutput },
-                                     new Action<SqlParameter>(p => args[idx] = p.Value)));
+                    parameters.Add(new InputOutputParameter(parmName, o => args[idx] = o, args[idx], argType.InferDbType()));
                 }
                 else
-                    parameters.Add(Tuple.Create(new SqlParameter(parmName, args[i]), none));
+                    parameters.Add(new InputParameter(parmName, args[idx], argType.InferDbType()));
             }
 
             result = new DynamicStoredProcedureResults(

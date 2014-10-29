@@ -190,7 +190,7 @@ namespace CodeOnlyStoredProcedure
             return res;
         }
 
-        private static SqlParameter AddPrecisison(this SqlParameter parameter,
+        internal static IDbDataParameter AddPrecisison(this IDbDataParameter parameter,
             int? size,
             byte? scale,
             byte? precision)
@@ -213,60 +213,17 @@ namespace CodeOnlyStoredProcedure
             var recordList = new List<SqlDataRecord>();
             var columnList = new List<SqlMetaData>();
             var props      = enumeratedType.GetMappedProperties().ToList();
-            string name;
-            SqlDbType coltype;
 
             foreach (var pi in props)
             {
                 var attr = pi.GetCustomAttributes(false)
                              .OfType<StoredProcedureParameterAttribute>()
                              .FirstOrDefault();
-                if (attr != null && !string.IsNullOrWhiteSpace(attr.Name))
-                    name = attr.Name;
-                else
-                    name = pi.Name;
 
                 if (attr != null)
-                    coltype = attr.GetSqlDbType(pi.PropertyType);
+                    columnList.Add(attr.CreateSqlMetaData(pi.Name, pi.PropertyType));
                 else
-                    coltype = pi.PropertyType.InferSqlType();
-
-                SqlMetaData column;
-                switch (coltype)
-                {
-                    case SqlDbType.Binary:
-                    case SqlDbType.Char:
-                    case SqlDbType.NChar:
-                    case SqlDbType.Image:
-                    case SqlDbType.VarChar:
-                    case SqlDbType.NVarChar:
-                    case SqlDbType.Text:
-                    case SqlDbType.NText:
-                    case SqlDbType.VarBinary:
-                        var size = 50;
-                        if (attr != null)
-                            size = attr.GetSize(size);
-                        column = new SqlMetaData(name, coltype, size);
-                        break;
-
-                    case SqlDbType.Decimal:
-                        byte precision = 10;
-                        byte scale     = 2;
-
-                        if (attr != null)
-                        {
-                            precision = attr.GetPrecision(precision);
-                            scale     = attr.GetScale    (scale);
-                        }
-                        column = new SqlMetaData(name, coltype, precision, scale);
-                        break;
-
-                    default:
-                        column = new SqlMetaData(name, coltype);
-                        break;
-                }
-
-                columnList.Add(column);
+                    columnList.Add(pi.PropertyType.CreateSqlMetaData(pi.Name, null, null, null, null));
             }
 
             // copy the input list into a list of SqlDataRecords

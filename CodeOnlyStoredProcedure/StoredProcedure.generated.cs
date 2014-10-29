@@ -44,7 +44,7 @@ namespace CodeOnlyStoredProcedure
 		}
 		
 		internal StoredProcedure(StoredProcedure toClone)
-			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.OutputParameterSetters, toClone.DataTransformers) 
+			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.DataTransformers) 
 		{ 
 			Contract.Requires(toClone != null);
 		}
@@ -52,52 +52,46 @@ namespace CodeOnlyStoredProcedure
 #if NET40
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
-        /// in the <paramref name="schema"/> schema, with the <see cref="SqlParameter"/>s
+        /// in the <paramref name="schema"/> schema, with the <see cref="IStoredProcedureParameter"/>s
         /// to pass, the output action map, and the <see cref="IDataTransformer"/>s to 
         /// use to transform the results.
         /// </summary>
         /// <param name="schema">The schema of the stored procedure.</param>
         /// <param name="name">The name of the stored procedure.</param>
-        /// <param name="parameters">The <see cref="SqlParameter"/>s to pass to the stored procedure.</param>
-        /// <param name="outputParameterSetters">The map of <see cref="Action{T}"/> to call for output parameters.</param>
+        /// <param name="parameters">The <see cref="IStoredProcedureParameter"/>s to pass to the stored procedure.</param>
         /// <param name="dataTransformers">The <see cref="IDataTransformer"/>s to transform the results.</param>
 		protected StoredProcedure(string schema, 
             string name,
-            IEnumerable<SqlParameter> parameters,
-            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
+            IEnumerable<IStoredProcedureParameter> parameters,
 			IEnumerable<IDataTransformer> dataTransformers)
-			: base(schema, name, parameters, outputParameterSetters, dataTransformers)
+			: base(schema, name, parameters, dataTransformers)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
-			Contract.Requires(parameters != null);
-			Contract.Requires(outputParameterSetters != null);
+			Contract.Requires(parameters       != null);
 			Contract.Requires(dataTransformers != null);
 		}
 #else
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
-        /// in the <paramref name="schema"/> schema, with the <see cref="SqlParameter"/>s
+        /// in the <paramref name="schema"/> schema, with the <see cref="IStoredProcedureParameter"/>s
         /// to pass, the output action map, and the <see cref="IDataTransformer"/>s to 
         /// use to transform the results.
         /// </summary>
         /// <param name="schema">The schema of the stored procedure.</param>
         /// <param name="name">The name of the stored procedure.</param>
-        /// <param name="parameters">The <see cref="SqlParameter"/>s to pass to the stored procedure.</param>
-        /// <param name="outputParameterSetters">The map of <see cref="Action{T}"/> to call for output parameters.</param>
+        /// <param name="parameters">The <see cref="IStoredProcedureParameter"/>s to pass to the stored procedure.</param>
         /// <param name="dataTransformers">The <see cref="IDataTransformer"/>s to transform the results.</param>
 		protected StoredProcedure(string                                      schema,
                                   string                                      name,
-                                  ImmutableList<SqlParameter>                 parameters,
-                                  ImmutableDictionary<string, Action<object>> outputParameterSetters,
+                                  ImmutableList<IStoredProcedureParameter>    parameters,
                                   ImmutableList<IDataTransformer>             dataTransformers)
-			: base(schema, name, parameters, outputParameterSetters, dataTransformers)
+			: base(schema, name, parameters, dataTransformers)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
-            Contract.Requires(parameters             != null);
-            Contract.Requires(outputParameterSetters != null);
-            Contract.Requires(dataTransformers       != null);
+            Contract.Requires(parameters       != null);
+            Contract.Requires(dataTransformers != null);
 		}
 #endif
 	
@@ -178,22 +172,19 @@ namespace CodeOnlyStoredProcedure
         /// <summary>
         /// Clones the StoredProcedure, and gives it the passed parameters.
         /// </summary>
-        /// <param name="parameters">The <see cref="SqlParameter"/>s to pass to the stored procedure.</param>
-        /// <param name="outputParameterSetters">The map of <see cref="Action{T}"/> to call for output parameters.</param>
+        /// <param name="parameters">The <see cref="IStoredProcedureParameter"/>s to pass to the stored procedure.</param>
         /// <param name="dataTransformers">The <see cref="IDataTransformer"/>s to transform the results.</param>
         /// <returns>A clone of the stored procedure.</returns>
 		protected internal override StoredProcedure CloneCore(
 #if NET40
-			IEnumerable<SqlParameter>                         parameters,
-            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
-			IEnumerable<IDataTransformer>                     dataTransformers)
+			IEnumerable<IStoredProcedureParameter> parameters,
+			IEnumerable<IDataTransformer>          dataTransformers)
 #else
-            ImmutableList<SqlParameter>                 parameters,
-            ImmutableDictionary<string, Action<object>> outputParameterSetters,
-            ImmutableList<IDataTransformer>             dataTransformers)
+            ImmutableList<IStoredProcedureParameter> parameters,
+            ImmutableList<IDataTransformer>          dataTransformers)
 #endif
 		{
-			return new StoredProcedure<T1>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
+			return new StoredProcedure<T1>(Schema, Name, parameters, dataTransformers);
 		}		
 
         internal override object InternalCall(
@@ -247,7 +238,7 @@ namespace CodeOnlyStoredProcedure
 		}
 		
 		internal StoredProcedure(StoredProcedure toClone)
-			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.OutputParameterSetters, toClone.DataTransformers) 
+			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.DataTransformers) 
 		{ 
 			Contract.Requires(toClone != null);
 		}
@@ -255,52 +246,46 @@ namespace CodeOnlyStoredProcedure
 #if NET40
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
-        /// in the <paramref name="schema"/> schema, with the <see cref="SqlParameter"/>s
+        /// in the <paramref name="schema"/> schema, with the <see cref="IStoredProcedureParameter"/>s
         /// to pass, the output action map, and the <see cref="IDataTransformer"/>s to 
         /// use to transform the results.
         /// </summary>
         /// <param name="schema">The schema of the stored procedure.</param>
         /// <param name="name">The name of the stored procedure.</param>
-        /// <param name="parameters">The <see cref="SqlParameter"/>s to pass to the stored procedure.</param>
-        /// <param name="outputParameterSetters">The map of <see cref="Action{T}"/> to call for output parameters.</param>
+        /// <param name="parameters">The <see cref="IStoredProcedureParameter"/>s to pass to the stored procedure.</param>
         /// <param name="dataTransformers">The <see cref="IDataTransformer"/>s to transform the results.</param>
 		protected StoredProcedure(string schema, 
             string name,
-            IEnumerable<SqlParameter> parameters,
-            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
+            IEnumerable<IStoredProcedureParameter> parameters,
 			IEnumerable<IDataTransformer> dataTransformers)
-			: base(schema, name, parameters, outputParameterSetters, dataTransformers)
+			: base(schema, name, parameters, dataTransformers)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
-			Contract.Requires(parameters != null);
-			Contract.Requires(outputParameterSetters != null);
+			Contract.Requires(parameters       != null);
 			Contract.Requires(dataTransformers != null);
 		}
 #else
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
-        /// in the <paramref name="schema"/> schema, with the <see cref="SqlParameter"/>s
+        /// in the <paramref name="schema"/> schema, with the <see cref="IStoredProcedureParameter"/>s
         /// to pass, the output action map, and the <see cref="IDataTransformer"/>s to 
         /// use to transform the results.
         /// </summary>
         /// <param name="schema">The schema of the stored procedure.</param>
         /// <param name="name">The name of the stored procedure.</param>
-        /// <param name="parameters">The <see cref="SqlParameter"/>s to pass to the stored procedure.</param>
-        /// <param name="outputParameterSetters">The map of <see cref="Action{T}"/> to call for output parameters.</param>
+        /// <param name="parameters">The <see cref="IStoredProcedureParameter"/>s to pass to the stored procedure.</param>
         /// <param name="dataTransformers">The <see cref="IDataTransformer"/>s to transform the results.</param>
 		protected StoredProcedure(string                                      schema,
                                   string                                      name,
-                                  ImmutableList<SqlParameter>                 parameters,
-                                  ImmutableDictionary<string, Action<object>> outputParameterSetters,
+                                  ImmutableList<IStoredProcedureParameter>    parameters,
                                   ImmutableList<IDataTransformer>             dataTransformers)
-			: base(schema, name, parameters, outputParameterSetters, dataTransformers)
+			: base(schema, name, parameters, dataTransformers)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
-            Contract.Requires(parameters             != null);
-            Contract.Requires(outputParameterSetters != null);
-            Contract.Requires(dataTransformers       != null);
+            Contract.Requires(parameters       != null);
+            Contract.Requires(dataTransformers != null);
 		}
 #endif
 	
@@ -381,22 +366,19 @@ namespace CodeOnlyStoredProcedure
         /// <summary>
         /// Clones the StoredProcedure, and gives it the passed parameters.
         /// </summary>
-        /// <param name="parameters">The <see cref="SqlParameter"/>s to pass to the stored procedure.</param>
-        /// <param name="outputParameterSetters">The map of <see cref="Action{T}"/> to call for output parameters.</param>
+        /// <param name="parameters">The <see cref="IStoredProcedureParameter"/>s to pass to the stored procedure.</param>
         /// <param name="dataTransformers">The <see cref="IDataTransformer"/>s to transform the results.</param>
         /// <returns>A clone of the stored procedure.</returns>
 		protected internal override StoredProcedure CloneCore(
 #if NET40
-			IEnumerable<SqlParameter>                         parameters,
-            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
-			IEnumerable<IDataTransformer>                     dataTransformers)
+			IEnumerable<IStoredProcedureParameter> parameters,
+			IEnumerable<IDataTransformer>          dataTransformers)
 #else
-            ImmutableList<SqlParameter>                 parameters,
-            ImmutableDictionary<string, Action<object>> outputParameterSetters,
-            ImmutableList<IDataTransformer>             dataTransformers)
+            ImmutableList<IStoredProcedureParameter> parameters,
+            ImmutableList<IDataTransformer>          dataTransformers)
 #endif
 		{
-			return new StoredProcedure<T1, T2>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
+			return new StoredProcedure<T1, T2>(Schema, Name, parameters, dataTransformers);
 		}		
 
         internal override object InternalCall(
@@ -453,7 +435,7 @@ namespace CodeOnlyStoredProcedure
 		}
 		
 		internal StoredProcedure(StoredProcedure toClone)
-			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.OutputParameterSetters, toClone.DataTransformers) 
+			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.DataTransformers) 
 		{ 
 			Contract.Requires(toClone != null);
 		}
@@ -461,52 +443,46 @@ namespace CodeOnlyStoredProcedure
 #if NET40
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
-        /// in the <paramref name="schema"/> schema, with the <see cref="SqlParameter"/>s
+        /// in the <paramref name="schema"/> schema, with the <see cref="IStoredProcedureParameter"/>s
         /// to pass, the output action map, and the <see cref="IDataTransformer"/>s to 
         /// use to transform the results.
         /// </summary>
         /// <param name="schema">The schema of the stored procedure.</param>
         /// <param name="name">The name of the stored procedure.</param>
-        /// <param name="parameters">The <see cref="SqlParameter"/>s to pass to the stored procedure.</param>
-        /// <param name="outputParameterSetters">The map of <see cref="Action{T}"/> to call for output parameters.</param>
+        /// <param name="parameters">The <see cref="IStoredProcedureParameter"/>s to pass to the stored procedure.</param>
         /// <param name="dataTransformers">The <see cref="IDataTransformer"/>s to transform the results.</param>
 		protected StoredProcedure(string schema, 
             string name,
-            IEnumerable<SqlParameter> parameters,
-            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
+            IEnumerable<IStoredProcedureParameter> parameters,
 			IEnumerable<IDataTransformer> dataTransformers)
-			: base(schema, name, parameters, outputParameterSetters, dataTransformers)
+			: base(schema, name, parameters, dataTransformers)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
-			Contract.Requires(parameters != null);
-			Contract.Requires(outputParameterSetters != null);
+			Contract.Requires(parameters       != null);
 			Contract.Requires(dataTransformers != null);
 		}
 #else
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
-        /// in the <paramref name="schema"/> schema, with the <see cref="SqlParameter"/>s
+        /// in the <paramref name="schema"/> schema, with the <see cref="IStoredProcedureParameter"/>s
         /// to pass, the output action map, and the <see cref="IDataTransformer"/>s to 
         /// use to transform the results.
         /// </summary>
         /// <param name="schema">The schema of the stored procedure.</param>
         /// <param name="name">The name of the stored procedure.</param>
-        /// <param name="parameters">The <see cref="SqlParameter"/>s to pass to the stored procedure.</param>
-        /// <param name="outputParameterSetters">The map of <see cref="Action{T}"/> to call for output parameters.</param>
+        /// <param name="parameters">The <see cref="IStoredProcedureParameter"/>s to pass to the stored procedure.</param>
         /// <param name="dataTransformers">The <see cref="IDataTransformer"/>s to transform the results.</param>
 		protected StoredProcedure(string                                      schema,
                                   string                                      name,
-                                  ImmutableList<SqlParameter>                 parameters,
-                                  ImmutableDictionary<string, Action<object>> outputParameterSetters,
+                                  ImmutableList<IStoredProcedureParameter>    parameters,
                                   ImmutableList<IDataTransformer>             dataTransformers)
-			: base(schema, name, parameters, outputParameterSetters, dataTransformers)
+			: base(schema, name, parameters, dataTransformers)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
-            Contract.Requires(parameters             != null);
-            Contract.Requires(outputParameterSetters != null);
-            Contract.Requires(dataTransformers       != null);
+            Contract.Requires(parameters       != null);
+            Contract.Requires(dataTransformers != null);
 		}
 #endif
 	
@@ -587,22 +563,19 @@ namespace CodeOnlyStoredProcedure
         /// <summary>
         /// Clones the StoredProcedure, and gives it the passed parameters.
         /// </summary>
-        /// <param name="parameters">The <see cref="SqlParameter"/>s to pass to the stored procedure.</param>
-        /// <param name="outputParameterSetters">The map of <see cref="Action{T}"/> to call for output parameters.</param>
+        /// <param name="parameters">The <see cref="IStoredProcedureParameter"/>s to pass to the stored procedure.</param>
         /// <param name="dataTransformers">The <see cref="IDataTransformer"/>s to transform the results.</param>
         /// <returns>A clone of the stored procedure.</returns>
 		protected internal override StoredProcedure CloneCore(
 #if NET40
-			IEnumerable<SqlParameter>                         parameters,
-            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
-			IEnumerable<IDataTransformer>                     dataTransformers)
+			IEnumerable<IStoredProcedureParameter> parameters,
+			IEnumerable<IDataTransformer>          dataTransformers)
 #else
-            ImmutableList<SqlParameter>                 parameters,
-            ImmutableDictionary<string, Action<object>> outputParameterSetters,
-            ImmutableList<IDataTransformer>             dataTransformers)
+            ImmutableList<IStoredProcedureParameter> parameters,
+            ImmutableList<IDataTransformer>          dataTransformers)
 #endif
 		{
-			return new StoredProcedure<T1, T2, T3>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
+			return new StoredProcedure<T1, T2, T3>(Schema, Name, parameters, dataTransformers);
 		}		
 
         internal override object InternalCall(
@@ -662,7 +635,7 @@ namespace CodeOnlyStoredProcedure
 		}
 		
 		internal StoredProcedure(StoredProcedure toClone)
-			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.OutputParameterSetters, toClone.DataTransformers) 
+			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.DataTransformers) 
 		{ 
 			Contract.Requires(toClone != null);
 		}
@@ -670,52 +643,46 @@ namespace CodeOnlyStoredProcedure
 #if NET40
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
-        /// in the <paramref name="schema"/> schema, with the <see cref="SqlParameter"/>s
+        /// in the <paramref name="schema"/> schema, with the <see cref="IStoredProcedureParameter"/>s
         /// to pass, the output action map, and the <see cref="IDataTransformer"/>s to 
         /// use to transform the results.
         /// </summary>
         /// <param name="schema">The schema of the stored procedure.</param>
         /// <param name="name">The name of the stored procedure.</param>
-        /// <param name="parameters">The <see cref="SqlParameter"/>s to pass to the stored procedure.</param>
-        /// <param name="outputParameterSetters">The map of <see cref="Action{T}"/> to call for output parameters.</param>
+        /// <param name="parameters">The <see cref="IStoredProcedureParameter"/>s to pass to the stored procedure.</param>
         /// <param name="dataTransformers">The <see cref="IDataTransformer"/>s to transform the results.</param>
 		protected StoredProcedure(string schema, 
             string name,
-            IEnumerable<SqlParameter> parameters,
-            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
+            IEnumerable<IStoredProcedureParameter> parameters,
 			IEnumerable<IDataTransformer> dataTransformers)
-			: base(schema, name, parameters, outputParameterSetters, dataTransformers)
+			: base(schema, name, parameters, dataTransformers)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
-			Contract.Requires(parameters != null);
-			Contract.Requires(outputParameterSetters != null);
+			Contract.Requires(parameters       != null);
 			Contract.Requires(dataTransformers != null);
 		}
 #else
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
-        /// in the <paramref name="schema"/> schema, with the <see cref="SqlParameter"/>s
+        /// in the <paramref name="schema"/> schema, with the <see cref="IStoredProcedureParameter"/>s
         /// to pass, the output action map, and the <see cref="IDataTransformer"/>s to 
         /// use to transform the results.
         /// </summary>
         /// <param name="schema">The schema of the stored procedure.</param>
         /// <param name="name">The name of the stored procedure.</param>
-        /// <param name="parameters">The <see cref="SqlParameter"/>s to pass to the stored procedure.</param>
-        /// <param name="outputParameterSetters">The map of <see cref="Action{T}"/> to call for output parameters.</param>
+        /// <param name="parameters">The <see cref="IStoredProcedureParameter"/>s to pass to the stored procedure.</param>
         /// <param name="dataTransformers">The <see cref="IDataTransformer"/>s to transform the results.</param>
 		protected StoredProcedure(string                                      schema,
                                   string                                      name,
-                                  ImmutableList<SqlParameter>                 parameters,
-                                  ImmutableDictionary<string, Action<object>> outputParameterSetters,
+                                  ImmutableList<IStoredProcedureParameter>    parameters,
                                   ImmutableList<IDataTransformer>             dataTransformers)
-			: base(schema, name, parameters, outputParameterSetters, dataTransformers)
+			: base(schema, name, parameters, dataTransformers)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
-            Contract.Requires(parameters             != null);
-            Contract.Requires(outputParameterSetters != null);
-            Contract.Requires(dataTransformers       != null);
+            Contract.Requires(parameters       != null);
+            Contract.Requires(dataTransformers != null);
 		}
 #endif
 	
@@ -796,22 +763,19 @@ namespace CodeOnlyStoredProcedure
         /// <summary>
         /// Clones the StoredProcedure, and gives it the passed parameters.
         /// </summary>
-        /// <param name="parameters">The <see cref="SqlParameter"/>s to pass to the stored procedure.</param>
-        /// <param name="outputParameterSetters">The map of <see cref="Action{T}"/> to call for output parameters.</param>
+        /// <param name="parameters">The <see cref="IStoredProcedureParameter"/>s to pass to the stored procedure.</param>
         /// <param name="dataTransformers">The <see cref="IDataTransformer"/>s to transform the results.</param>
         /// <returns>A clone of the stored procedure.</returns>
 		protected internal override StoredProcedure CloneCore(
 #if NET40
-			IEnumerable<SqlParameter>                         parameters,
-            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
-			IEnumerable<IDataTransformer>                     dataTransformers)
+			IEnumerable<IStoredProcedureParameter> parameters,
+			IEnumerable<IDataTransformer>          dataTransformers)
 #else
-            ImmutableList<SqlParameter>                 parameters,
-            ImmutableDictionary<string, Action<object>> outputParameterSetters,
-            ImmutableList<IDataTransformer>             dataTransformers)
+            ImmutableList<IStoredProcedureParameter> parameters,
+            ImmutableList<IDataTransformer>          dataTransformers)
 #endif
 		{
-			return new StoredProcedure<T1, T2, T3, T4>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
+			return new StoredProcedure<T1, T2, T3, T4>(Schema, Name, parameters, dataTransformers);
 		}		
 
         internal override object InternalCall(
@@ -874,7 +838,7 @@ namespace CodeOnlyStoredProcedure
 		}
 		
 		internal StoredProcedure(StoredProcedure toClone)
-			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.OutputParameterSetters, toClone.DataTransformers) 
+			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.DataTransformers) 
 		{ 
 			Contract.Requires(toClone != null);
 		}
@@ -882,52 +846,46 @@ namespace CodeOnlyStoredProcedure
 #if NET40
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
-        /// in the <paramref name="schema"/> schema, with the <see cref="SqlParameter"/>s
+        /// in the <paramref name="schema"/> schema, with the <see cref="IStoredProcedureParameter"/>s
         /// to pass, the output action map, and the <see cref="IDataTransformer"/>s to 
         /// use to transform the results.
         /// </summary>
         /// <param name="schema">The schema of the stored procedure.</param>
         /// <param name="name">The name of the stored procedure.</param>
-        /// <param name="parameters">The <see cref="SqlParameter"/>s to pass to the stored procedure.</param>
-        /// <param name="outputParameterSetters">The map of <see cref="Action{T}"/> to call for output parameters.</param>
+        /// <param name="parameters">The <see cref="IStoredProcedureParameter"/>s to pass to the stored procedure.</param>
         /// <param name="dataTransformers">The <see cref="IDataTransformer"/>s to transform the results.</param>
 		protected StoredProcedure(string schema, 
             string name,
-            IEnumerable<SqlParameter> parameters,
-            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
+            IEnumerable<IStoredProcedureParameter> parameters,
 			IEnumerable<IDataTransformer> dataTransformers)
-			: base(schema, name, parameters, outputParameterSetters, dataTransformers)
+			: base(schema, name, parameters, dataTransformers)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
-			Contract.Requires(parameters != null);
-			Contract.Requires(outputParameterSetters != null);
+			Contract.Requires(parameters       != null);
 			Contract.Requires(dataTransformers != null);
 		}
 #else
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
-        /// in the <paramref name="schema"/> schema, with the <see cref="SqlParameter"/>s
+        /// in the <paramref name="schema"/> schema, with the <see cref="IStoredProcedureParameter"/>s
         /// to pass, the output action map, and the <see cref="IDataTransformer"/>s to 
         /// use to transform the results.
         /// </summary>
         /// <param name="schema">The schema of the stored procedure.</param>
         /// <param name="name">The name of the stored procedure.</param>
-        /// <param name="parameters">The <see cref="SqlParameter"/>s to pass to the stored procedure.</param>
-        /// <param name="outputParameterSetters">The map of <see cref="Action{T}"/> to call for output parameters.</param>
+        /// <param name="parameters">The <see cref="IStoredProcedureParameter"/>s to pass to the stored procedure.</param>
         /// <param name="dataTransformers">The <see cref="IDataTransformer"/>s to transform the results.</param>
 		protected StoredProcedure(string                                      schema,
                                   string                                      name,
-                                  ImmutableList<SqlParameter>                 parameters,
-                                  ImmutableDictionary<string, Action<object>> outputParameterSetters,
+                                  ImmutableList<IStoredProcedureParameter>    parameters,
                                   ImmutableList<IDataTransformer>             dataTransformers)
-			: base(schema, name, parameters, outputParameterSetters, dataTransformers)
+			: base(schema, name, parameters, dataTransformers)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
-            Contract.Requires(parameters             != null);
-            Contract.Requires(outputParameterSetters != null);
-            Contract.Requires(dataTransformers       != null);
+            Contract.Requires(parameters       != null);
+            Contract.Requires(dataTransformers != null);
 		}
 #endif
 	
@@ -1008,22 +966,19 @@ namespace CodeOnlyStoredProcedure
         /// <summary>
         /// Clones the StoredProcedure, and gives it the passed parameters.
         /// </summary>
-        /// <param name="parameters">The <see cref="SqlParameter"/>s to pass to the stored procedure.</param>
-        /// <param name="outputParameterSetters">The map of <see cref="Action{T}"/> to call for output parameters.</param>
+        /// <param name="parameters">The <see cref="IStoredProcedureParameter"/>s to pass to the stored procedure.</param>
         /// <param name="dataTransformers">The <see cref="IDataTransformer"/>s to transform the results.</param>
         /// <returns>A clone of the stored procedure.</returns>
 		protected internal override StoredProcedure CloneCore(
 #if NET40
-			IEnumerable<SqlParameter>                         parameters,
-            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
-			IEnumerable<IDataTransformer>                     dataTransformers)
+			IEnumerable<IStoredProcedureParameter> parameters,
+			IEnumerable<IDataTransformer>          dataTransformers)
 #else
-            ImmutableList<SqlParameter>                 parameters,
-            ImmutableDictionary<string, Action<object>> outputParameterSetters,
-            ImmutableList<IDataTransformer>             dataTransformers)
+            ImmutableList<IStoredProcedureParameter> parameters,
+            ImmutableList<IDataTransformer>          dataTransformers)
 #endif
 		{
-			return new StoredProcedure<T1, T2, T3, T4, T5>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
+			return new StoredProcedure<T1, T2, T3, T4, T5>(Schema, Name, parameters, dataTransformers);
 		}		
 
         internal override object InternalCall(
@@ -1089,7 +1044,7 @@ namespace CodeOnlyStoredProcedure
 		}
 		
 		internal StoredProcedure(StoredProcedure toClone)
-			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.OutputParameterSetters, toClone.DataTransformers) 
+			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.DataTransformers) 
 		{ 
 			Contract.Requires(toClone != null);
 		}
@@ -1097,52 +1052,46 @@ namespace CodeOnlyStoredProcedure
 #if NET40
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
-        /// in the <paramref name="schema"/> schema, with the <see cref="SqlParameter"/>s
+        /// in the <paramref name="schema"/> schema, with the <see cref="IStoredProcedureParameter"/>s
         /// to pass, the output action map, and the <see cref="IDataTransformer"/>s to 
         /// use to transform the results.
         /// </summary>
         /// <param name="schema">The schema of the stored procedure.</param>
         /// <param name="name">The name of the stored procedure.</param>
-        /// <param name="parameters">The <see cref="SqlParameter"/>s to pass to the stored procedure.</param>
-        /// <param name="outputParameterSetters">The map of <see cref="Action{T}"/> to call for output parameters.</param>
+        /// <param name="parameters">The <see cref="IStoredProcedureParameter"/>s to pass to the stored procedure.</param>
         /// <param name="dataTransformers">The <see cref="IDataTransformer"/>s to transform the results.</param>
 		protected StoredProcedure(string schema, 
             string name,
-            IEnumerable<SqlParameter> parameters,
-            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
+            IEnumerable<IStoredProcedureParameter> parameters,
 			IEnumerable<IDataTransformer> dataTransformers)
-			: base(schema, name, parameters, outputParameterSetters, dataTransformers)
+			: base(schema, name, parameters, dataTransformers)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
-			Contract.Requires(parameters != null);
-			Contract.Requires(outputParameterSetters != null);
+			Contract.Requires(parameters       != null);
 			Contract.Requires(dataTransformers != null);
 		}
 #else
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
-        /// in the <paramref name="schema"/> schema, with the <see cref="SqlParameter"/>s
+        /// in the <paramref name="schema"/> schema, with the <see cref="IStoredProcedureParameter"/>s
         /// to pass, the output action map, and the <see cref="IDataTransformer"/>s to 
         /// use to transform the results.
         /// </summary>
         /// <param name="schema">The schema of the stored procedure.</param>
         /// <param name="name">The name of the stored procedure.</param>
-        /// <param name="parameters">The <see cref="SqlParameter"/>s to pass to the stored procedure.</param>
-        /// <param name="outputParameterSetters">The map of <see cref="Action{T}"/> to call for output parameters.</param>
+        /// <param name="parameters">The <see cref="IStoredProcedureParameter"/>s to pass to the stored procedure.</param>
         /// <param name="dataTransformers">The <see cref="IDataTransformer"/>s to transform the results.</param>
 		protected StoredProcedure(string                                      schema,
                                   string                                      name,
-                                  ImmutableList<SqlParameter>                 parameters,
-                                  ImmutableDictionary<string, Action<object>> outputParameterSetters,
+                                  ImmutableList<IStoredProcedureParameter>    parameters,
                                   ImmutableList<IDataTransformer>             dataTransformers)
-			: base(schema, name, parameters, outputParameterSetters, dataTransformers)
+			: base(schema, name, parameters, dataTransformers)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
-            Contract.Requires(parameters             != null);
-            Contract.Requires(outputParameterSetters != null);
-            Contract.Requires(dataTransformers       != null);
+            Contract.Requires(parameters       != null);
+            Contract.Requires(dataTransformers != null);
 		}
 #endif
 	
@@ -1223,22 +1172,19 @@ namespace CodeOnlyStoredProcedure
         /// <summary>
         /// Clones the StoredProcedure, and gives it the passed parameters.
         /// </summary>
-        /// <param name="parameters">The <see cref="SqlParameter"/>s to pass to the stored procedure.</param>
-        /// <param name="outputParameterSetters">The map of <see cref="Action{T}"/> to call for output parameters.</param>
+        /// <param name="parameters">The <see cref="IStoredProcedureParameter"/>s to pass to the stored procedure.</param>
         /// <param name="dataTransformers">The <see cref="IDataTransformer"/>s to transform the results.</param>
         /// <returns>A clone of the stored procedure.</returns>
 		protected internal override StoredProcedure CloneCore(
 #if NET40
-			IEnumerable<SqlParameter>                         parameters,
-            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
-			IEnumerable<IDataTransformer>                     dataTransformers)
+			IEnumerable<IStoredProcedureParameter> parameters,
+			IEnumerable<IDataTransformer>          dataTransformers)
 #else
-            ImmutableList<SqlParameter>                 parameters,
-            ImmutableDictionary<string, Action<object>> outputParameterSetters,
-            ImmutableList<IDataTransformer>             dataTransformers)
+            ImmutableList<IStoredProcedureParameter> parameters,
+            ImmutableList<IDataTransformer>          dataTransformers)
 #endif
 		{
-			return new StoredProcedure<T1, T2, T3, T4, T5, T6>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
+			return new StoredProcedure<T1, T2, T3, T4, T5, T6>(Schema, Name, parameters, dataTransformers);
 		}		
 
         internal override object InternalCall(
@@ -1307,7 +1253,7 @@ namespace CodeOnlyStoredProcedure
 		}
 		
 		internal StoredProcedure(StoredProcedure toClone)
-			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.OutputParameterSetters, toClone.DataTransformers) 
+			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.DataTransformers) 
 		{ 
 			Contract.Requires(toClone != null);
 		}
@@ -1315,52 +1261,46 @@ namespace CodeOnlyStoredProcedure
 #if NET40
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
-        /// in the <paramref name="schema"/> schema, with the <see cref="SqlParameter"/>s
+        /// in the <paramref name="schema"/> schema, with the <see cref="IStoredProcedureParameter"/>s
         /// to pass, the output action map, and the <see cref="IDataTransformer"/>s to 
         /// use to transform the results.
         /// </summary>
         /// <param name="schema">The schema of the stored procedure.</param>
         /// <param name="name">The name of the stored procedure.</param>
-        /// <param name="parameters">The <see cref="SqlParameter"/>s to pass to the stored procedure.</param>
-        /// <param name="outputParameterSetters">The map of <see cref="Action{T}"/> to call for output parameters.</param>
+        /// <param name="parameters">The <see cref="IStoredProcedureParameter"/>s to pass to the stored procedure.</param>
         /// <param name="dataTransformers">The <see cref="IDataTransformer"/>s to transform the results.</param>
 		protected StoredProcedure(string schema, 
             string name,
-            IEnumerable<SqlParameter> parameters,
-            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
+            IEnumerable<IStoredProcedureParameter> parameters,
 			IEnumerable<IDataTransformer> dataTransformers)
-			: base(schema, name, parameters, outputParameterSetters, dataTransformers)
+			: base(schema, name, parameters, dataTransformers)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
-			Contract.Requires(parameters != null);
-			Contract.Requires(outputParameterSetters != null);
+			Contract.Requires(parameters       != null);
 			Contract.Requires(dataTransformers != null);
 		}
 #else
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
-        /// in the <paramref name="schema"/> schema, with the <see cref="SqlParameter"/>s
+        /// in the <paramref name="schema"/> schema, with the <see cref="IStoredProcedureParameter"/>s
         /// to pass, the output action map, and the <see cref="IDataTransformer"/>s to 
         /// use to transform the results.
         /// </summary>
         /// <param name="schema">The schema of the stored procedure.</param>
         /// <param name="name">The name of the stored procedure.</param>
-        /// <param name="parameters">The <see cref="SqlParameter"/>s to pass to the stored procedure.</param>
-        /// <param name="outputParameterSetters">The map of <see cref="Action{T}"/> to call for output parameters.</param>
+        /// <param name="parameters">The <see cref="IStoredProcedureParameter"/>s to pass to the stored procedure.</param>
         /// <param name="dataTransformers">The <see cref="IDataTransformer"/>s to transform the results.</param>
 		protected StoredProcedure(string                                      schema,
                                   string                                      name,
-                                  ImmutableList<SqlParameter>                 parameters,
-                                  ImmutableDictionary<string, Action<object>> outputParameterSetters,
+                                  ImmutableList<IStoredProcedureParameter>    parameters,
                                   ImmutableList<IDataTransformer>             dataTransformers)
-			: base(schema, name, parameters, outputParameterSetters, dataTransformers)
+			: base(schema, name, parameters, dataTransformers)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
-            Contract.Requires(parameters             != null);
-            Contract.Requires(outputParameterSetters != null);
-            Contract.Requires(dataTransformers       != null);
+            Contract.Requires(parameters       != null);
+            Contract.Requires(dataTransformers != null);
 		}
 #endif
 	
@@ -1441,22 +1381,19 @@ namespace CodeOnlyStoredProcedure
         /// <summary>
         /// Clones the StoredProcedure, and gives it the passed parameters.
         /// </summary>
-        /// <param name="parameters">The <see cref="SqlParameter"/>s to pass to the stored procedure.</param>
-        /// <param name="outputParameterSetters">The map of <see cref="Action{T}"/> to call for output parameters.</param>
+        /// <param name="parameters">The <see cref="IStoredProcedureParameter"/>s to pass to the stored procedure.</param>
         /// <param name="dataTransformers">The <see cref="IDataTransformer"/>s to transform the results.</param>
         /// <returns>A clone of the stored procedure.</returns>
 		protected internal override StoredProcedure CloneCore(
 #if NET40
-			IEnumerable<SqlParameter>                         parameters,
-            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
-			IEnumerable<IDataTransformer>                     dataTransformers)
+			IEnumerable<IStoredProcedureParameter> parameters,
+			IEnumerable<IDataTransformer>          dataTransformers)
 #else
-            ImmutableList<SqlParameter>                 parameters,
-            ImmutableDictionary<string, Action<object>> outputParameterSetters,
-            ImmutableList<IDataTransformer>             dataTransformers)
+            ImmutableList<IStoredProcedureParameter> parameters,
+            ImmutableList<IDataTransformer>          dataTransformers)
 #endif
 		{
-			return new StoredProcedure<T1, T2, T3, T4, T5, T6, T7>(Schema, Name, parameters, outputParameterSetters, dataTransformers);
+			return new StoredProcedure<T1, T2, T3, T4, T5, T6, T7>(Schema, Name, parameters, dataTransformers);
 		}		
 
         internal override object InternalCall(
