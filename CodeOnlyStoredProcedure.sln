@@ -23,21 +23,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmokeTests-NET40", "SmokeTe
 EndProject
 Project("{7CF6DF6D-3B04-46F8-A40B-537D21BCA0B4}") = "Documentation", "Documentation\Documentation.shfbproj", "{CFFB3E02-288C-4971-B373-3B7C812D35C1}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Wiki", "Wiki", "{982909DF-C0FB-4544-AE7B-3AE93CCCDFD2}"
-	ProjectSection(SolutionItems) = preProject
-		Wiki\as a member.md = Wiki\as a member.md
-		Wiki\attributes.md = Wiki\attributes.md
-		Wiki\convert numerics.md = Wiki\convert numerics.md
-		Wiki\dynamic.md = Wiki\dynamic.md
-		Wiki\fluent api.md = Wiki\fluent api.md
-		Wiki\home.md = Wiki\home.md
-		Wiki\interning strings.md = Wiki\interning strings.md
-		Wiki\parameters.md = Wiki\parameters.md
-		Wiki\quickstart.md = Wiki\quickstart.md
-		readme.md = readme.md
-		Wiki\trimming strings.md = Wiki\trimming strings.md
-	EndProjectSection
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
