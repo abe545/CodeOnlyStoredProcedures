@@ -74,7 +74,7 @@ namespace CodeOnlyTests
 
             foreach (var t in _generics)
             {
-                foreach (var tt in TypeExtensions.integralTpes)
+                foreach (var tt in TypeExtensions.integralTypes)
                 {
                     type = t.MakeGenericType(Enumerable.Range(0, parameterCount)
                                                         .Select(_ => tt)
@@ -105,7 +105,7 @@ namespace CodeOnlyTests
 
             foreach (var t in _generics)
             {
-                foreach (var tt in TypeExtensions.integralTpes)
+                foreach (var tt in TypeExtensions.integralTypes)
                 {
                     try
                     {
@@ -153,7 +153,6 @@ namespace CodeOnlyTests
             Assert.AreEqual("dbo", sp.Schema);
             Assert.AreEqual("[dbo].[procMe]", sp.FullName);
             Assert.AreEqual(0, sp.Parameters.Count());
-            Assert.AreEqual(0, sp.OutputParameterSetters.Count());
         }
 
         [TestMethod]
@@ -165,7 +164,6 @@ namespace CodeOnlyTests
             Assert.AreEqual("usp_test", sp.Name);
             Assert.AreEqual("[dummy].[usp_test]", sp.FullName);
             Assert.AreEqual(0, sp.Parameters.Count());
-            Assert.AreEqual(0, sp.OutputParameterSetters.Count());
         } 
         #endregion
 
@@ -173,23 +171,18 @@ namespace CodeOnlyTests
         [TestMethod]
         public void TestCloneCore_CreatesNewStoredProcedureWithParameters()
         {
-            var p1 = new SqlParameter("Foo", 12);
-            var p2 = new SqlParameter("Bar", 42.0);
+            var p1 = Mock.Of<IStoredProcedureParameter>(p => p.ParameterName == "Foo");
+            var p2 = Mock.Of<IStoredProcedureParameter>(p => p.ParameterName == "Bar");
 
 #if NET40
             var parms = new[] { p1, p2 };
-            var outputParms = new ReadOnlyDictionary<string, Action<object>>(
-                new Dictionary<string, Action<object>>());
             var transformers = new IDataTransformer[0];
 #else
-            var parms = ImmutableList<SqlParameter>.Empty
-                                                   .Add(p1)
-                                                   .Add(p2);
-            var outputParms = ImmutableDictionary<string, Action<object>>.Empty;
+            var parms = ImmutableList<IStoredProcedureParameter>.Empty.Add(p1).Add(p2);
             var transformers = ImmutableList<IDataTransformer>.Empty;
 #endif
             var sp = new StoredProcedure("schema", "Test");
-            var toTest = sp.CloneCore(parms, outputParms, transformers);
+            var toTest = sp.CloneCore(parms, transformers);
 
             Assert.AreEqual("schema", toTest.Schema, "Schema not cloned");
             Assert.AreEqual("Test", toTest.Name, "Name not cloned");
@@ -197,10 +190,6 @@ namespace CodeOnlyTests
                 new[] { p1, p2 }, 
                 toTest.Parameters.ToArray(), 
                 "Parameters are not equal");
-            CollectionAssert.AreEquivalent(
-                new Dictionary<string, Action<object>>(),
-                toTest.OutputParameterSetters.ToArray(), 
-                "Output Parameters are not eqaul");
             CollectionAssert.AreEquivalent(
                 new IDataParameter[0],
                 toTest.DataTransformers.ToArray(),
@@ -214,28 +203,12 @@ namespace CodeOnlyTests
         {
             var sp = new StoredProcedure("test", "proc");
 
-            var toTest = sp.CloneWith(new SqlParameter());
+            var toTest = sp.CloneWith(Mock.Of<IStoredProcedureParameter>());
 
             Assert.AreEqual("test", sp.Schema);
             Assert.AreEqual("proc", sp.Name);
             Assert.AreEqual("[test].[proc]", sp.FullName);
             Assert.AreEqual(0, sp.Parameters.Count());
-            Assert.AreEqual(0, sp.OutputParameterSetters.Count());
-            Assert.AreEqual(0, sp.DataTransformers.Count());
-        }
-
-        [TestMethod]
-        public void TestCloneWithOutputParameterDoesNotAlterOriginalProcedure()
-        {
-            var sp = new StoredProcedure("test", "proc");
-
-            var toTest = sp.CloneWith(new SqlParameter(), o => { });
-
-            Assert.AreEqual("test", sp.Schema);
-            Assert.AreEqual("proc", sp.Name);
-            Assert.AreEqual("[test].[proc]", sp.FullName);
-            Assert.AreEqual(0, sp.Parameters.Count());
-            Assert.AreEqual(0, sp.OutputParameterSetters.Count());
             Assert.AreEqual(0, sp.DataTransformers.Count());
         }
 
@@ -244,13 +217,12 @@ namespace CodeOnlyTests
         {
             var sp = new StoredProcedure("test", "proc");
 
-            var toTest = sp.CloneWith(new Mock<IDataTransformer>().Object);
+            var toTest = sp.CloneWith(Mock.Of<IDataTransformer>());
 
             Assert.AreEqual("test", sp.Schema);
             Assert.AreEqual("proc", sp.Name);
             Assert.AreEqual("[test].[proc]", sp.FullName);
             Assert.AreEqual(0, sp.Parameters.Count());
-            Assert.AreEqual(0, sp.OutputParameterSetters.Count());
             Assert.AreEqual(0, sp.DataTransformers.Count());
         }
 
@@ -259,13 +231,12 @@ namespace CodeOnlyTests
         {
             var sp = new StoredProcedure("test_proc");
 
-            var toTest = sp.CloneWith(new SqlParameter());
+            var toTest = sp.CloneWith(Mock.Of<IStoredProcedureParameter>());
 
             Assert.AreEqual("dbo", toTest.Schema);
             Assert.AreEqual("test_proc", toTest.Name);
             Assert.AreEqual("[dbo].[test_proc]", toTest.FullName);
             Assert.AreEqual(1, toTest.Parameters.Count());
-            Assert.AreEqual(0, toTest.OutputParameterSetters.Count());
             Assert.AreEqual(0, toTest.DataTransformers.Count());
         }
 
@@ -274,43 +245,12 @@ namespace CodeOnlyTests
         {
             var sp = new StoredProcedure("test", "proc");
 
-            var toTest = sp.CloneWith(new SqlParameter());
+            var toTest = sp.CloneWith(Mock.Of<IStoredProcedureParameter>());
 
             Assert.AreEqual("test", toTest.Schema);
             Assert.AreEqual("proc", toTest.Name);
             Assert.AreEqual("[test].[proc]", toTest.FullName);
             Assert.AreEqual(1, toTest.Parameters.Count());
-            Assert.AreEqual(0, toTest.OutputParameterSetters.Count());
-            Assert.AreEqual(0, toTest.DataTransformers.Count());
-        }
-
-        [TestMethod]
-        public void TestCloneWithOutputParameterRetainsNameAndDefaultSchema()
-        {
-            var sp = new StoredProcedure("test_proc");
-
-            var toTest = sp.CloneWith(new SqlParameter(), o => { });
-
-            Assert.AreEqual("dbo", toTest.Schema);
-            Assert.AreEqual("test_proc", toTest.Name);
-            Assert.AreEqual("[dbo].[test_proc]", toTest.FullName);
-            Assert.AreEqual(1, toTest.Parameters.Count());
-            Assert.AreEqual(1, toTest.OutputParameterSetters.Count());
-            Assert.AreEqual(0, toTest.DataTransformers.Count());
-        }
-
-        [TestMethod]
-        public void TestCloneWithOutputParameterRetainsNameAndSchema()
-        {
-            var sp = new StoredProcedure("test", "proc");
-
-            var toTest = sp.CloneWith(new SqlParameter(), o => { });
-
-            Assert.AreEqual("test", toTest.Schema);
-            Assert.AreEqual("proc", toTest.Name);
-            Assert.AreEqual("[test].[proc]", toTest.FullName);
-            Assert.AreEqual(1, toTest.Parameters.Count());
-            Assert.AreEqual(1, toTest.OutputParameterSetters.Count());
             Assert.AreEqual(0, toTest.DataTransformers.Count());
         }
 
@@ -325,7 +265,6 @@ namespace CodeOnlyTests
             Assert.AreEqual("test_proc", toTest.Name);
             Assert.AreEqual("[dbo].[test_proc]", toTest.FullName);
             Assert.AreEqual(0, toTest.Parameters.Count());
-            Assert.AreEqual(0, toTest.OutputParameterSetters.Count());
             Assert.AreEqual(1, toTest.DataTransformers.Count());
         }
 
@@ -340,34 +279,19 @@ namespace CodeOnlyTests
             Assert.AreEqual("proc", toTest.Name);
             Assert.AreEqual("[test].[proc]", toTest.FullName);
             Assert.AreEqual(0, toTest.Parameters.Count());
-            Assert.AreEqual(0, toTest.OutputParameterSetters.Count());
             Assert.AreEqual(1, toTest.DataTransformers.Count());
         }
 
         [TestMethod]
         public void TestCloneWithStoresParameter()
         {
-            var p = new SqlParameter { ParameterName = "Parm" };
+            var p1 = Mock.Of<IStoredProcedureParameter>(p => p.ParameterName == "Parm");
 
-            var toTest = new StoredProcedure("test").CloneWith(p);
+            var toTest = new StoredProcedure("test").CloneWith(p1);
 
-            Assert.AreEqual(p, toTest.Parameters.Single());
+            Assert.AreEqual(p1, toTest.Parameters.Single());
         }
-
-        [TestMethod]
-        public void TestCloneWithStoresParameterAndSetter()
-        {
-            var p = new SqlParameter { ParameterName = "Parm" };
-            var a = new Action<object>(o => { });
-
-            var toTest = new StoredProcedure("test").CloneWith(p, a);
-
-            Assert.AreEqual(p, toTest.Parameters.Single());
-            var kv = toTest.OutputParameterSetters.Single();
-            Assert.AreEqual("Parm", kv.Key);
-            Assert.AreEqual(a, kv.Value);
-        }
-
+        
         [TestMethod]
         public void TestCloneWithTransformerStoresTransformer()
         {
@@ -605,7 +529,6 @@ namespace CodeOnlyTests
             Assert.AreEqual(name, proc.Name);
             Assert.AreEqual(String.Format("[{0}].[{1}]", schema, name), proc.FullName);
             Assert.AreEqual(parmCount, proc.Parameters.Count());
-            Assert.AreEqual(outputCount, proc.OutputParameterSetters.Count());
         }
 
         private class NoDefaultCtor

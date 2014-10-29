@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections;
-using System.Data;
-using System.Data.SqlClient;
 using System.Diagnostics.Contracts;
-using System.Linq;
 
 namespace CodeOnlyStoredProcedure
 {
@@ -55,29 +51,8 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(inputType                          != null);
             Contract.Ensures (Contract.Result<StoredProcedure>() != null);
 
-            foreach (var t in inputType.GetParameters(input))
-            {
-                var pi        = t.Item1;
-                var parameter = t.Item2;
-
-                switch (parameter.Direction)
-                {
-                    case ParameterDirection.Input:
-                        sp = sp.CloneWith(parameter);
-                        break;
-
-                    case ParameterDirection.InputOutput:
-                    case ParameterDirection.Output:
-                        sp = sp.CloneWith(parameter, o => pi.SetValue(input, o, null));
-                        break;
-
-                    case ParameterDirection.ReturnValue:
-                        if (pi.PropertyType != typeof(int))
-                            throw new NotSupportedException("Can only use a ReturnValue of type int.");
-                        sp = sp.CloneWith(parameter, o => pi.SetValue(input, o, null));
-                        break;
-                }
-            }
+            foreach (var p in inputType.GetParameters(input))
+                sp = sp.CloneWith(p);
 
             return sp;
         }

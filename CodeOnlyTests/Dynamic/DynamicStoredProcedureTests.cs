@@ -24,7 +24,6 @@ namespace CodeOnlyTests.Dynamic
         [TestClass]
         public class Synchronous
         {
-
             [TestMethod]
             public void CanCallWithoutArguments()
             {
@@ -42,7 +41,7 @@ namespace CodeOnlyTests.Dynamic
             {
                 var ctx = CreatePeople(parms =>
                 {
-                    var parm = ((SqlParameter)parms[0]);
+                    var parm = ((IDbDataParameter)parms[0]);
                     Assert.AreEqual(ParameterDirection.ReturnValue, parm.Direction, "Not passed as ReturnValue");
                     parm.Value = 42;
                 });
@@ -60,7 +59,7 @@ namespace CodeOnlyTests.Dynamic
             {
                 var ctx = CreatePeople(parms =>
                 {
-                    var parm = ((SqlParameter)parms[0]);
+                    var parm = ((IDbDataParameter)parms[0]);
                     Assert.AreEqual(ParameterDirection.InputOutput, parm.Direction, "Not passed as InputOutput");
                     Assert.AreEqual(16, (int)parm.Value, "Ref parameter not passed to SP");
                     parm.Value = 42;
@@ -79,7 +78,7 @@ namespace CodeOnlyTests.Dynamic
             {
                 var ctx = CreatePeople(parms =>
                 {
-                    var parm = ((SqlParameter)parms[0]);
+                    var parm = ((IDbDataParameter)parms[0]);
                     Assert.AreEqual(ParameterDirection.Output, parm.Direction, "Not passed as Output");
                     parm.Value = 42;
                 });
@@ -175,7 +174,7 @@ namespace CodeOnlyTests.Dynamic
             {
                 var ctx = CreatePeople(parms =>
                 {
-                    var parm = ((SqlParameter)parms[0]);
+                    var parm = ((IDbDataParameter)parms[0]);
                     Assert.AreEqual(ParameterDirection.ReturnValue, parm.Direction, "Not passed as ReturnValue");
                     parm.Value = 42;
                 }, "Foo");
@@ -202,7 +201,7 @@ namespace CodeOnlyTests.Dynamic
             {
                 var ctx = CreatePeople(parms =>
                 {
-                    var parm = ((SqlParameter)parms[0]);
+                    var parm = ((IDbDataParameter)parms[0]);
                     Assert.AreEqual(ParameterDirection.InputOutput, parm.Direction, "Not passed as InputOutput");
                     Assert.AreEqual("Foo", parm.Value, "Ref value not passed to the stored procedure.");
                     parm.Value = "Bar";
@@ -230,7 +229,7 @@ namespace CodeOnlyTests.Dynamic
             {
                 var ctx = CreatePeople(parms =>
                 {
-                    var parm = ((SqlParameter)parms[0]);
+                    var parm = ((IDbDataParameter)parms[0]);
                     Assert.AreEqual(ParameterDirection.Output, parm.Direction, "Not passed as Output");
                     parm.Value = 42M;
                 }, "Foo");
@@ -257,7 +256,7 @@ namespace CodeOnlyTests.Dynamic
             {
                 var ctx = CreatePeople(parms =>
                 {
-                    var parm = ((SqlParameter)parms[0]);
+                    var parm = ((IDbDataParameter)parms[0]);
                     Assert.AreEqual(ParameterDirection.ReturnValue, parm.Direction, "Not passed as ReturnValue");
                     parm.Value = 42;
                 });
@@ -275,7 +274,7 @@ namespace CodeOnlyTests.Dynamic
             {
                 var ctx = CreatePeople(parms =>
                 {
-                    var parm = ((SqlParameter)parms[0]);
+                    var parm = ((IDbDataParameter)parms[0]);
                     Assert.AreEqual(ParameterDirection.InputOutput, parm.Direction, "Not passed as InputOutput");
                     Assert.AreEqual(16, (int)parm.Value, "Ref parameter not passed to SP");
                     parm.Value = 42;
@@ -295,7 +294,7 @@ namespace CodeOnlyTests.Dynamic
             {
                 var ctx = CreatePeople(parms =>
                 {
-                    var parm = ((SqlParameter)parms[0]);
+                    var parm = ((IDbDataParameter)parms[0]);
                     Assert.AreEqual(ParameterDirection.Output, parm.Direction, "Not passed as Output");
                     parm.Value = 42;
                 });
@@ -314,7 +313,7 @@ namespace CodeOnlyTests.Dynamic
             {
                 var ctx = CreatePeople(parms =>
                 {
-                    var parm = ((SqlParameter)parms[0]);
+                    var parm = ((IDbDataParameter)parms[0]);
                     Assert.AreEqual(ParameterDirection.ReturnValue, parm.Direction, "Not passed as ReturnValue");
                     parm.Value = 42;
                 }, "Foo", "Bar");
@@ -333,7 +332,7 @@ namespace CodeOnlyTests.Dynamic
             {
                 var ctx = CreatePeople(parms =>
                 {
-                    var parm = ((SqlParameter)parms[0]);
+                    var parm = ((IDbDataParameter)parms[0]);
                     Assert.AreEqual(ParameterDirection.InputOutput, parm.Direction, "Not passed as InputOutput");
                     Assert.AreEqual(22, (int)parm.Value, "Ref parameter not passed to SP");
                     parm.Value = 42;
@@ -353,7 +352,7 @@ namespace CodeOnlyTests.Dynamic
             {
                 var ctx = CreatePeople(parms =>
                 {
-                    var parm = ((SqlParameter)parms[0]);
+                    var parm = ((IDbDataParameter)parms[0]);
                     Assert.AreEqual(ParameterDirection.Output, parm.Direction, "Not passed as Output");
                     parm.Value = 42;
                 }, "Bar", "Baz");
@@ -548,6 +547,14 @@ namespace CodeOnlyTests.Dynamic
                .Returns(reader.Object);
             cmd.SetupGet(c => c.Parameters)
                .Returns(parms);
+            cmd.Setup(c => c.CreateParameter())
+               .Returns(() =>
+               {
+                   var m = new Mock<IDbDataParameter>();
+                   m.SetupAllProperties();
+
+                   return m.Object;
+               });
 
             var ctx = new Mock<IDbConnection>();
             ctx.Setup(c => c.CreateCommand())

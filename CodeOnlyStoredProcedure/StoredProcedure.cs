@@ -34,13 +34,11 @@ namespace CodeOnlyStoredProcedure
         private readonly string name;
 
 #if NET40
-        private readonly IEnumerable<SqlParameter>                  parameters;
-        private readonly ReadOnlyDictionary<string, Action<object>> outputParameterSetters;
-        private readonly IEnumerable<IDataTransformer>              dataTransformers;
+        private readonly IEnumerable<IStoredProcedureParameter> parameters;
+        private readonly IEnumerable<IDataTransformer>          dataTransformers;
 #else
-        private readonly ImmutableList<SqlParameter>                 parameters;
-        private readonly ImmutableDictionary<string, Action<object>> outputParameterSetters; 
-        private readonly ImmutableList<IDataTransformer>             dataTransformers;
+        private readonly ImmutableList<IStoredProcedureParameter> parameters;
+        private readonly ImmutableList<IDataTransformer>          dataTransformers;
 #endif
         #endregion
 
@@ -97,37 +95,21 @@ namespace CodeOnlyStoredProcedure
                 if (parameters == null || !parameters.Any())
                     return string.Empty;
 
-                return parameters.Aggregate("", (s, p) => s == "" ? Print(p) : s + ", " + Print(p));
+                return parameters.Aggregate("", (s, p) => s == "" ? p.ToString() : s + ", " + p.ToString());
             }
         }
 
 #if NET40
         /// <summary>
-        /// Gets the <see cref="SqlParameter"/>s to pass to the stored procedure.
+        /// Gets the <see cref="IStoredProcedureParameter"/>s to pass to the stored procedure.
         /// </summary>
-        protected internal IEnumerable<SqlParameter> Parameters
+        protected internal IEnumerable<IStoredProcedureParameter> Parameters
         {
             get
             {
-                Contract.Ensures(Contract.Result<IEnumerable<SqlParameter>>() != null);
+                Contract.Ensures(Contract.Result<IEnumerable<IStoredProcedureParameter>>() != null);
 
                 return parameters;
-            }
-        }
-
-        /// <summary>
-        /// Gets a read-only map of actions to call when the stored procedure returns values
-        /// as output parameters. 
-        /// </summary>
-        /// <remarks>If a return value setter is registered, it will be in
-        /// this map as well.</remarks>
-        protected internal IDictionary<string, Action<object>> OutputParameterSetters
-        {
-            get
-            {
-                Contract.Ensures(Contract.Result<IDictionary<string, Action<object>>>() != null);
-
-                return outputParameterSetters;
             }
         }
 
@@ -146,31 +128,15 @@ namespace CodeOnlyStoredProcedure
         }
 #else
         /// <summary>
-        /// Gets the <see cref="SqlParameter"/>s to pass to the stored procedure.
+        /// Gets the <see cref="IStoredProcedureParameter"/>s to pass to the stored procedure.
         /// </summary>
-        protected internal ImmutableList<SqlParameter> Parameters
+        protected internal ImmutableList<IStoredProcedureParameter> Parameters
         {
             get
             {
-                Contract.Ensures(Contract.Result<ImmutableList<SqlParameter>>() != null);
+                Contract.Ensures(Contract.Result<ImmutableList<IStoredProcedureParameter>>() != null);
 
                 return parameters;
-            }
-        }
-
-        /// <summary>
-        /// Gets a read-only map of actions to call when the stored procedure returns values
-        /// as output parameters. 
-        /// </summary>
-        /// <remarks>If a return value setter is registered, it will be in
-        /// this map as well.</remarks>
-        protected internal ImmutableDictionary<string, Action<object>> OutputParameterSetters
-        {
-            get
-            {
-                Contract.Ensures(Contract.Result<ImmutableDictionary<string, Action<object>>>() != null);
-
-                return outputParameterSetters;
             }
         }
 
@@ -211,8 +177,7 @@ namespace CodeOnlyStoredProcedure
         /// <param name="name">The name of the stored procedure.</param>
         public StoredProcedure(string schema, string name)
             : this(schema, name,
-                   new SqlParameter[0],
-                   new Dictionary<string, Action<object>>(),
+                   new IStoredProcedureParameter[0],
                    new IDataTransformer[0])
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
@@ -220,32 +185,28 @@ namespace CodeOnlyStoredProcedure
         }
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
-        /// in the <paramref name="schema"/> schema, with the <see cref="SqlParameter"/>s
+        /// in the <paramref name="schema"/> schema, with the <see cref="IStoredProcedureParameter"/>s
         /// to pass, the output action map, and the <see cref="IDataTransformer"/>s to 
         /// use to transform the results.
         /// </summary>
         /// <param name="schema">The schema of the stored procedure.</param>
         /// <param name="name">The name of the stored procedure.</param>
-        /// <param name="parameters">The <see cref="SqlParameter"/>s to pass to the stored procedure.</param>
-        /// <param name="outputParameterSetters">The map of <see cref="Action{T}"/> to call for output parameters.</param>
+        /// <param name="parameters">The <see cref="IStoredProcedureParameter"/>s to pass to the stored procedure.</param>
         /// <param name="dataTransformers">The <see cref="IDataTransformer"/>s to transform the results.</param>
-        protected StoredProcedure(string                                            schema,
-                                  string                                            name,
-                                  IEnumerable<SqlParameter>                         parameters,
-                                  IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
-                                  IEnumerable<IDataTransformer>                     dataTransformers)
+        protected StoredProcedure(string                                 schema,
+                                  string                                 name,
+                                  IEnumerable<IStoredProcedureParameter> parameters,
+                                  IEnumerable<IDataTransformer>          dataTransformers)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
             Contract.Requires(parameters             != null);
-            Contract.Requires(outputParameterSetters != null);
             Contract.Requires(dataTransformers       != null);
 
             this.schema                 = schema;
             this.name                   = name;
-            this.parameters             = new ReadOnlyCollection<SqlParameter>          (parameters.ToArray());
-            this.outputParameterSetters = new ReadOnlyDictionary<string, Action<object>>(outputParameterSetters.ToArray());
-            this.dataTransformers       = new ReadOnlyCollection<IDataTransformer>      (dataTransformers.ToArray());
+            this.parameters             = new ReadOnlyCollection<IStoredProcedureParameter>(parameters.ToArray());
+            this.dataTransformers       = new ReadOnlyCollection<IDataTransformer>         (dataTransformers.ToArray());
         } 
 #else
         /// <summary>
@@ -256,8 +217,7 @@ namespace CodeOnlyStoredProcedure
         /// <param name="name">The name of the stored procedure.</param>
         public StoredProcedure(string schema, string name)
             : this(schema, name,
-                   ImmutableList<SqlParameter>.Empty,
-                   ImmutableDictionary<string, Action<object>>.Empty,
+                   ImmutableList<IStoredProcedureParameter>.Empty,
                    ImmutableList<IDataTransformer>.Empty)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
@@ -266,32 +226,28 @@ namespace CodeOnlyStoredProcedure
 
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
-        /// in the <paramref name="schema"/> schema, with the <see cref="SqlParameter"/>s
+        /// in the <paramref name="schema"/> schema, with the <see cref="IStoredProcedureParameter"/>s
         /// to pass, the output action map, and the <see cref="IDataTransformer"/>s to 
         /// use to transform the results.
         /// </summary>
         /// <param name="schema">The schema of the stored procedure.</param>
         /// <param name="name">The name of the stored procedure.</param>
-        /// <param name="parameters">The <see cref="SqlParameter"/>s to pass to the stored procedure.</param>
-        /// <param name="outputParameterSetters">The map of <see cref="Action{T}"/> to call for output parameters.</param>
+        /// <param name="parameters">The <see cref="IStoredProcedureParameter"/>s to pass to the stored procedure.</param>
         /// <param name="dataTransformers">The <see cref="IDataTransformer"/>s to transform the results.</param>
-        protected StoredProcedure(string                                      schema,
-                                  string                                      name,
-                                  ImmutableList<SqlParameter>                 parameters,
-                                  ImmutableDictionary<string, Action<object>> outputParameterSetters,
-                                  ImmutableList<IDataTransformer>             dataTransformers)
+        protected StoredProcedure(string                                   schema,
+                                  string                                   name,
+                                  ImmutableList<IStoredProcedureParameter> parameters,
+                                  ImmutableList<IDataTransformer>          dataTransformers)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
-            Contract.Requires(parameters             != null);
-            Contract.Requires(outputParameterSetters != null);
-            Contract.Requires(dataTransformers       != null);
+            Contract.Requires(parameters       != null);
+            Contract.Requires(dataTransformers != null);
 
-            this.schema                 = schema;
-            this.name                   = name;
-            this.parameters             = parameters;
-            this.outputParameterSetters = outputParameterSetters;
-            this.dataTransformers       = dataTransformers;
+            this.schema           = schema;
+            this.name             = name;
+            this.parameters       = parameters;
+            this.dataTransformers = dataTransformers;
         } 
 #endif
         #endregion
@@ -330,72 +286,40 @@ namespace CodeOnlyStoredProcedure
         /// <summary>
         /// Clones the StoredProcedure, and gives it the passed parameters.
         /// </summary>
-        /// <param name="parameters">The <see cref="SqlParameter"/>s to pass to the stored procedure.</param>
-        /// <param name="outputParameterSetters">The map of <see cref="Action{T}"/> to call for output parameters.</param>
+        /// <param name="parameters">The <see cref="IStoredProcedureParameter"/>s to pass to the stored procedure.</param>
         /// <param name="dataTransformers">The <see cref="IDataTransformer"/>s to transform the results.</param>
         /// <returns>A clone of the stored procedure.</returns>
         protected internal virtual StoredProcedure CloneCore(
 #if NET40
-            IEnumerable<SqlParameter>                         parameters,
-            IEnumerable<KeyValuePair<string, Action<object>>> outputParameterSetters,
-            IEnumerable<IDataTransformer>                     dataTransformers)
+            IEnumerable<IStoredProcedureParameter> parameters,
+            IEnumerable<IDataTransformer>          dataTransformers)
 #else
-            ImmutableList<SqlParameter>                 parameters,
-            ImmutableDictionary<string, Action<object>> outputParameterSetters,
-            ImmutableList<IDataTransformer>             dataTransformers)
+            ImmutableList<IStoredProcedureParameter> parameters,
+            ImmutableList<IDataTransformer>          dataTransformers)
 #endif
         {
             Contract.Requires(parameters                        != null);
-            Contract.Requires(outputParameterSetters            != null);
             Contract.Requires(dataTransformers                  != null);
             Contract.Ensures(Contract.Result<StoredProcedure>() != null);
 
-            return new StoredProcedure(schema, name, parameters, outputParameterSetters, dataTransformers);
+            return new StoredProcedure(schema, name, parameters, dataTransformers);
         }
 
         /// <summary>
         /// Clones the current stored procedure, and adds the <paramref name="parameter"/> as 
         /// an input parameter.
         /// </summary>
-        /// <param name="parameter">The <see cref="SqlParameter"/> to pass to the stored procedure.</param>
+        /// <param name="parameter">The <see cref="IStoredProcedureParameter"/> to pass to the stored procedure.</param>
         /// <returns>A copy of the current <see cref="StoredProcedure"/> with the additional input parameter.</returns>
-        protected internal StoredProcedure CloneWith(SqlParameter parameter)
+        protected internal StoredProcedure CloneWith(IStoredProcedureParameter parameter)
         {
             Contract.Requires(parameter != null);
             Contract.Ensures(Contract.Result<StoredProcedure>() != null);
 
 #if NET40
-            return CloneCore(parameters.Concat(new[] { parameter }), outputParameterSetters, dataTransformers);
+            return CloneCore(parameters.Concat(new[] { parameter }), dataTransformers);
 #else
-            return CloneCore(parameters.Add(parameter), outputParameterSetters, dataTransformers);
-#endif
-        }
-        
-        /// <summary>
-        /// Clones the current stored procedure, and adds the <paramref name="parameter"/> as 
-        /// an output parameter.
-        /// </summary>
-        /// <param name="parameter">The <see cref="SqlParameter"/> to pass to the stored procedure.</param>
-        /// <param name="setter">The <see cref="Action{T}"/> to call when the value is returned.</param>
-        /// <returns>A copy of the current <see cref="StoredProcedure"/> with the additional output parameter.</returns>
-        protected internal StoredProcedure CloneWith(SqlParameter parameter, Action<object> setter)
-        {
-            Contract.Requires(parameter != null);
-            Contract.Requires(setter    != null);
-            Contract.Ensures(Contract.Result<StoredProcedure>() != null);
-
-#if NET40
-            return CloneCore(parameters            .Concat(new[] { parameter }),
-                             outputParameterSetters.Concat(new[] 
-                                                          {
-                                                              new KeyValuePair<string, Action<object>>(parameter.ParameterName, setter) 
-                                                          }), 
-                             dataTransformers);
-
-#else
-            return CloneCore(parameters            .Add(parameter),
-                             outputParameterSetters.Add(parameter.ParameterName, setter), 
-                             dataTransformers);
+            return CloneCore(parameters.Add(parameter), dataTransformers);
 #endif
         } 
 
@@ -411,13 +335,9 @@ namespace CodeOnlyStoredProcedure
             Contract.Ensures(Contract.Result<StoredProcedure>() != null);
 
 #if NET40
-            return CloneCore(parameters,
-                             outputParameterSetters,
-                             dataTransformers.Concat(new[] { transformer }));
+            return CloneCore(parameters, dataTransformers.Concat(new[] { transformer }));
 #else
-            return CloneCore(parameters,
-                             outputParameterSetters,
-                             dataTransformers.Add(transformer));
+            return CloneCore(parameters, dataTransformers.Add(transformer));
 #endif
         }
         #endregion
@@ -564,12 +484,8 @@ namespace CodeOnlyStoredProcedure
             {
                 using (var cmd = connection.CreateCommand(schema, name, commandTimeout, out toClose))
                 {
-                    // move parameters to command object
-                    // we must clone them first because the framework
-                    // throws an exception if a parameter is passed to 
-                    // more than one IDbCommand
-                    var cloned = parameters.Select(Clone).ToArray();
-                    foreach (var p in cloned)
+                    var dbParameters = parameters.Select(p => p.CreateDbDataParameter(cmd)).ToArray();
+                    foreach (var p in dbParameters)
                         cmd.Parameters.Add(p);
 
                     token.ThrowIfCancellationRequested();
@@ -583,8 +499,13 @@ namespace CodeOnlyStoredProcedure
                         results = new Dictionary<Type, IList>();
                     }
 
-                    foreach (var parm in cloned.Where(p => p.Direction != ParameterDirection.Input))
-                        outputParameterSetters[parm.ParameterName](parm.Value);
+                    foreach (var parm in dbParameters.Where(p => p.Direction != ParameterDirection.Input))
+                    {
+                        var spParm = parameters.OfType<IOutputStoredProcedureParameter>()
+                                               .FirstOrDefault(p => p.ParameterName == parm.ParameterName);
+                        if (spParm != null)
+                            spParm.TransferOutputValue(parm.Value);
+                    }
 
                     return results;
                 }
@@ -612,41 +533,13 @@ namespace CodeOnlyStoredProcedure
             }
         }
 
-        private SqlParameter Clone(SqlParameter p)
-        {
-            Contract.Requires(p != null);
-
-            return new SqlParameter(p.ParameterName, 
-                                    p.SqlDbType,
-                                    p.Size,
-                                    p.Direction,
-                                    p.Precision,
-                                    p.Scale, 
-                                    p.SourceColumn, 
-                                    p.SourceVersion,
-                                    p.SourceColumnNullMapping, 
-                                    p.Value,
-                                    p.XmlSchemaCollectionDatabase,
-                                    p.XmlSchemaCollectionOwningSchema, 
-                                    p.XmlSchemaCollectionName);
-        }
-
-        private string Print(SqlParameter p)
-        {
-            Contract.Requires(p != null);
-            Contract.Ensures(!string.IsNullOrEmpty(Contract.Result<string>()));
-
-            return string.Format("@{0} = '{1}'", p.ParameterName, p.Value ?? "");
-        }
-
         [ContractInvariantMethod]
         private void Invariants()
         {
             Contract.Invariant(!string.IsNullOrWhiteSpace(schema));
             Contract.Invariant(!string.IsNullOrWhiteSpace(name));
-            Contract.Invariant(parameters             != null);
-            Contract.Invariant(outputParameterSetters != null);
-            Contract.Invariant(dataTransformers       != null);
+            Contract.Invariant(parameters       != null);
+            Contract.Invariant(dataTransformers != null);
         }
     }
 }

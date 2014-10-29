@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Data;
-using System.Data.SqlClient;
 using System.Diagnostics.Contracts;
 
 namespace CodeOnlyStoredProcedure
@@ -32,13 +31,7 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(setter                 != null);
             Contract.Ensures (Contract.Result<TSP>() != null);
 
-            return (TSP)sp.CloneWith(
-                new SqlParameter
-                {
-                    ParameterName = name,
-                    Direction     = ParameterDirection.Output
-                }.AddPrecisison(size, scale, precision),
-                o => setter((TValue)o));
+            return (TSP)sp.CloneWith(new OutputParameter(name, o => setter((TValue)o), null, size, scale, precision));
         }
 
         /// <summary>
@@ -49,7 +42,7 @@ namespace CodeOnlyStoredProcedure
         /// <param name="sp">The <see cref="StoredProcedure"/> to add an output parameter to.</param>
         /// <param name="name">The name of the output parameter.</param>
         /// <param name="setter">The setter to call when the stored procedure returns the parameter.</param>
-        /// <param name="dbType">The name of the Sql data type.</param>
+        /// <param name="dbType">The <see cref="DbType"/> that the StoredProcedure returns.</param>
         /// <param name="size">The size expected for the Sql data type. This can normally be omitted.</param>
         /// <param name="scale">The scale expected for the Sql data type. This can normally be omitted.</param>
         /// <param name="precision">The precision expected for the Sql data type. This can normally be omitted.</param>
@@ -57,7 +50,7 @@ namespace CodeOnlyStoredProcedure
         public static TSP WithOutputParameter<TSP, TValue>(this TSP sp,
             string         name,
             Action<TValue> setter,
-            SqlDbType      dbType,
+            DbType         dbType,
             int?           size      = null,
             byte?          scale     = null,
             byte?          precision = null)
@@ -68,14 +61,7 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(setter                 != null);
             Contract.Ensures (Contract.Result<TSP>() != null);
 
-            return (TSP)sp.CloneWith(
-                new SqlParameter
-                {
-                    ParameterName = name,
-                    Direction     = ParameterDirection.Output,
-                    SqlDbType     = dbType
-                }.AddPrecisison(size, scale, precision),
-                o => setter((TValue)o));
+            return (TSP)sp.CloneWith(new OutputParameter(name, o => setter((TValue)o), dbType, size, scale, precision));
         }
 
         internal static TSP WithOutputParameter<TSP>(this TSP sp, string name, Action<object> setter)
@@ -86,13 +72,7 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(setter                 != null);
             Contract.Ensures (Contract.Result<TSP>() != null);
 
-            return (TSP)sp.CloneWith(
-                new SqlParameter
-                {
-                    ParameterName = name,
-                    Direction     = ParameterDirection.Output
-                },
-                setter);
+            return (TSP)sp.CloneWith(new OutputParameter(name, setter));
         }
     }
 }

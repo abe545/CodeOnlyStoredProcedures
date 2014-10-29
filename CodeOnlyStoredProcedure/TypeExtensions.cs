@@ -8,6 +8,7 @@ using System.Data.SqlClient;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Reflection;
+using Microsoft.SqlServer.Server;
 
 namespace CodeOnlyStoredProcedure
 {
@@ -16,7 +17,11 @@ namespace CodeOnlyStoredProcedure
     /// </summary>
     public static class TypeExtensions
     {
-        internal static readonly Type[] integralTpes = new[]
+        private const byte defaultPrecision = 20;
+        private const int  defaultSize      = 50;
+        private const byte defaultScale     = 2;
+
+        internal static readonly Type[] integralTypes = new[]
             {
                 typeof(String),
                 typeof(Int16),
@@ -91,17 +96,12 @@ namespace CodeOnlyStoredProcedure
                 var col = pi.GetCustomAttributes(typeof(ColumnAttribute), false)
                             .OfType<ColumnAttribute>()
                             .FirstOrDefault();
-                var tableAttr = pi.GetCustomAttributes(typeof(TableValuedParameterAttribute), false)
-                                  .OfType<TableValuedParameterAttribute>()
-                                  .FirstOrDefault();
                 var attr = pi.GetCustomAttributes(typeof(StoredProcedureParameterAttribute), false)
                              .OfType<StoredProcedureParameterAttribute>()
                              .FirstOrDefault();
 
                 if (col != null && !string.IsNullOrWhiteSpace(col.Name))
                     name = col.Name;
-                else if (tableAttr != null && !string.IsNullOrWhiteSpace(tableAttr.Name))
-                    name = tableAttr.Name;
                 else if (attr != null && !string.IsNullOrWhiteSpace(attr.Name))
                     name = attr.Name;
 
@@ -111,45 +111,192 @@ namespace CodeOnlyStoredProcedure
             return mappedProperties;
         }
 
-        internal static SqlDbType InferSqlType(this Type type)
+        internal static DbType InferDbType(this Type type)
         {
             Contract.Requires(type != null);
 
             if (type == typeof(Int32))
-                return SqlDbType.Int;
-            if (type == typeof(Double))
-                return SqlDbType.Float;
-            if (type == typeof(Decimal))
-                return SqlDbType.Decimal;
-            if (type == typeof(Boolean))
-                return SqlDbType.Bit;
-            if (type == typeof(String))
-                return SqlDbType.NVarChar;
-            if (type == typeof(DateTime))
-                return SqlDbType.DateTime;
-            if (type == typeof(Int64))
-                return SqlDbType.BigInt;
-            if (type == typeof(Int16))
-                return SqlDbType.SmallInt;
-            if (type == typeof(Byte))
-                return SqlDbType.TinyInt;
-            if (type == typeof(Single))
-                return SqlDbType.Real;
-            if (type == typeof(Guid))
-                return SqlDbType.UniqueIdentifier;
+                return DbType.Int32;
+            else if (type == typeof(Double))
+                return DbType.Double;
+            else if (type == typeof(Decimal))
+                return DbType.Decimal;
+            else if (type == typeof(Boolean))
+                return DbType.Boolean;
+            else if (type == typeof(String))
+                return DbType.String;
+            else if (type == typeof(DateTime))
+                return DbType.DateTime;
+            else if (type == typeof(Int64))
+                return DbType.Int64;
+            else if (type == typeof(Int16))
+                return DbType.Int16;
+            else if (type == typeof(Byte))
+                return DbType.Byte;
+            else if (type == typeof(Single))
+                return DbType.Single;
+            else if (type == typeof(Guid))
+                return DbType.Guid;
+            else if (type == typeof(UInt16))
+                return DbType.UInt16;
+            else if (type == typeof(UInt32))
+                return DbType.UInt32;
+            else if (type == typeof(UInt64))
+                return DbType.UInt64;
+            else if (type == typeof(SByte))
+                return DbType.SByte;
+            else if (type == typeof(Char))
+                return DbType.StringFixedLength;
 
-            throw new NotSupportedException("Unable to determine the SqlDbType for the property. You can specify it by using a StoredProcedureParameterAttribute. Or prevent it from being mapped with the NotMappedAttribute.");
+            return DbType.Object;
         }
 
-        internal static IEnumerable<Tuple<PropertyInfo, SqlParameter>> GetParameters(this Type type, object instance)
+        internal static void SetTypePrecisionAndScale(this Type        type, 
+                                                      IDbDataParameter parameter, 
+                                                      DbType?          specifiedType,
+                                                      int?             specifiedSize,
+                                                      byte?            specifiedScale,
+                                                      byte?            specifiedPrecision)
+        {
+            Contract.Requires(parameter != null);
+            Contract.Requires(type      != null);
+
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+                type = type.GetGenericArguments().Single();
+
+            if (specifiedType != null)
+                parameter.DbType = specifiedType.Value;
+            else if (type == typeof(Char))
+            {
+                parameter.DbType = DbType.StringFixedLength;
+                parameter.Size   = specifiedSize ?? 1;
+            }
+            else
+                parameter.DbType = type.InferDbType();
+
+            switch (parameter.DbType)
+            {
+                case DbType.AnsiStringFixedLength:
+                case DbType.StringFixedLength:
+                case DbType.AnsiString:
+                case DbType.String:
+                case DbType.Binary:
+                    parameter.Size = specifiedSize ?? defaultSize;
+                    break;
+
+                case DbType.Currency:
+                case DbType.Decimal:
+                    parameter.Precision = specifiedPrecision ?? defaultPrecision;
+                    parameter.Scale     = specifiedScale     ?? defaultScale;
+                    break;
+            }
+        }
+
+        internal static SqlMetaData CreateSqlMetaData(this Type  type, 
+                                                      string     columnName, 
+                                                      SqlDbType? specifiedSqlDbType,
+                                                      int?       specifiedSize,
+                                                      byte?      specifiedScale,
+                                                      byte?      specifiedPrecision)
+        {
+            Contract.Requires(type != null);
+            Contract.Requires(!string.IsNullOrWhiteSpace(columnName));
+            Contract.Ensures(Contract.Result<SqlMetaData>() != null);
+
+            if (!specifiedSqlDbType.HasValue)
+            {
+                if (type == typeof(string))
+                    specifiedSqlDbType = SqlDbType.NVarChar;
+                else if (type == typeof(char))
+                {
+                    specifiedSqlDbType = SqlDbType.NChar;
+                    specifiedSize = specifiedSize ?? 1;
+                }
+                else if (type == typeof(Decimal))
+                    specifiedSqlDbType = SqlDbType.Decimal;
+                else if (type == typeof(Int32))
+                    specifiedSqlDbType = SqlDbType.Int;
+                else if (type == typeof(Double))
+                    specifiedSqlDbType = SqlDbType.Float;
+                else if (type == typeof(Boolean))
+                    specifiedSqlDbType = SqlDbType.Bit;
+                else if (type == typeof(DateTime))
+                    specifiedSqlDbType = SqlDbType.DateTime;
+                else if (type == typeof(Int64))
+                    specifiedSqlDbType = SqlDbType.BigInt;
+                else if (type == typeof(Int16))
+                    specifiedSqlDbType = SqlDbType.SmallInt;
+                else if (type == typeof(Byte))
+                    specifiedSqlDbType = SqlDbType.TinyInt;
+                else if (type == typeof(Single))
+                    specifiedSqlDbType = SqlDbType.Real;
+                else if (type == typeof(Guid))
+                    specifiedSqlDbType = SqlDbType.UniqueIdentifier;
+                else
+                    throw new NotSupportedException("Could not determine the type of " + columnName + " for the Table Valued Parameter. You can specify the desired type by decorating the property of your model with a SqlServerStoredProcedureParameter attribute.");
+            }
+
+            switch (specifiedSqlDbType.Value)
+            {
+                case SqlDbType.Binary:
+                case SqlDbType.Char:
+                case SqlDbType.NChar:
+                case SqlDbType.Image:
+                case SqlDbType.VarChar:
+                case SqlDbType.NVarChar:
+                case SqlDbType.Text:
+                case SqlDbType.NText:
+                case SqlDbType.VarBinary:
+                    return new SqlMetaData(columnName, specifiedSqlDbType.Value, specifiedSize ?? defaultSize);
+
+                case SqlDbType.Decimal:
+                    return new SqlMetaData(columnName, specifiedSqlDbType.Value, specifiedPrecision ?? defaultPrecision, specifiedScale ?? defaultScale);
+
+                default:
+                    return new SqlMetaData(columnName, specifiedSqlDbType.Value);
+            }
+        }
+
+        /// <summary>
+        /// Gets if a given <see cref="Type"/> can be returned as a the result from a single
+        /// column result set. In practice, this returns true for numeric, enum, char, bool, or strings.
+        /// </summary>
+        /// <param name="type">The <see cref="Type"/> to test.</param>
+        /// <returns>True if the Type can be used as the result for a single column stored procedure.</returns>
+        [Pure]
+        public static bool IsSimpleType(this Type type)
+        {
+            Contract.Requires(type != null);
+
+            return type.IsEnum || integralTypes.Contains(type);
+        }
+
+        /// <summary>
+        /// Tests to see if a given <see cref="Type"/> can be returned from a <see cref="StoredProcedure" />.
+        /// Will return true for interfaces mapped in <see cref="StoredProcedure.MapResultType"/>
+        /// </summary>
+        /// <param name="type">The <see cref="Type"/> to test.</param>
+        /// <returns>True if a type can be returned from a StoredProcedure.</returns>
+        [Pure]
+        public static bool IsValidResultType(this Type type)
+        {
+            Contract.Requires(type != null);
+
+            if (type.IsSimpleType() || interfaceMap.ContainsKey(type))
+                return true;
+
+            return type.GetConstructor(new Type[0]) != null;
+        }
+        
+        internal static IEnumerable<IStoredProcedureParameter> GetParameters(this Type type, object instance)
         {
             Contract.Requires(type     != null);
             Contract.Requires(instance != null);
-            Contract.Ensures (Contract.Result<IEnumerable<Tuple<PropertyInfo, SqlParameter>>>() != null);
+            Contract.Ensures(Contract.Result<IEnumerable<IStoredProcedureParameter>>() != null);
 
             foreach (var pi in type.GetMappedProperties())
             {
-                SqlParameter parameter;
+                IStoredProcedureParameter parameter;
                 var tableAttr = pi.GetCustomAttributes(false)
                                   .OfType<TableValuedParameterAttribute>()
                                   .FirstOrDefault();
@@ -169,61 +316,14 @@ namespace CodeOnlyStoredProcedure
                 }
 
                 if (tableAttr != null)
-                    parameter = tableAttr.CreateSqlParameter(pi.Name);
+                    parameter = tableAttr.CreateParameter(instance, pi);
                 else if (attr != null)
-                    parameter = attr.CreateSqlParameter(pi.Name);
+                    parameter = attr.CreateParameter(instance, pi);
                 else
-                    parameter = new SqlParameter(pi.Name, value);
+                    parameter = new InputParameter(pi.Name, pi.GetValue(instance, null), pi.PropertyType.InferDbType());
 
-                if (value == null)
-                    parameter.Value = DBNull.Value;
-                else if (parameter.SqlDbType == SqlDbType.Structured)
-                {
-                    // An IEnumerable type to be used as a Table-Valued Parameter
-                    if (!(value is IEnumerable))
-                        throw new InvalidCastException(string.Format("{0} must be an IEnumerable type to be used as a Table-Valued Parameter", pi.Name));
-
-                    var baseType = value.GetType().GetEnumeratedType();
-
-                    // generate table valued parameter
-                    parameter.Value = ((IEnumerable)value).ToTableValuedParameter(baseType);
-                }
-                else
-                    parameter.Value = value;
-
-                yield return Tuple.Create(pi, parameter);
+                yield return parameter;
             }
-        }
-
-        /// <summary>
-        /// Gets if a given <see cref="Type"/> can be returned as a the result from a single
-        /// column result set. In practice, this returns true for numeric, enum, char, bool, or strings.
-        /// </summary>
-        /// <param name="type">The <see cref="Type"/> to test.</param>
-        /// <returns>True if the Type can be used as the result for a single column stored procedure.</returns>
-        [Pure]
-        public static bool IsSimpleType(this Type type)
-        {
-            Contract.Requires(type != null);
-
-            return type.IsEnum || integralTpes.Contains(type);
-        }
-
-        /// <summary>
-        /// Tests to see if a given <see cref="Type"/> can be returned from a <see cref="StoredProcedure" />.
-        /// Will return true for interfaces mapped in <see cref="StoredProcedure.MapResultType"/>
-        /// </summary>
-        /// <param name="type">The <see cref="Type"/> to test.</param>
-        /// <returns>True if a type can be returned from a StoredProcedure.</returns>
-        [Pure]
-        public static bool IsValidResultType(this Type type)
-        {
-            Contract.Requires(type != null);
-
-            if (type.IsSimpleType() || interfaceMap.ContainsKey(type))
-                return true;
-
-            return type.GetConstructor(new Type[0]) != null;
         }
     }
 }

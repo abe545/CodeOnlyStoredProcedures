@@ -127,11 +127,15 @@
     <Compile Include="Dynamic\DynamicStoredProcedureResults.cs" />
     <Compile Include="IDataTransformer.cs" />
     <Compile Include="IDbConnectionExtensions.cs" />
+    <Compile Include="StoredProcedureParameters\IInputStoredProcedureParameter.cs" />
+    <Compile Include="StoredProcedureParameters\IOutputStoredProcedureParameter.cs" />
+    <Compile Include="StoredProcedureParameters\IStoredProcedureParameter.cs" />
     <Compile Include="NamespaceDoc.cs" />
     <Compile Include="RowFactory\DynamicRowFactory.cs" />
     <Compile Include="RowFactory\IRowFactory.cs" />
     <Compile Include="RowFactory\RowFactoryCreator.cs" />
     <Compile Include="RowFactory\SimpleTypeRowFactory.cs" />
+    <Compile Include="SqlServerStoredProcedureParameterAttribute.cs" />
     <Compile Include="StoredProcedure.cs" />
     <Compile Include="StoredProcedure.generated.cs">
       <AutoGen>True</AutoGen>
@@ -168,8 +172,14 @@
     <Compile Include="StoredProcedureExtensions.WithReturnValue.cs">
       <DependentUpon>StoredProcedureExtensions.cs</DependentUpon>
     </Compile>
+    <Compile Include="StoredProcedureParameter.cs" />
     <Compile Include="StoredProcedureParameterAttribute.cs" />
     <Compile Include="Exceptions\StoredProcedureResultsException.cs" />
+    <Compile Include="StoredProcedureParameters\InputOutputParameter.cs" />
+    <Compile Include="StoredProcedureParameters\InputParameter.cs" />
+    <Compile Include="StoredProcedureParameters\OutputParameter.cs" />
+    <Compile Include="StoredProcedureParameters\ReturnValueParameter.cs" />
+    <Compile Include="StoredProcedureParameters\TableValuedParameter.cs" />
     <Compile Include="TableValuedParameterAttribute.cs" />
     <Compile Include="TypeExtensions.cs" />
   </ItemGroup>
