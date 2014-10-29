@@ -30,11 +30,7 @@ namespace CodeOnlyStoredProcedure
             var parm           = command.CreateParameter();
             parm.ParameterName = ParameterName;
             parm.Direction     = ParameterDirection.InputOutput;
-
-            if (Value == null)
-                parm.Value = DBNull.Value;
-            else
-                parm.Value = Value;
+            parm.Value         = Value;
 
             if (DbType.HasValue)
                 parm.DbType = DbType.Value;

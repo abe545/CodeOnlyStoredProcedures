@@ -107,6 +107,12 @@
       <DependentUpon>StoredProcedureExtensionsTests.cs</DependentUpon>
     </Compile>
     <Compile Include="StoredProcedureParameterAttributeTests.cs" />
+    <Compile Include="StoredProcedureParameters\InputOutputParameterTests.cs" />
+    <Compile Include="StoredProcedureParameters\InputParameterTests.cs" />
+    <Compile Include="StoredProcedureParameters\OutputParameterTests.cs" />
+    <Compile Include="StoredProcedureParameters\ParameterTestBase.cs" />
+    <Compile Include="StoredProcedureParameters\ReturnValueParameterTests.cs" />
+    <Compile Include="StoredProcedureParameters\TableValuedParameterTests.cs" />
     <Compile Include="StoredProcedureTests.cs" />
     <Compile Include="StoredProcedureExtensionsTests.cs" />
     <Compile Include="TestSynchronizationContext.cs" />

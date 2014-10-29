@@ -11,7 +11,7 @@ namespace CodeOnlyStoredProcedure
 
         public InputParameter(string name, object value, DbType? dbType = null)
         {
-            Value         = value ?? DBNull.Value;
+            Value         = value;
             ParameterName = name;
             DbType        = dbType;
         }

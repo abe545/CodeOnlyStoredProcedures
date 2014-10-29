@@ -320,7 +320,7 @@ namespace CodeOnlyStoredProcedure
                 else if (attr != null)
                     parameter = attr.CreateParameter(instance, pi);
                 else
-                    parameter = new InputParameter(pi.Name, pi.GetValue(instance, null) ?? DBNull.Value, pi.PropertyType.InferDbType());
+                    parameter = new InputParameter(pi.Name, pi.GetValue(instance, null), pi.PropertyType.InferDbType());
 
                 yield return parameter;
             }

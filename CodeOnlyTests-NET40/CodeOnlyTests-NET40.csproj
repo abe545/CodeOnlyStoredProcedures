@@ -155,6 +155,24 @@
     <Compile Include="..\CodeOnlyTests\StoredProcedureParameterAttributeTests.cs">
       <Link>StoredProcedureParameterAttributeTests.cs</Link>
     </Compile>
+    <Compile Include="..\CodeOnlyTests\StoredProcedureParameters\InputOutputParameterTests.cs">
+      <Link>StoredProcedureParameters\InputOutputParameterTests.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyTests\StoredProcedureParameters\InputParameterTests.cs">
+      <Link>StoredProcedureParameters\InputParameterTests.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyTests\StoredProcedureParameters\OutputParameterTests.cs">
+      <Link>StoredProcedureParameters\OutputParameterTests.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyTests\StoredProcedureParameters\ParameterTestBase.cs">
+      <Link>StoredProcedureParameters\ParameterTestBase.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyTests\StoredProcedureParameters\ReturnValueParameterTests.cs">
+      <Link>StoredProcedureParameters\ReturnValueParameterTests.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyTests\StoredProcedureParameters\TableValuedParameterTests.cs">
+      <Link>StoredProcedureParameters\TableValuedParameterTests.cs</Link>
+    </Compile>
     <Compile Include="..\CodeOnlyTests\StoredProcedureTests.cs">
       <Link>StoredProcedureTests.cs</Link>
     </Compile>
