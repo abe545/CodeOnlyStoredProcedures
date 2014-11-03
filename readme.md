@@ -219,26 +219,14 @@ public class Person
 ```
 
 #### Can I also use table valued input parameters?
-Sure, if you want to use the fluent syntax, do it like this:
+Sure, you can again choose between dynamic or fluent syntax. This is an example in fluent:
 
 ```cs
 IEnumerable<InputRow> rows = ...;
 StoredProcedure.Create("dbo", "usp_TakesLotsOfInput")
                .WithTableValuedParameter("parameterName", rows, "schemaOfTable", "typeOfTable")
                .Execute(dbConnection);
-```
 
-Or using dynamic syntax, like this:
-
-```cs
-IEnumerable<InputRow> rows = ...;
-dbConnection.Execute().dbo.usp_TakesLotsOfInput(parameterName: rows);
-For that syntax to work, you do need to decorate InputRow with TableValuedParameterAttribute:
-```
-
-For that syntax to work, you do need to decorate `InputRow` with the `TableValuedParameterAttribute`:
-
-```cs
 [TableValuedParameter(Schema = "schemaOfTable", TableName = "typeOfTable")]
 public class InputRow { ... }
 ```
