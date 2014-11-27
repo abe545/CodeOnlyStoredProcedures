@@ -305,7 +305,6 @@ namespace CodeOnlyStoredProcedure
                              .FirstOrDefault();
 
                 // store table values, scalar value or null
-                var value = pi.GetValue(instance, null);
                 if (tableAttr == null && pi.PropertyType.IsEnumeratedType())
                 {
                     tableAttr = pi.PropertyType
