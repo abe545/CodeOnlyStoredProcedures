@@ -40,9 +40,25 @@ namespace CodeOnlyTests
         }
 
         [TestMethod]
+        public void TestGetMappedProperties_DoesNotIncludePropertiesWithPrivateSettersWhenRequiresWritableSpecified()
+        {
+            var prop = typeof(ModelPrivateSetter).GetMappedProperties(requireWritable: true).Single();
+
+            Assert.AreEqual("Foo", prop.Name, "Wrong property returned.");
+        }
+
+        [TestMethod]
         public void TestGetMappedProperties_DoesNotIncludeWriteOnlyPropertiesWhenSpecified()
         {
             var prop = typeof(ModelWriteOnlyProperty).GetMappedProperties(requireReadable: true).Single();
+
+            Assert.AreEqual("Foo", prop.Name, "Wrong property returned.");
+        }
+
+        [TestMethod]
+        public void TestGetMappedProperties_DoesNotIncludePropertiesWithPrivateGetterWhenRequireReadableSpecified()
+        {
+            var prop = typeof(ModelPrivateGetter).GetMappedProperties(requireReadable: true).Single();
 
             Assert.AreEqual("Foo", prop.Name, "Wrong property returned.");
         } 
@@ -216,10 +232,22 @@ namespace CodeOnlyTests
             public double Bar { get { return 42.0; } }
         }
 
+        private class ModelPrivateSetter
+        {
+            public string Foo { get; set; }
+            public double Bar { get; private set; }
+        }
+
         private class ModelWriteOnlyProperty
         {
             public string Foo { get; set; }
             public double Bar { set { } }
+        }
+
+        private class ModelPrivateGetter
+        {
+            public string Foo { get; set; }
+            public double Bar { private get; set; }
         } 
 
         private class RenamedProperties

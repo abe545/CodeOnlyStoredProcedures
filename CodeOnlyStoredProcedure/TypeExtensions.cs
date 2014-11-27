@@ -51,9 +51,9 @@ namespace CodeOnlyStoredProcedure
             var props = t.GetProperties().AsEnumerable();
 
             if (requireWritable)
-                props = props.Where(p => p.CanWrite);
+                props = props.Where(p => p.GetSetMethod() != null);
             if (requireReadable)
-                props = props.Where(p => p.CanRead);
+                props = props.Where(p => p.GetGetMethod() != null);
 
             return props.Where(p => !p.GetCustomAttributes(typeof(NotMappedAttribute), false).Any())
                         .ToArray();
