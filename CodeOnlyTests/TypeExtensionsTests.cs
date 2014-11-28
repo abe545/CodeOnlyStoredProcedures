@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using CodeOnlyStoredProcedure;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using FluentAssertions;
 
 #if NET40
 namespace CodeOnlyTests.Net40
@@ -18,50 +19,109 @@ namespace CodeOnlyTests
         [TestMethod]
         public void TestGetMappedProperties_GetsAllPublicProperties()
         {
-            var props = typeof(Model).GetMappedProperties().ToArray();
-
-            CollectionAssert.AreEquivalent(typeof(Model).GetProperties(), props, "Not all public properties returned.");
+            typeof(Model).GetMappedProperties()
+                .Should().ContainInOrder(typeof(Model).GetProperties(), "all public properties should be mapped");
         }
 
         [TestMethod]
         public void TestGetMappedProperties_DoesNotIncludeNotMappedProperties()
         {
-            var prop = typeof(ModelNotMapped).GetMappedProperties().Single();
-
-            Assert.AreEqual("Bar", prop.Name, "Wrong property returned.");
+            typeof(ModelNotMapped).GetMappedProperties()
+                .Should().ContainSingle(pi => pi.Name == "Bar", "Bar is the only mapped property");
         }
 
         [TestMethod]
         public void TestGetMappedProperties_DoesNotIncludeReadOnlyPropertiesWhenSpecified()
         {
-            var prop = typeof(ModelReadOnlyProperty).GetMappedProperties(requireWritable: true).Single();
-
-            Assert.AreEqual("Foo", prop.Name, "Wrong property returned.");
+            typeof(ModelReadOnlyProperty).GetMappedProperties()
+                .Should().ContainSingle(pi => pi.Name == "Foo", "Foo is the only writeable property");
         }
 
         [TestMethod]
         public void TestGetMappedProperties_DoesNotIncludePropertiesWithPrivateSettersWhenRequiresWritableSpecified()
         {
-            var prop = typeof(ModelPrivateSetter).GetMappedProperties(requireWritable: true).Single();
-
-            Assert.AreEqual("Foo", prop.Name, "Wrong property returned.");
+            typeof(ModelPrivateSetter).GetMappedProperties()
+                .Should().ContainSingle(pi => pi.Name == "Foo", "Foo is the only property with a public setter");
         }
 
         [TestMethod]
         public void TestGetMappedProperties_DoesNotIncludeWriteOnlyPropertiesWhenSpecified()
         {
-            var prop = typeof(ModelWriteOnlyProperty).GetMappedProperties(requireReadable: true).Single();
-
-            Assert.AreEqual("Foo", prop.Name, "Wrong property returned.");
+            typeof(ModelWriteOnlyProperty).GetMappedProperties()
+                .Should().ContainSingle(pi => pi.Name == "Foo", "Foo is the only readable property");
         }
 
         [TestMethod]
         public void TestGetMappedProperties_DoesNotIncludePropertiesWithPrivateGetterWhenRequireReadableSpecified()
         {
-            var prop = typeof(ModelPrivateGetter).GetMappedProperties(requireReadable: true).Single();
+            typeof(ModelPrivateGetter).GetMappedProperties()
+                .Should().ContainSingle(pi => pi.Name == "Foo", "Foo is the only property with a public getter");
+        }
 
-            Assert.AreEqual("Foo", prop.Name, "Wrong property returned.");
-        } 
+        [TestMethod]
+        public void TestGetMappedProperties_GetsOptionalProperties()
+        {
+            typeof(WithOptionalProperty).GetMappedProperties()
+                .Should().ContainInOrder(typeof(WithOptionalProperty).GetProperties(), "optional properties should have no effect");
+        }
+        #endregion
+
+        #region GetRequiredPropertyNames
+        [TestMethod]
+        public void TestGetRequiredPropertyNames_GetsAllPropertyNames()
+        {
+            typeof(Model).GetRequiredPropertyNames()
+                .Should().ContainInOrder(typeof(Model).GetProperties().Select(pi => pi.Name), "all public properties are required by default");
+        }
+
+        [TestMethod]
+        public void TestGetRequiredPropertyNames_DoesNotIncludeNotMappedProperties()
+        {
+            typeof(ModelNotMapped).GetRequiredPropertyNames()
+                .Should().ContainSingle(s => s == "Bar", "Bar is the only mapped property");
+        }
+
+        [TestMethod]
+        public void TestGetRequiredPropertyNames_DoesNotIncludeReadOnlyPropertiesWhenSpecified()
+        {
+            typeof(ModelReadOnlyProperty).GetRequiredPropertyNames()
+                .Should().ContainSingle(s => s == "Foo", "Foo is the only writeable property");
+        }
+
+        [TestMethod]
+        public void TestGetRequiredPropertyNames_DoesNotIncludePropertiesWithPrivateSettersWhenRequiresWritableSpecified()
+        {
+            typeof(ModelPrivateSetter).GetRequiredPropertyNames()
+                .Should().ContainSingle(s => s == "Foo", "Foo is the only property with a public setter");
+        }
+
+        [TestMethod]
+        public void TestGetRequiredPropertyNames_DoesNotIncludeWriteOnlyPropertiesWhenSpecified()
+        {
+            typeof(ModelWriteOnlyProperty).GetRequiredPropertyNames()
+                .Should().ContainSingle(s => s == "Foo", "Foo is the only readable property");
+        }
+
+        [TestMethod]
+        public void TestGetRequiredPropertyNames_DoesNotIncludePropertiesWithPrivateGetterWhenRequireReadableSpecified()
+        {
+            typeof(ModelPrivateGetter).GetRequiredPropertyNames()
+                .Should().ContainSingle(s => s == "Foo", "Foo is the only property with a public getter");
+        }
+
+        [TestMethod]
+        public void TestGetRequiredPropertyNames_DoesNotIncludeOptionalProperties()
+        {
+            typeof(WithOptionalProperty).GetRequiredPropertyNames()
+                .Should().ContainSingle(s => s == "Bar", "Foo is marked optional, so should not be included");
+        }
+
+        [TestMethod]
+        public void TestGetRequiredPropertyNames_GetsTheRenamedProperties()
+        {
+            typeof(RenamedProperties).GetRequiredPropertyNames()
+                .Should().Contain(new[] { "One", "Two", "Three" }, because: "the properties have been mapped to other columns in the result set");
+        }
         #endregion
 
         #region GetResultPropertiesBySqlName
@@ -183,10 +243,10 @@ namespace CodeOnlyTests
         [TestMethod]
         public void IsValidResultType_ReturnsFalseForUnmappedInterface()
         {
-            lock (TypeExtensions.interfaceMap)
+            lock (CodeOnlyStoredProcedure.TypeExtensions.interfaceMap)
             {
                 // make sure that there is nothing in the map
-                TypeExtensions.interfaceMap.Clear();
+                CodeOnlyStoredProcedure.TypeExtensions.interfaceMap.Clear();
                 Assert.IsFalse(typeof(IModel).IsValidResultType());
             }
         }
@@ -194,11 +254,11 @@ namespace CodeOnlyTests
         [TestMethod]
         public void IsValidResultType_ReturnsTrueForMappedInterface()
         {
-            lock (TypeExtensions.interfaceMap)
+            lock (CodeOnlyStoredProcedure.TypeExtensions.interfaceMap)
             {
                 // make sure that there is nothing in the map
-                TypeExtensions.interfaceMap.Clear();
-                TypeExtensions.interfaceMap.TryAdd(typeof(IModel), typeof(Model));
+                CodeOnlyStoredProcedure.TypeExtensions.interfaceMap.Clear();
+                CodeOnlyStoredProcedure.TypeExtensions.interfaceMap.TryAdd(typeof(IModel), typeof(Model));
 
                 Assert.IsTrue(typeof(IModel).IsValidResultType());
             }
@@ -258,6 +318,13 @@ namespace CodeOnlyTests
             public string Bar { get; set; }
             [StoredProcedureParameter(Name = "Three")]
             public string Baz { get; set; }
+        }
+
+        private class WithOptionalProperty
+        {
+            [OptionalResult]
+            public string Foo { get; set; }
+            public string Bar { get; set; }
         }
         #endregion
     }

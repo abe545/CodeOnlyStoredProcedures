@@ -99,7 +99,7 @@ namespace CodeOnlyStoredProcedure
 
         public DynamicRowFactory()
         {
-            unfoundProps = new HashSet<string>(setters.Keys);
+            unfoundProps = new HashSet<string>(typeof(T).GetRequiredPropertyNames());
         }
 
         public object CreateRow(

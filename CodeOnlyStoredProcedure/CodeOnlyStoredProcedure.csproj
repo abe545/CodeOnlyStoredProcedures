@@ -127,6 +127,7 @@
     <Compile Include="Dynamic\DynamicStoredProcedureResults.cs" />
     <Compile Include="IDataTransformer.cs" />
     <Compile Include="IDbConnectionExtensions.cs" />
+    <Compile Include="OptionalResultAttribute.cs" />
     <Compile Include="StoredProcedureParameters\IInputStoredProcedureParameter.cs" />
     <Compile Include="StoredProcedureParameters\IOutputStoredProcedureParameter.cs" />
     <Compile Include="StoredProcedureParameters\IStoredProcedureParameter.cs" />

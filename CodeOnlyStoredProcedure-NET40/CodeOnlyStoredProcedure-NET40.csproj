@@ -173,6 +173,9 @@
     <Compile Include="..\CodeOnlyStoredProcedure\NamespaceDoc.cs">
       <Link>NamespaceDoc.cs</Link>
     </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\OptionalResultAttribute.cs">
+      <Link>OptionalResultAttribute.cs</Link>
+    </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\Properties\AssemblyInfo.cs">
       <Link>Properties\AssemblyInfo.cs</Link>
     </Compile>
