@@ -59,6 +59,12 @@ namespace CodeOnlyStoredProcedure
                         .ToArray();
         }
 
+        internal static IEnumerable<string> GetRequiredPropertyNames(this Type t)
+        {
+            return t.GetResultPropertiesBySqlName().Where(kv => !kv.Value.GetCustomAttributes(typeof(OptionalResultAttribute), false).Any())
+                                                   .Select(kv => kv.Key);
+        }
+
         internal static bool IsEnumeratedType(this Type t)
         {
             Contract.Requires(t != null);
@@ -305,7 +311,6 @@ namespace CodeOnlyStoredProcedure
                              .FirstOrDefault();
 
                 // store table values, scalar value or null
-                var value = pi.GetValue(instance, null);
                 if (tableAttr == null && pi.PropertyType.IsEnumeratedType())
                 {
                     tableAttr = pi.PropertyType

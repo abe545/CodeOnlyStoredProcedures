@@ -173,6 +173,9 @@
     <Compile Include="..\CodeOnlyStoredProcedure\NamespaceDoc.cs">
       <Link>NamespaceDoc.cs</Link>
     </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\OptionalResultAttribute.cs">
+      <Link>OptionalResultAttribute.cs</Link>
+    </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\Properties\AssemblyInfo.cs">
       <Link>Properties\AssemblyInfo.cs</Link>
     </Compile>
@@ -285,6 +288,14 @@
       <LastGenOutput>StoredProcedure.generated.cs</LastGenOutput>
       <DependentUpon>StoredProcedure.cs</DependentUpon>
       <LastOutputs>.\StoredProcedure.generated.cs</LastOutputs>
+    </None>
+    <None Include="..\CodeOnlyStoredProcedure\StoredProcedureExtensions.WithResults.tt">
+      <Link>StoredProcedure.WithResults.tt</Link>
+      <DependentUpon>StoredProcedureExtensions.cs</DependentUpon>
+    </None>
+    <None Include="..\CodeOnlyStoredProcedure\StoredProcedureTemplate.tt">
+      <Link>StoredProcedureTemplate.tt</Link>
+      <DependentUpon>StoredProcedure.cs</DependentUpon>
     </None>
     <None Include="..\CodeOnlyStoredProcedure\StoredProcedureExtensions.tt">
       <Link>StoredProcedureExtensions.tt</Link>
