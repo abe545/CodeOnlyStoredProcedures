@@ -112,6 +112,23 @@ namespace CodeOnlyTests
                   .WithInnerException<InvalidCastException>();
         }
 
+        [TestMethod]
+        public void CreateRow_WithPropertyTransformerWillCallTransformer()
+        {
+            var toTest = new DynamicRowFactory<Row>()
+                .CreateRow(new[] { "Name", "Price", "Rename", "Transformed" },
+                           new object[] { "Foo", 13.3, "Bar", 42.0 },
+                           Enumerable.Empty<IDataTransformer>());
+
+            toTest.Should().NotBeNull("one row should have been returned")
+                  .And.BeOfType<Row>()
+                  .And.Subject
+                  .Should().Match<Row>(r => r.Name == "Foo", "Name column returned Foo")
+                  .And     .Match<Row>(r => r.Price == 13.3, "Price column returned 13.3")
+                  .And     .Match<Row>(r => r.Other == "Bar", "Other column returned Bar")
+                  .And     .Match<Row>(r => r.Transformed == 42M, "Transformed column returned 42.0 double, which should have been converted to 42 decimal");
+        }
+
         private class Row
         {
             public string Name { get; set; }
@@ -120,6 +137,8 @@ namespace CodeOnlyTests
             public string Other { get; set; }
             [OptionalResult]
             public bool Optional { get; set; }
+            [OptionalResult, ConvertNumeric]
+            public decimal Transformed { get; set; }
         }
     }
 }
