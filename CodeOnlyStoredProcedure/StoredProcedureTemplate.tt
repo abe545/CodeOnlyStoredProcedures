@@ -85,7 +85,7 @@ public class StoredProcedureTemplate : Template
 			if (i > 1)
 				Write(", ");
 
-			Write("(IEnumerable<T" + i + ">)results[t" + i + "]");
+			Write("(IEnumerable<T" + i + ">)results[" + (i-1) + "]");
 		}
 
 		if (TypeCount > 1)

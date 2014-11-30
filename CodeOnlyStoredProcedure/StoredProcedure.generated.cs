@@ -114,7 +114,7 @@ namespace CodeOnlyStoredProcedure
 
 			var results = Execute(connection, CancellationToken.None, timeout, new[] { t1 });
 
-			return (IEnumerable<T1>)results[t1]; 
+			return (IEnumerable<T1>)results[0]; 
 		}
 		
         /// <summary>
@@ -162,7 +162,7 @@ namespace CodeOnlyStoredProcedure
 				{
 					var results = Execute(connection, token, timeout, new[] { t1 });
 
-					return (IEnumerable<T1>)results[t1]; 
+					return (IEnumerable<T1>)results[0]; 
 				}, 
 				token,
                 TaskCreationOptions.None,
@@ -308,7 +308,7 @@ namespace CodeOnlyStoredProcedure
 
 			var results = Execute(connection, CancellationToken.None, timeout, new[] { t1, t2 });
 
-			return Tuple.Create((IEnumerable<T1>)results[t1], (IEnumerable<T2>)results[t2]); 
+			return Tuple.Create((IEnumerable<T1>)results[0], (IEnumerable<T2>)results[1]); 
 		}
 		
         /// <summary>
@@ -356,7 +356,7 @@ namespace CodeOnlyStoredProcedure
 				{
 					var results = Execute(connection, token, timeout, new[] { t1, t2 });
 
-					return Tuple.Create((IEnumerable<T1>)results[t1], (IEnumerable<T2>)results[t2]); 
+					return Tuple.Create((IEnumerable<T1>)results[0], (IEnumerable<T2>)results[1]); 
 				}, 
 				token,
                 TaskCreationOptions.None,
@@ -505,7 +505,7 @@ namespace CodeOnlyStoredProcedure
 
 			var results = Execute(connection, CancellationToken.None, timeout, new[] { t1, t2, t3 });
 
-			return Tuple.Create((IEnumerable<T1>)results[t1], (IEnumerable<T2>)results[t2], (IEnumerable<T3>)results[t3]); 
+			return Tuple.Create((IEnumerable<T1>)results[0], (IEnumerable<T2>)results[1], (IEnumerable<T3>)results[2]); 
 		}
 		
         /// <summary>
@@ -553,7 +553,7 @@ namespace CodeOnlyStoredProcedure
 				{
 					var results = Execute(connection, token, timeout, new[] { t1, t2, t3 });
 
-					return Tuple.Create((IEnumerable<T1>)results[t1], (IEnumerable<T2>)results[t2], (IEnumerable<T3>)results[t3]); 
+					return Tuple.Create((IEnumerable<T1>)results[0], (IEnumerable<T2>)results[1], (IEnumerable<T3>)results[2]); 
 				}, 
 				token,
                 TaskCreationOptions.None,
@@ -705,7 +705,7 @@ namespace CodeOnlyStoredProcedure
 
 			var results = Execute(connection, CancellationToken.None, timeout, new[] { t1, t2, t3, t4 });
 
-			return Tuple.Create((IEnumerable<T1>)results[t1], (IEnumerable<T2>)results[t2], (IEnumerable<T3>)results[t3], (IEnumerable<T4>)results[t4]); 
+			return Tuple.Create((IEnumerable<T1>)results[0], (IEnumerable<T2>)results[1], (IEnumerable<T3>)results[2], (IEnumerable<T4>)results[3]); 
 		}
 		
         /// <summary>
@@ -753,7 +753,7 @@ namespace CodeOnlyStoredProcedure
 				{
 					var results = Execute(connection, token, timeout, new[] { t1, t2, t3, t4 });
 
-					return Tuple.Create((IEnumerable<T1>)results[t1], (IEnumerable<T2>)results[t2], (IEnumerable<T3>)results[t3], (IEnumerable<T4>)results[t4]); 
+					return Tuple.Create((IEnumerable<T1>)results[0], (IEnumerable<T2>)results[1], (IEnumerable<T3>)results[2], (IEnumerable<T4>)results[3]); 
 				}, 
 				token,
                 TaskCreationOptions.None,
@@ -908,7 +908,7 @@ namespace CodeOnlyStoredProcedure
 
 			var results = Execute(connection, CancellationToken.None, timeout, new[] { t1, t2, t3, t4, t5 });
 
-			return Tuple.Create((IEnumerable<T1>)results[t1], (IEnumerable<T2>)results[t2], (IEnumerable<T3>)results[t3], (IEnumerable<T4>)results[t4], (IEnumerable<T5>)results[t5]); 
+			return Tuple.Create((IEnumerable<T1>)results[0], (IEnumerable<T2>)results[1], (IEnumerable<T3>)results[2], (IEnumerable<T4>)results[3], (IEnumerable<T5>)results[4]); 
 		}
 		
         /// <summary>
@@ -956,7 +956,7 @@ namespace CodeOnlyStoredProcedure
 				{
 					var results = Execute(connection, token, timeout, new[] { t1, t2, t3, t4, t5 });
 
-					return Tuple.Create((IEnumerable<T1>)results[t1], (IEnumerable<T2>)results[t2], (IEnumerable<T3>)results[t3], (IEnumerable<T4>)results[t4], (IEnumerable<T5>)results[t5]); 
+					return Tuple.Create((IEnumerable<T1>)results[0], (IEnumerable<T2>)results[1], (IEnumerable<T3>)results[2], (IEnumerable<T4>)results[3], (IEnumerable<T5>)results[4]); 
 				}, 
 				token,
                 TaskCreationOptions.None,
@@ -1114,7 +1114,7 @@ namespace CodeOnlyStoredProcedure
 
 			var results = Execute(connection, CancellationToken.None, timeout, new[] { t1, t2, t3, t4, t5, t6 });
 
-			return Tuple.Create((IEnumerable<T1>)results[t1], (IEnumerable<T2>)results[t2], (IEnumerable<T3>)results[t3], (IEnumerable<T4>)results[t4], (IEnumerable<T5>)results[t5], (IEnumerable<T6>)results[t6]); 
+			return Tuple.Create((IEnumerable<T1>)results[0], (IEnumerable<T2>)results[1], (IEnumerable<T3>)results[2], (IEnumerable<T4>)results[3], (IEnumerable<T5>)results[4], (IEnumerable<T6>)results[5]); 
 		}
 		
         /// <summary>
@@ -1162,7 +1162,7 @@ namespace CodeOnlyStoredProcedure
 				{
 					var results = Execute(connection, token, timeout, new[] { t1, t2, t3, t4, t5, t6 });
 
-					return Tuple.Create((IEnumerable<T1>)results[t1], (IEnumerable<T2>)results[t2], (IEnumerable<T3>)results[t3], (IEnumerable<T4>)results[t4], (IEnumerable<T5>)results[t5], (IEnumerable<T6>)results[t6]); 
+					return Tuple.Create((IEnumerable<T1>)results[0], (IEnumerable<T2>)results[1], (IEnumerable<T3>)results[2], (IEnumerable<T4>)results[3], (IEnumerable<T5>)results[4], (IEnumerable<T6>)results[5]); 
 				}, 
 				token,
                 TaskCreationOptions.None,
@@ -1323,7 +1323,7 @@ namespace CodeOnlyStoredProcedure
 
 			var results = Execute(connection, CancellationToken.None, timeout, new[] { t1, t2, t3, t4, t5, t6, t7 });
 
-			return Tuple.Create((IEnumerable<T1>)results[t1], (IEnumerable<T2>)results[t2], (IEnumerable<T3>)results[t3], (IEnumerable<T4>)results[t4], (IEnumerable<T5>)results[t5], (IEnumerable<T6>)results[t6], (IEnumerable<T7>)results[t7]); 
+			return Tuple.Create((IEnumerable<T1>)results[0], (IEnumerable<T2>)results[1], (IEnumerable<T3>)results[2], (IEnumerable<T4>)results[3], (IEnumerable<T5>)results[4], (IEnumerable<T6>)results[5], (IEnumerable<T7>)results[6]); 
 		}
 		
         /// <summary>
@@ -1371,7 +1371,7 @@ namespace CodeOnlyStoredProcedure
 				{
 					var results = Execute(connection, token, timeout, new[] { t1, t2, t3, t4, t5, t6, t7 });
 
-					return Tuple.Create((IEnumerable<T1>)results[t1], (IEnumerable<T2>)results[t2], (IEnumerable<T3>)results[t3], (IEnumerable<T4>)results[t4], (IEnumerable<T5>)results[t5], (IEnumerable<T6>)results[t6], (IEnumerable<T7>)results[t7]); 
+					return Tuple.Create((IEnumerable<T1>)results[0], (IEnumerable<T2>)results[1], (IEnumerable<T3>)results[2], (IEnumerable<T4>)results[3], (IEnumerable<T5>)results[4], (IEnumerable<T6>)results[5], (IEnumerable<T7>)results[6]); 
 				}, 
 				token,
                 TaskCreationOptions.None,

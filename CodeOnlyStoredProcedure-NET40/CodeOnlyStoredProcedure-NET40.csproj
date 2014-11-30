@@ -179,6 +179,9 @@
     <Compile Include="..\CodeOnlyStoredProcedure\Properties\AssemblyInfo.cs">
       <Link>Properties\AssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\ExpandoObjectRowFactory.cs">
+      <Link>RowFactory\ExpandoObjectRowFactory.cs</Link>
+    </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\SqlServerStoredProcedureParameterAttribute.cs">
       <Link>SqlServerStoredProcedureParameterAttribute.cs</Link>
     </Compile>

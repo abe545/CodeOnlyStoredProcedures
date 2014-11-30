@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -203,22 +202,6 @@ namespace CodeOnlyStoredProcedure
                 il.Emit(OpCodes.Ret);
 
                 setters.Add(kv.Key, Tuple.Create((Set)method.CreateDelegate(typeof(Set)), propAttrs));
-            }
-        }
-
-        public static void SetProperty(T row, object value, IEnumerable<IDataTransformer> transformers, Attribute[] attributes)
-        {
-            var type = typeof(string);
-            foreach (var xFormer in transformers)
-            {
-                if (xFormer.CanTransform(value, type, true, attributes))
-                    value = xFormer.Transform(value, type, true, attributes);
-            }
-
-            for (int i = 0; i < attributes.Length; i++)
-            {
-                if (attributes[i] is DataTransformerAttributeBase)
-                    value = ((DataTransformerAttributeBase)attributes[i]).Transform(value, type, true);
             }
         }
 

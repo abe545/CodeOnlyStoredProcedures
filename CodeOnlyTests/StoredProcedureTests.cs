@@ -318,7 +318,7 @@ namespace CodeOnlyTests
 
             var res = toTest.Execute(conn.Object, CancellationToken.None, 100);
 
-            Assert.AreEqual(0, res.Count);
+            Assert.AreEqual(0, res.Length);
             Assert.AreEqual("[foo].[bar]", cmd.Object.CommandText);
             Assert.AreEqual(CommandType.StoredProcedure, cmd.Object.CommandType);
             Assert.AreEqual(100, cmd.Object.CommandTimeout);

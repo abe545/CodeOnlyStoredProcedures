@@ -64,6 +64,13 @@ namespace SmokeTests
             if (!TestGetWidgetResults(items))
                 return false;
 
+            Console.Write("Calling usp_GetWidget asynchronously (Dynamic Results) - ");
+            Task<Tuple<IEnumerable<dynamic>, IEnumerable<dynamic>>> asyncDynamics =
+                db.Database.Connection.ExecuteAsync(timeout).usp_GetWidget(WidgetId: 1);
+
+            if (!TestGetWidgetResultsDynamic(asyncDynamics.Result))
+                return false;
+
             Console.Write("Calling usp_GetItem asynchronously two times simultaneously - ");
 
             var sp = db.GetWidget.WithInput(new { WidgetId = 1 });
@@ -140,6 +147,67 @@ namespace SmokeTests
             if (finalSuccess)
                 WriteSuccess();
 
+            return true;
+        }
+
+        static bool TestGetWidgetResultsDynamic(Tuple<IEnumerable<dynamic>, IEnumerable<dynamic>> items)
+        {
+            var widget = items.Item1;
+            var components = items.Item2;
+
+            if (!widget.Any())
+            {
+                WriteError("\tDid not return any items in the first result set.");
+                return false;
+            }
+            if (!components.Any())
+            {
+                WriteError("\tDid not return any items in the second result set.");
+                return false;
+            }
+
+            if (widget.Count() > 1)
+            {
+                WriteError("\tUnexpected results returned in the first result set.");
+                return false;
+            }
+
+            var w = widget.Single();
+            if (w.WidgetId != 1 ||
+                w.IsNew ||
+                w.Name != "Grub" ||
+                w.Price != 22.22M ||
+                w.Weight != 3.3)
+            {
+                WriteError("\tData not mapped correctly in first result set.");
+                return false;
+            }
+
+            if (components.Count() != 3)
+            {
+                WriteError("\tUnexpected results returned in the second result set.");
+                return false;
+            }
+
+            var ids = components.Select(c => (int)c.WidgetComponentId)
+                                .OrderBy(i => i);
+
+            if (!ids.SequenceEqual(new[] { 2, 3, 4 }))
+            {
+                WriteError("\tData not mapped correctly in second result set.");
+                return false;
+            }
+
+            var names = components.Select(c => c.Name)
+                                  .OrderBy(s => s);
+
+            if (!names.SequenceEqual(new[] { "Antennae", "Compound Eye", "Leg" }))
+            {
+                WriteError("\tData not mapped correctly in second result set.");
+                return false;
+            }
+
+            WriteSuccess();
             return true;
         }
     }

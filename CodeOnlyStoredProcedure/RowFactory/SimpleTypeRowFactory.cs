@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CodeOnlyStoredProcedure
+namespace CodeOnlyStoredProcedure.RowFactory
 {
     internal class SimpleTypeRowFactory : IRowFactory
     {

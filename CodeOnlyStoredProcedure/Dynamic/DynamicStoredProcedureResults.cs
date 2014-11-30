@@ -258,7 +258,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
         private object GetSingleResult(Type itemType)
         {
-            return resultTask.Result.Parse(new[] { itemType }, transformers)[itemType];
+            return resultTask.Result.Parse(new[] { itemType }, transformers)[0];
         }
 
         private Task<IEnumerable<T>> CreateSingleContinuation<T>()
@@ -277,7 +277,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
             var parsed     = resultTask.Result.Parse(innerTypes, transformers);
 
             return create.MakeGenericMethod(types)
-                         .Invoke(null, innerTypes.Select(t => parsed[t]).ToArray());
+                         .Invoke(null, innerTypes.Select((_, i) => parsed[i]).ToArray());
         }
 
         private Task CreateMultipleContinuation(Type[] types)
@@ -303,7 +303,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
                     else
                     {
                         var res = r.Result.Parse(innerTypes, transformers);
-                        tcs.SetResult(parse.Invoke(null, innerTypes.Select(t => res[t]).ToArray()));
+                        tcs.SetResult(parse.Invoke(null, innerTypes.Select((_, i) => res[i]).ToArray()));
                     }
                 });
 

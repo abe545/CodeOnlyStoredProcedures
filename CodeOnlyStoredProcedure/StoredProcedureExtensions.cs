@@ -2,11 +2,11 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.SqlClient;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using CodeOnlyStoredProcedure.RowFactory;
 using Microsoft.SqlServer.Server;
 
 namespace CodeOnlyStoredProcedure
@@ -49,7 +49,7 @@ namespace CodeOnlyStoredProcedure
             return results;
         }
 
-        internal static IDictionary<Type, IList> Execute(
+        internal static IList[] Execute(
             this IDbCommand               cmd,
             CancellationToken             token,
             IEnumerable<Type>             outputTypes,
@@ -58,7 +58,7 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(cmd          != null);
             Contract.Requires(outputTypes  != null && Contract.ForAll(outputTypes, t => t != null));
             Contract.Requires(transformers != null);
-            Contract.Ensures (Contract.Result<IDictionary<Type, IList>>() != null);
+            Contract.Ensures (Contract.Result<IList[]>() != null);
 
             var results = cmd.Execute(token);
 
@@ -70,7 +70,7 @@ namespace CodeOnlyStoredProcedure
             return results.Parse(outputTypes, transformers);
         }
 
-        internal static IDictionary<Type, IList> Parse(
+        internal static IList[] Parse(
             this IEnumerable<StoredProcedureResult> results,
                  IEnumerable<Type>                  outputTypes, 
                  IEnumerable<IDataTransformer>      transformers)
@@ -78,10 +78,10 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(results      != null);
             Contract.Requires(outputTypes  != null && Contract.ForAll(outputTypes,  t => t != null));
             Contract.Requires(transformers != null && Contract.ForAll(transformers, t => t != null));
-            Contract.Ensures (Contract.Result<IDictionary<Type, IList>>() != null);
+            Contract.Ensures (Contract.Result<IList[]>() != null);
 
             var spResults = results.ToArray();
-            var output    = new Dictionary<Type, IList>();
+            var output    = new List<IList>();
             int i         = 0;
 
             foreach (var currentType in outputTypes)
@@ -93,6 +93,8 @@ namespace CodeOnlyStoredProcedure
                 // process the result set
                 if (res.ColumnNames.Length == 1 && currentType.IsSimpleType())
                     factory = new SimpleTypeRowFactory(currentType);
+                else if (currentType == typeof(object))
+                    factory = new ExpandoObjectRowFactory();
                 else
                 {
                     Type impl = currentType;
@@ -106,7 +108,6 @@ namespace CodeOnlyStoredProcedure
 
                 foreach (var values in res.Rows)
                 {
-
                     var row = factory.CreateRow(res.ColumnNames, values, transformers);
 
                     try
@@ -129,11 +130,11 @@ namespace CodeOnlyStoredProcedure
                         throw new StoredProcedureResultsException(currentType, factory.UnfoundPropertyNames.ToArray());
                 }
 
-                output.Add(currentType, rows);
+                output.Add(rows);
                 ++i;
             }
 
-            return output;
+            return output.ToArray();
         }
 
         internal static T DoExecute<T>(this IDbCommand cmd, Func<IDbCommand, T> exec, CancellationToken token)

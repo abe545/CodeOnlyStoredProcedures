@@ -470,14 +470,14 @@ namespace CodeOnlyStoredProcedure
 
         // Suppress this message, because the sp name is never set via user input
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2100:Review SQL queries for security vulnerabilities")]
-        internal IDictionary<Type, IList> Execute(
+        internal IList[] Execute(
             IDbConnection     connection,
             CancellationToken token,
             int               commandTimeout = defaultTimeout,
             IEnumerable<Type> outputTypes    = null)
         {
             Contract.Requires(connection != null);
-            Contract.Ensures(Contract.Result<IDictionary<Type, IList>>() != null);
+            Contract.Ensures(Contract.Result<IList[]>() != null);
 
             IDbConnection toClose = null;
             try
@@ -490,13 +490,13 @@ namespace CodeOnlyStoredProcedure
 
                     token.ThrowIfCancellationRequested();
 
-                    IDictionary<Type, IList> results;
+                    IList[] results;
                     if (outputTypes != null && outputTypes.Any())
                         results = cmd.Execute(token, outputTypes, dataTransformers);
                     else
                     {
                         cmd.DoExecute(c => c.ExecuteNonQuery(), token);
-                        results = new Dictionary<Type, IList>();
+                        results = new IList[0];
                     }
 
                     foreach (var parm in dbParameters.Where(p => p.Direction != ParameterDirection.Input))

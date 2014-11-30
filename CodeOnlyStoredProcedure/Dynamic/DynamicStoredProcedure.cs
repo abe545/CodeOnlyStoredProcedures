@@ -2,15 +2,11 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.SqlClient;
 using System.Diagnostics.Contracts;
 using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 using System.Threading;
-using System.Threading.Tasks;
-using CodeOnlyStoredProcedure.Dynamic;
 using Microsoft.CSharp.RuntimeBinder;
 
 namespace CodeOnlyStoredProcedure.Dynamic

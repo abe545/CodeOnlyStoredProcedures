@@ -126,7 +126,7 @@ namespace CodeOnlyTests
 
             var results = command.Object.Execute(CancellationToken.None, new[] { typeof(SingleResultSet) }, Enumerable.Empty<IDataTransformer>());
 
-            var toTest = (IList<SingleResultSet>)results[typeof(SingleResultSet)];
+            var toTest = (IList<SingleResultSet>)results[0];
 
             Assert.AreEqual(1, toTest.Count);
             var item = toTest[0];
@@ -138,6 +138,65 @@ namespace CodeOnlyTests
             Assert.AreEqual(1028130L,                  item.Long);
             Assert.AreEqual(new DateTime(1982, 1, 31), item.Date);
             Assert.AreEqual(FooBar.Bar,                item.FooBar);
+        }
+
+        [TestMethod]
+        public void TestExecuteReturnsDynamicResultOneRow()
+        {
+            var values = new Dictionary<string, object>
+            {
+                { "String",  "Hello, World!"           },
+                { "Double",  42.0                      },
+                { "Decimal", 100M                      },
+                { "Int",     99                        },
+                { "Long",    1028130L                  },
+                { "Date",    new DateTime(1982, 1, 31) }
+            };
+
+            var keys = values.Keys.OrderBy(s => s).ToArray();
+            var vals = values.OrderBy(kv => kv.Key).Select(kv => kv.Value).ToArray();
+
+            var reader  = new Mock<IDataReader>();
+            var command = new Mock<IDbCommand>();
+
+            command.Setup(d => d.ExecuteReader())
+                   .Returns(reader.Object);
+
+            reader.SetupGet(r => r.FieldCount)
+                  .Returns(keys.Length);
+
+            var first = true;
+            reader.Setup(r => r.Read())
+                  .Returns(() =>
+                  {
+                      if (first)
+                      {
+                          first = false;
+                          return true;
+                      }
+
+                      return false;
+                  });
+
+            reader.Setup(r => r.GetName(It.IsAny<int>()))
+                  .Returns((int i) => keys[i]);
+            reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
+                  .Callback((object[] arr) => vals.CopyTo(arr, 0))
+                  .Returns(vals.Length);
+
+            var results = command.Object.Execute(CancellationToken.None, new[] { typeof(object) }, Enumerable.Empty<IDataTransformer>());
+
+            var toTest = (IList<dynamic>)results[0];
+
+            Assert.AreEqual(1, toTest.Count);
+            var item = toTest[0];
+
+            Assert.AreEqual("Hello, World!",           item.String);
+            Assert.AreEqual(42.0,                      item.Double);
+            Assert.AreEqual(100M,                      item.Decimal);
+            Assert.AreEqual(99,                        item.Int);
+            Assert.AreEqual(1028130L,                  item.Long);
+            Assert.AreEqual(new DateTime(1982, 1, 31), item.Date);
         }
 
         [TestMethod]
@@ -187,7 +246,7 @@ namespace CodeOnlyTests
 
             var results = command.Object.Execute(CancellationToken.None, new[] { typeof(SingleResultSet) }, Enumerable.Empty<IDataTransformer>());
 
-            var toTest = (IList<SingleResultSet>)results[typeof(SingleResultSet)];
+            var toTest = (IList<SingleResultSet>)results[0];
 
             Assert.AreEqual(1, toTest.Count);
             var item = toTest[0];
@@ -234,7 +293,7 @@ namespace CodeOnlyTests
 
             var results = command.Object.Execute(CancellationToken.None, new[] { typeof(RenamedColumn) }, Enumerable.Empty<IDataTransformer>());
 
-            var toTest = (IList<RenamedColumn>)results[typeof(RenamedColumn)];
+            var toTest = (IList<RenamedColumn>)results[0];
 
             Assert.AreEqual(1, toTest.Count);
             var item = toTest[0];
@@ -269,7 +328,7 @@ namespace CodeOnlyTests
 
             var res = command.Object.Execute(CancellationToken.None, new[] { typeof(SingleColumn) }, Enumerable.Empty<IDataTransformer>());
 
-            var toTest = (IList<SingleColumn>)res[typeof(SingleColumn)];
+            var toTest = (IList<SingleColumn>)res[0];
 
             Assert.AreEqual(3, toTest.Count);
 
@@ -315,7 +374,7 @@ namespace CodeOnlyTests
 
             var results = command.Object.Execute(CancellationToken.None, new[] { typeof(NullableColumns) }, Enumerable.Empty<IDataTransformer>());
 
-            var toTest = (IList<NullableColumns>)results[typeof(NullableColumns)];
+            var toTest = (IList<NullableColumns>)results[0];
 
             Assert.AreEqual(1, toTest.Count);
             var item = toTest[0];
@@ -393,7 +452,7 @@ namespace CodeOnlyTests
 
             var results = command.Object.Execute(CancellationToken.None, new[] { typeof(WithStaticValue) }, Enumerable.Empty<IDataTransformer>());
 
-            var toTest = (IList<WithStaticValue>)results[typeof(WithStaticValue)];
+            var toTest = (IList<WithStaticValue>)results[0];
 
             Assert.AreEqual(1, toTest.Count);
             var item = toTest[0];
@@ -434,7 +493,7 @@ namespace CodeOnlyTests
 
             var results = command.Object.Execute(CancellationToken.None, new[] { typeof(WithStaticValue) }, Enumerable.Empty<IDataTransformer>());
 
-            var toTest = (IList<WithStaticValue>)results[typeof(WithStaticValue)];
+            var toTest = (IList<WithStaticValue>)results[0];
 
             Assert.AreEqual(1, toTest.Count);
             var item = toTest[0];
@@ -475,7 +534,7 @@ namespace CodeOnlyTests
 
             var results = command.Object.Execute(CancellationToken.None, new[] { typeof(RenamedColumnWithStaticValue) }, Enumerable.Empty<IDataTransformer>());
 
-            var toTest = (IList<RenamedColumnWithStaticValue>)results[typeof(RenamedColumnWithStaticValue)];
+            var toTest = (IList<RenamedColumnWithStaticValue>)results[0];
 
             Assert.AreEqual(1, toTest.Count);
             var item = toTest[0];
@@ -516,7 +575,7 @@ namespace CodeOnlyTests
 
             var results = command.Object.Execute(CancellationToken.None, new[] { typeof(WithStaticValueToUpper) }, Enumerable.Empty<IDataTransformer>());
 
-            var toTest = (IList<WithStaticValueToUpper>)results[typeof(WithStaticValueToUpper)];
+            var toTest = (IList<WithStaticValueToUpper>)results[0];
 
             Assert.AreEqual(1, toTest.Count);
             var item = toTest[0];
@@ -559,7 +618,7 @@ namespace CodeOnlyTests
                                                  new[] { typeof(SingleColumn) },
                                                  new IDataTransformer[] { new StaticTransformer { Result = "Foobar" } });
 
-            var toTest = (IList<SingleColumn>)results[typeof(SingleColumn)];
+            var toTest = (IList<SingleColumn>)results[0];
 
             Assert.AreEqual(1, toTest.Count);
             var item = toTest[0];
@@ -602,7 +661,7 @@ namespace CodeOnlyTests
                                                  new[] { typeof(SingleColumn) },
                                                  new IDataTransformer[] { new StaticTransformer { Result = "Foobar" } });
 
-            var toTest = (IList<SingleColumn>)results[typeof(SingleColumn)];
+            var toTest = (IList<SingleColumn>)results[0];
 
             Assert.AreEqual(1, toTest.Count);
             var item = toTest[0];
@@ -645,7 +704,7 @@ namespace CodeOnlyTests
                                                  new[] { typeof(RenamedColumn) },
                                                  new IDataTransformer[] { new StaticTransformer { Result = "Foobar" } });
 
-            var toTest = (IList<RenamedColumn>)results[typeof(RenamedColumn)];
+            var toTest = (IList<RenamedColumn>)results[0];
 
             Assert.AreEqual(1, toTest.Count);
             var item = toTest[0];
@@ -688,7 +747,7 @@ namespace CodeOnlyTests
                                                  new[] { typeof(SingleColumn) },
                                                  new IDataTransformer[] { new NeverTransformer() });
 
-            var toTest = (IList<SingleColumn>)results[typeof(SingleColumn)];
+            var toTest = (IList<SingleColumn>)results[0];
 
             Assert.AreEqual(1, toTest.Count);
             var item = toTest[0];
@@ -731,7 +790,7 @@ namespace CodeOnlyTests
                                                  new[] { typeof(SingleColumn) },
                                                  new IDataTransformer[] { new NeverTransformer() });
 
-            var toTest = (IList<SingleColumn>)results[typeof(SingleColumn)];
+            var toTest = (IList<SingleColumn>)results[0];
 
             Assert.AreEqual(1, toTest.Count);
             var item = toTest[0];
@@ -765,7 +824,7 @@ namespace CodeOnlyTests
                                                  new[] { typeof(RenamedColumn) },
                                                  new IDataTransformer[] { new NeverTransformer() });
 
-            var toTest = (IList<RenamedColumn>)results[typeof(RenamedColumn)];
+            var toTest = (IList<RenamedColumn>)results[0];
 
             Assert.AreEqual(1, toTest.Count);
             var item = toTest[0];
@@ -801,7 +860,7 @@ namespace CodeOnlyTests
                                                  new[] { typeof(string) },
                                                  Enumerable.Empty<IDataTransformer>());
 
-            var totest = (IEnumerable<string>)results[typeof(string)];
+            var totest = (IEnumerable<string>)results[0];
             for (int j = 0; j < res.Length; j++)
             {
                 Assert.AreEqual(res[j], totest.ElementAt(j));
@@ -836,7 +895,7 @@ namespace CodeOnlyTests
                                                  new[] { typeof(int) },
                                                  Enumerable.Empty<IDataTransformer>());
 
-            var totest = (IEnumerable<int>)results[typeof(int)];
+            var totest = (IEnumerable<int>)results[0];
             for (int j = 0; j < res.Length; j++)
             {
                 Assert.AreEqual(res[j], totest.ElementAt(j));
@@ -871,7 +930,7 @@ namespace CodeOnlyTests
                                                  new[] { typeof(FooBar) },
                                                  Enumerable.Empty<IDataTransformer>());
 
-            var totest = (IEnumerable<FooBar>)results[typeof(FooBar)];
+            var totest = (IEnumerable<FooBar>)results[0];
             for (int j = 0; j < res.Length; j++)
             {
                 Assert.AreEqual(res[j], totest.ElementAt(j));
@@ -906,7 +965,7 @@ namespace CodeOnlyTests
                                                  new[] { typeof(FooBar) },
                                                  Enumerable.Empty<IDataTransformer>());
 
-            var totest = (IEnumerable<FooBar>)results[typeof(FooBar)];
+            var totest = (IEnumerable<FooBar>)results[0];
             for (int j = 0; j < res.Length; j++)
                 Assert.AreEqual(res[j], totest.ElementAt(j));
         }
@@ -972,7 +1031,7 @@ namespace CodeOnlyTests
                                                  new[] { typeof(NullableChecker) },
                                                  Enumerable.Empty<IDataTransformer>());
 
-            var totest = (IEnumerable<NullableChecker>)results[typeof(NullableChecker)];
+            var totest = (IEnumerable<NullableChecker>)results[0];
             for (int j = 0; j < res.Length; j++)
                 Assert.AreEqual(res[j], totest.ElementAt(j).Value);
         }
@@ -1017,7 +1076,7 @@ namespace CodeOnlyTests
                                                  new[] { typeof(NullableChecker) },
                                                  new[] { xformer.Object });
 
-            var totest = (IEnumerable<NullableChecker>)results[typeof(NullableChecker)];
+            var totest = (IEnumerable<NullableChecker>)results[0];
             for (int j = 0; j < res.Length; j++)
                 Assert.AreEqual(res[j], totest.ElementAt(j).Value);
 

@@ -69,6 +69,27 @@ namespace SmokeTests
                 return false;
             }
 
+            Console.Write("Awaiting usp_GetSpokes (dynamic results) - ");
+
+            IEnumerable<dynamic> dynResults = db.Database.Connection.Execute(timeout).usp_GetSpokes(minimumSpokes: 6);
+            if (!dynResults.Any())
+            {
+                WriteError("\tdid not return any results.");
+                return false;
+            }
+            else if ((int)dynResults.First().Spoke != 8)
+            {
+                WriteError("\tfirst item != 8: " + dynResults.First().Spoke);
+                return false;
+            }
+            else if ((int)dynResults.Last().Spoke != 16)
+            {
+                WriteError("\tlast item != 16: " + dynResults.First().Spoke);
+                return false;
+            }
+            else
+                WriteSuccess();
+
             Console.Write("Awaiting usp_GetSpokes (Enum result) (No parameters) - ");
 
             IEnumerable<Spoke> spokes2 = db.Database.Connection.Execute(timeout).usp_GetSpokes();
