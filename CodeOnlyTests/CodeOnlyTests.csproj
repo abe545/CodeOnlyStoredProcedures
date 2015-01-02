@@ -49,10 +49,6 @@
       <HintPath>..\packages\Moq.4.2.1409.1722\lib\net40\Moq.dll</HintPath>
     </Reference>
     <Reference Include="System" />
-    <Reference Include="System.Collections.Immutable, Version=1.0.34.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Microsoft.Bcl.Immutable.1.0.34\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
-    </Reference>
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Data" />
     <Reference Include="System.Data.Entity" />
@@ -77,11 +73,16 @@
     <Compile Include="DataTransformation\InternAttributeTests.cs" />
     <Compile Include="DataTransformation\InternAllStringsTransformerTests.cs" />
     <Compile Include="DataTransformation\TrimAllStringsTransformerTests.cs" />
+    <Compile Include="MoqExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="..\VersionInfo.cs">
       <Link>Properties\VersionInfo.cs</Link>
     </Compile>
     <Compile Include="RowFactory\DyamicRowFactoryTests.cs" />
+    <Compile Include="RowFactory\EnumRowFactoryTests.cs" />
+    <Compile Include="RowFactory\ExpandoObjectRowFactoryTests.cs" />
+    <Compile Include="RowFactory\ComplexTypeRowFactoryTests.cs" />
+    <Compile Include="RowFactory\SimpleTypeRowFactoryTests.cs" />
     <Compile Include="StoredProcedureExtensionsTests.DoExecute.cs">
       <DependentUpon>StoredProcedureExtensionsTests.cs</DependentUpon>
     </Compile>

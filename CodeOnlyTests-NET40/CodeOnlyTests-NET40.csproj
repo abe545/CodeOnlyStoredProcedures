@@ -114,8 +114,20 @@
     <Compile Include="..\CodeOnlyTests\Dynamic\DynamicStoredProcedureTests.cs">
       <Link>Dynamic\DynamicStoredProcedureTests.cs</Link>
     </Compile>
+    <Compile Include="..\CodeOnlyTests\RowFactory\ComplexTypeRowFactoryTests.cs">
+      <Link>RowFactory\ComplexTypeRowFactoryTests.cs</Link>
+    </Compile>
     <Compile Include="..\CodeOnlyTests\RowFactory\DyamicRowFactoryTests.cs">
       <Link>RowFactory\DyamicRowFactoryTests.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyTests\RowFactory\EnumRowFactoryTests.cs">
+      <Link>RowFactory\EnumRowFactoryTests.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyTests\RowFactory\ExpandoObjectRowFactoryTests.cs">
+      <Link>RowFactory\ExpandoObjectRowFactoryTests.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyTests\RowFactory\SimpleTypeRowFactoryTests.cs">
+      <Link>RowFactory\SimpleTypeRowFactoryTests.cs</Link>
     </Compile>
     <Compile Include="..\CodeOnlyTests\StoredProcedureExtensionsTests.cs">
       <Link>StoredProcedureExtensionsTests.cs</Link>

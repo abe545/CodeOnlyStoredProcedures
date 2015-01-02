@@ -1,39 +1,41 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Dynamic;
-using System.Linq;
+using System.Linq.Expressions;
 
 namespace CodeOnlyStoredProcedure.RowFactory
 {
-    internal class ExpandoObjectRowFactory : IRowFactory
+    internal class ExpandoObjectRowFactory<T> : RowFactoryBase<T>
     {
-        public IEnumerable<string> UnfoundPropertyNames
+        static ExpandoObjectRowFactory()
         {
-            get { return Enumerable.Empty<string>(); }
+            if (typeof(T) != typeof(object))
+                throw new NotSupportedException("T must be of type object, since that is how the framework passes dynamic.");
         }
 
-        public object CreateRow(string[] fieldNames, object[] values, IEnumerable<IDataTransformer> transformers)
+        protected override Func<IDataReader, T> CreateRowFactory(IDataReader reader, IEnumerable<IDataTransformer> xFormers)
         {
-            IDictionary<string, object> ret = new ExpandoObject();
+            var all = new List<Expression>();
+            var rdr = Expression.Parameter(typeof(IDataReader));
+            var exp = Expression.Variable(typeof(ExpandoObject));
+            var add = typeof(IDictionary<string, object>).GetMethod("Add");
+            var val = Expression.Variable(typeof(object[]));
 
-            for (int i = 0; i < fieldNames.Length; i++)
+            all.Add(Expression.Assign(exp, Expression.New(typeof(ExpandoObject))));
+            all.Add(Expression.Assign(val, Expression.NewArrayBounds(typeof(object), Expression.Constant(reader.FieldCount))));
+            all.Add(Expression.Call  (rdr, typeof(IDataRecord).GetMethod("GetValues"), val));
+
+            for (int i = 0; i < reader.FieldCount; i++)
             {
-                var val = values[i];
-                if (val == DBNull.Value)
-                    val = null;
-
-                var valType = val != null ? val.GetType() : typeof(object);
-
-                foreach (var x in transformers)
-                {
-                    if (x.CanTransform(val, valType, true, Enumerable.Empty<Attribute>()))
-                        val = x.Transform(val, valType, true, Enumerable.Empty<Attribute>());
-                }
-
-                ret.Add(fieldNames[i], val);
+                var v = Expression.ArrayIndex(val, Expression.Constant(i));
+                all.Add(Expression.Call(exp, add, Expression.Constant(reader.GetName(i)), v));
             }
 
-            return ret;
+            all.Add(Expression.Convert(exp, typeof(T)));
+
+            return Expression.Lambda<Func<IDataReader, T>>(Expression.Block(typeof(T), new[] { exp, val }, all.ToArray()), rdr)
+                             .Compile();
         }
     }
 }

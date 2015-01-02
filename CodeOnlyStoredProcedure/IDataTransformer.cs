@@ -41,6 +41,21 @@ namespace CodeOnlyStoredProcedure
     [ContractClassFor(typeof(IDataTransformer))]
     abstract class IDataTransformerContract : IDataTransformer
     {
+        public Type OutputType
+        {
+            get 
+            {
+                Contract.Ensures(Contract.Result<Type>() != null);
+                return null;
+            }
+        }
+
+        public bool CanTransformInput(Type type)
+        {
+            Contract.Requires(type != null);
+            return false;
+        }
+
         public bool CanTransform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes)
         {
             Contract.Requires(targetType != null);

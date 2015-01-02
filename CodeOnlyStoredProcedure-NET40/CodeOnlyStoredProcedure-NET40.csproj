@@ -122,6 +122,9 @@
     <Compile Include="..\CodeOnlyStoredProcedure\DataTransformation\ConvertNumericAttribute.cs">
       <Link>DataTransformation\ConvertNumericAttribute.cs</Link>
     </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\DataTransformation\IDataTransformerAttribute.cs">
+      <Link>DataTransformation\IDataTransformerAttribute.cs</Link>
+    </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\DataTransformation\InternAllStringsTransformer.cs">
       <Link>DataTransformation\InternAllStringsTransformer.cs</Link>
     </Compile>
@@ -179,8 +182,23 @@
     <Compile Include="..\CodeOnlyStoredProcedure\Properties\AssemblyInfo.cs">
       <Link>Properties\AssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\AccessorFactoryBase.cs">
+      <Link>RowFactory\AccessorFactoryBase.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\EnumAccessorFactory.cs">
+      <Link>RowFactory\EnumAccessorFactory.cs</Link>
+    </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\ExpandoObjectRowFactory.cs">
       <Link>RowFactory\ExpandoObjectRowFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\RowFactory.cs">
+      <Link>RowFactory\RowFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\RowFactoryBase.cs">
+      <Link>RowFactory\RowFactoryBase.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\ValueAccessorFactory.cs">
+      <Link>RowFactory\ValueAccessorFactory.cs</Link>
     </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\SqlServerStoredProcedureParameterAttribute.cs">
       <Link>SqlServerStoredProcedureParameterAttribute.cs</Link>
@@ -220,12 +238,6 @@
     </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\IRowFactory.cs">
       <Link>RowFactory\IRowFactory.cs</Link>
-    </Compile>
-    <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\RowFactoryCreator.cs">
-      <Link>RowFactory\RowFactoryCreator.cs</Link>
-    </Compile>
-    <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\SimpleTypeRowFactory.cs">
-      <Link>RowFactory\SimpleTypeRowFactory.cs</Link>
     </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedure.cs">
       <Link>StoredProcedure.cs</Link>
@@ -312,6 +324,7 @@
   <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

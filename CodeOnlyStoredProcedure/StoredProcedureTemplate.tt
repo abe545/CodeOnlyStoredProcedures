@@ -24,14 +24,6 @@ public class StoredProcedureTemplate : Template
 			Write(">");
 	}
 
-	private void CreateCachedFields()
-	{
-		PushIndent("\t\t");
-		for (int i = 1; i <= TypeCount; ++i)
-			WriteLine("private static readonly Type t" + i + " = typeof(T" + i + ");");
-		PopIndent();
-	}
-
 	private void GetResults(bool isInXml = false)
 	{
 		if (TypeCount > 1)
@@ -64,35 +56,6 @@ public class StoredProcedureTemplate : Template
     {
 		Write(isInXml ? "&gt;" : ">");
     }
-
-	public void GetCachedFields()
-	{
-		for (int i = 1; i <= TypeCount; ++i)
-		{
-			if (i > 1)
-				Write(", ");
-			Write("t" + i);
-		}
-	}
-
-	public void ParseResults()
-	{
-		if (TypeCount > 1)
-			Write("Tuple.Create(");
-
-		for (int i = 1; i <= TypeCount; ++i)
-		{
-			if (i > 1)
-				Write(", ");
-
-			Write("(IEnumerable<T" + i + ">)results[" + (i-1) + "]");
-		}
-
-		if (TypeCount > 1)
-			Write(")");
-
-		Write(";");
-	}
 
 	public void WriteTypeParams()
     {
@@ -140,9 +103,65 @@ public class StoredProcedureTemplate : Template
 
         for (int i = 1; i <= TypeCount; i++)
         {
-			WriteLine("Contract.Requires(typeof(T" + i + ").IsValidResultType());");
+			if (i > 1 )
+				WriteLine("");
+			Write("Contract.Requires(typeof(T" + i + ").IsValidResultType());");
         }
 
+		PopIndent();
+    }
+
+	public void WriteReadResults()
+    {
+		PushIndent("\t\t\t\t");
+		if (TypeCount == 1)
+        {
+			WriteLine("results = T1Factory.ParseRows(reader, DataTransformers, token);");
+			PopIndent();
+			return;
+        }
+
+		for (int i = 1; i <= TypeCount; ++i)
+        {
+			if (i > 1)
+				WriteLine("reader.NextResult();");
+
+			WriteLine("var t" + i + " = T" + i + "Factory.ParseRows(reader, DataTransformers, token);");
+        }
+
+		Write("results = Tuple.Create(t1");
+		
+		for (int i = 2; i <= TypeCount; ++i)
+			Write(", t" + i);
+
+		WriteLine(");");
+		PopIndent();
+    }
+
+	public void WriteReadResultsAsync()
+    {
+		PushIndent("\t\t\t");
+		if (TypeCount == 1)
+        {
+			WriteLine("results = await T1Factory.ParseRowsAsync(reader, DataTransformers, token);");
+			PopIndent();
+			return;
+        }
+
+		for (int i = 1; i <= TypeCount; ++i)
+		{
+			if (i > 1)
+				WriteLine("await reader.NextResultAsync(token);");
+
+			WriteLine("var t" + i + " = await T" + i + "Factory.ParseRowsAsync(reader, DataTransformers, token);");
+        }
+
+		Write("results = Tuple.Create(t1");
+		
+		for (int i = 2; i <= TypeCount; ++i)
+			Write(", t" + i);
+
+		WriteLine(");");
 		PopIndent();
     }
 
@@ -155,7 +174,18 @@ public class StoredProcedureTemplate : Template
 	<#+ WriteTypeParams(); #>
 	public class StoredProcedure<#+ GetTypes(TypeCount); #> : StoredProcedure<#+ GetTypes(TypeCount - 1); #>
 	{
-<#+ CreateCachedFields(); #>
+		private IRowFactory<T<#+ Write(TypeCount.ToString()); #>> factory;
+
+		internal IRowFactory<T<#+ Write(TypeCount.ToString()); #>> T<#+ Write(TypeCount.ToString()); #>Factory 
+		{
+			get
+			{
+				if (factory == null)
+					factory = RowFactory<T<#+ Write(TypeCount.ToString()); #>>.Create();
+
+				return factory;
+			}
+		}
 
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
@@ -178,6 +208,7 @@ public class StoredProcedureTemplate : Template
 		{ 
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
+			<#+ WriteTypeChecks(); #>	
 		}
 		
 		internal StoredProcedure(StoredProcedure toClone)
@@ -186,7 +217,6 @@ public class StoredProcedureTemplate : Template
 			Contract.Requires(toClone != null);
 		}
 				
-#if NET40
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
         /// in the <paramref name="schema"/> schema, with the <see cref="IStoredProcedureParameter"/>s
@@ -208,29 +238,6 @@ public class StoredProcedureTemplate : Template
 			Contract.Requires(parameters       != null);
 			Contract.Requires(dataTransformers != null);
 		}
-#else
-        /// <summary>
-        /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
-        /// in the <paramref name="schema"/> schema, with the <see cref="IStoredProcedureParameter"/>s
-        /// to pass, the output action map, and the <see cref="IDataTransformer"/>s to 
-        /// use to transform the results.
-        /// </summary>
-        /// <param name="schema">The schema of the stored procedure.</param>
-        /// <param name="name">The name of the stored procedure.</param>
-        /// <param name="parameters">The <see cref="IStoredProcedureParameter"/>s to pass to the stored procedure.</param>
-        /// <param name="dataTransformers">The <see cref="IDataTransformer"/>s to transform the results.</param>
-		protected StoredProcedure(string                                      schema,
-                                  string                                      name,
-                                  ImmutableList<IStoredProcedureParameter>    parameters,
-                                  ImmutableList<IDataTransformer>             dataTransformers)
-			: base(schema, name, parameters, dataTransformers)
-        {
-            Contract.Requires(!string.IsNullOrWhiteSpace(schema));
-            Contract.Requires(!string.IsNullOrWhiteSpace(name));
-            Contract.Requires(parameters       != null);
-            Contract.Requires(dataTransformers != null);
-		}
-#endif
 	
         /// <summary>
         /// Executes the stored procedure.
@@ -249,9 +256,31 @@ public class StoredProcedureTemplate : Template
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<<#+ GetResults(); #>>() != null);
 
-			var results = Execute(connection, CancellationToken.None, timeout, new[] { <#+ GetCachedFields(); #> });
+			return Execute(connection, CancellationToken.None, timeout);
+		}
+		
+		private <#+ GetResults(); #> Execute(IDbConnection connection, CancellationToken token, int timeout = defaultTimeout)
+		{
+			Contract.Requires(connection != null);
+			Contract.Ensures(Contract.Result<<#+ GetResults(); #>>() != null);
 
-			return <#+ ParseResults(); #> 
+			<#+ GetResults(); #> results;
+			using (var cmd = connection.CreateCommand(Schema, Name, timeout, out connection))
+            {
+                var dbParameters = AddParameters(cmd);
+				
+                token.ThrowIfCancellationRequested();
+                var reader = cmd.ExecuteReader();
+				<#+ WriteReadResults(); #>
+				
+                token.ThrowIfCancellationRequested();
+                TransferOutputParameters(CancellationToken.None, dbParameters);
+            }
+
+            if (connection != null)
+                connection.Close();
+			
+			return results;
 		}
 		
         /// <summary>
@@ -273,7 +302,6 @@ public class StoredProcedureTemplate : Template
 
 			return ExecuteAsync(connection, CancellationToken.None, timeout);
 		}
-
 		
         /// <summary>
         /// Executes the StoredProcedure asynchronously.
@@ -293,18 +321,54 @@ public class StoredProcedureTemplate : Template
 		{
 			Contract.Requires(connection != null);
 			Contract.Ensures(Contract.Result<Task<<#+ GetResults(); #>>>() != null);
+			
+#if !NET40
+            var baseClass = connection as DbConnection;
+            if (baseClass != null)
+            {
+                IDbConnection toClose;
+                var cmd = connection.CreateCommand(Schema, Name, timeout, out toClose);
+                var asyncCapable = cmd as DbCommand;
+                if (asyncCapable != null)
+					return ExecuteAsync(asyncCapable, toClose, token);
+				else
+				{
+					cmd.Dispose();
+					if (toClose != null)
+						toClose.Close();
+				}
+            }
+#endif
 
 			return Task.Factory.StartNew(
-				() => 
-				{
-					var results = Execute(connection, token, timeout, new[] { <#+ GetCachedFields(); #> });
-
-					return <#+ ParseResults(); #> 
-				}, 
+				() => Execute(connection, token, timeout), 
 				token,
                 TaskCreationOptions.None,
                 TaskScheduler.Default);
 		}
+		
+#if !NET40
+		async Task<<#+ GetResults(); #>> ExecuteAsync(DbCommand cmd, IDbConnection toClose, CancellationToken token)
+		{
+			<#+ GetResults(); #> results;
+            var dbParameters = AddParameters(cmd);
+			
+            token.ThrowIfCancellationRequested();
+			var reader = await cmd.ExecuteReaderAsync(token);
+			<#+ WriteReadResultsAsync(); #>
+
+            token.ThrowIfCancellationRequested();
+			TransferOutputParameters(token, dbParameters);
+
+			if (toClose != null)
+				toClose.Close();
+
+			cmd.Dispose();
+
+			return results;
+		}
+#endif
+
 		
         /// <summary>
         /// Clones the StoredProcedure, and gives it the passed parameters.
@@ -313,31 +377,11 @@ public class StoredProcedureTemplate : Template
         /// <param name="dataTransformers">The <see cref="IDataTransformer"/>s to transform the results.</param>
         /// <returns>A clone of the stored procedure.</returns>
 		protected internal override StoredProcedure CloneCore(
-#if NET40
 			IEnumerable<IStoredProcedureParameter> parameters,
 			IEnumerable<IDataTransformer>          dataTransformers)
-#else
-            ImmutableList<IStoredProcedureParameter> parameters,
-            ImmutableList<IDataTransformer>          dataTransformers)
-#endif
 		{
 			return new StoredProcedure<#+ GetTypes(TypeCount); #>(Schema, Name, parameters, dataTransformers);
-		}		
-
-        internal override object InternalCall(
-            IDbConnection connection,
-            int           commandTimeout = defaultTimeout)
-        {
-            return this.Execute(connection, commandTimeout);
-        }
-
-        internal override object InternalCallAsync(
-            IDbConnection     connection,
-            CancellationToken token,
-            int               commandTimeout = defaultTimeout)
-        {
-            return this.ExecuteAsync(connection, token, commandTimeout);
-        }
+		}	
 	}
 	#endregion
 

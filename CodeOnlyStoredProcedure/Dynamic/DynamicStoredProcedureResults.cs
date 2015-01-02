@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.SqlClient;
 using System.Diagnostics.Contracts;
 using System.Dynamic;
 using System.Linq;
@@ -22,13 +21,13 @@ namespace CodeOnlyStoredProcedure.Dynamic
                                     .ToDictionary(mi => mi.GetGenericArguments().Count());
             });
 
-        private readonly Task<IEnumerable<StoredProcedureExtensions.StoredProcedureResult>> resultTask;
-        private readonly IDbConnection                                                      connection;
-        private readonly IDbCommand                                                         command;
-        private readonly IEnumerable<IDataTransformer>                                      transformers;
-        private readonly DynamicExecutionMode                                               executionMode;
-        private readonly CancellationToken                                                  token;
-        private          bool                                                               continueOnCaller = true;
+        private readonly Task<IDataReader>             resultTask;
+        private readonly IDbConnection                 connection;
+        private readonly IDbCommand                    command;
+        private readonly IEnumerable<IDataTransformer> transformers;
+        private readonly DynamicExecutionMode          executionMode;
+        private readonly CancellationToken             token;
+        private          bool                          continueOnCaller = true;
 
 #if NET40
         /// <summary>
@@ -112,11 +111,11 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
             if (executionMode == DynamicExecutionMode.Synchronous)
             {
-                var tcs = new TaskCompletionSource<IEnumerable<StoredProcedureExtensions.StoredProcedureResult>>();
+                var tcs = new TaskCompletionSource<IDataReader>();
 
                 try
                 {
-                    var res = command.Execute(token);
+                    var res = command.ExecuteReader();
                     token.ThrowIfCancellationRequested();
 
                     foreach (IDbDataParameter p in command.Parameters)
@@ -149,7 +148,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
             }
             else
             {
-                this.resultTask = Task.Factory.StartNew(() => command.Execute(token),
+                this.resultTask = Task.Factory.StartNew(() => command.ExecuteReader(),
                                                         token,
                                                         TaskCreationOptions.None,
                                                         TaskScheduler.Default)
@@ -242,31 +241,33 @@ namespace CodeOnlyStoredProcedure.Dynamic
             else if (retType.IsEnumeratedType())
             {
                 // there is only one result set. Return it
-                result = GetSingleResult(retType.GetGenericArguments().Single());
+                result = GetType().GetMethod("GetResults", BindingFlags.Instance | BindingFlags.NonPublic)
+                                      .MakeGenericMethod(retType.GetGenericArguments().Single())
+                                      .Invoke(this, new object[] { resultTask.Result });
                 return true;
             }
             else if (retType.FullName.StartsWith(tupleName) &&
                      retType.GetGenericArguments().All(t => t.IsEnumeratedType()))
             {
                 // it is a tuple of enumerables
-                result = GetMultipleResults(retType.GetGenericArguments());
+                result = GetMultipleResults(resultTask.Result, retType.GetGenericArguments());
                 return true;
             }
 
             return base.TryConvert(binder, out result);
         }
 
-        private object GetSingleResult(Type itemType)
+        private IEnumerable<T> GetResults<T>(IDataReader reader)
         {
-            return resultTask.Result.Parse(new[] { itemType }, transformers)[0];
+            return RowFactory<T>.Create().ParseRows(reader, transformers, token);
         }
 
         private Task<IEnumerable<T>> CreateSingleContinuation<T>()
         {
-            return resultTask.ContinueWith(_ => (IEnumerable<T>)GetSingleResult(typeof(T)), token);
+            return resultTask.ContinueWith(r => GetResults<T>(r.Result), token);
         }
 
-        private object GetMultipleResults(Type[] types)
+        private object GetMultipleResults(IDataReader reader, Type[] types)
         {
             Contract.Requires(types != null);
 
@@ -274,10 +275,19 @@ namespace CodeOnlyStoredProcedure.Dynamic
             // so we know that there is a Create method with this many type parameters
             var create     = tupleCreates.Value[types.Length];
             var innerTypes = types.Select(t => t.GetEnumeratedType());
-            var parsed     = resultTask.Result.Parse(innerTypes, transformers);
+
+            var res = innerTypes.Select((t, i) =>
+                {
+                    if (i > 0)
+                        reader.NextResult();
+
+                    return GetType().GetMethod("GetResults", BindingFlags.Instance | BindingFlags.NonPublic)
+                                    .MakeGenericMethod(t)
+                                    .Invoke(this, new object[] { reader });
+                }).ToArray();
 
             return create.MakeGenericMethod(types)
-                         .Invoke(null, innerTypes.Select((_, i) => parsed[i]).ToArray());
+                         .Invoke(null, res);
         }
 
         private Task CreateMultipleContinuation(Type[] types)
@@ -301,11 +311,8 @@ namespace CodeOnlyStoredProcedure.Dynamic
                     else if (r.IsCanceled)
                         tcs.SetCanceled();
                     else
-                    {
-                        var res = r.Result.Parse(innerTypes, transformers);
-                        tcs.SetResult(parse.Invoke(null, innerTypes.Select((_, i) => res[i]).ToArray()));
-                    }
-                });
+                        tcs.SetResult(GetMultipleResults(r.Result, types));
+                }, token);
 
             return tcs.Task;
         }

@@ -62,7 +62,7 @@ namespace CodeOnlyStoredProcedure
             }
 
             return string.Format(
-                "No {0} with name {1} {2} found in the result set for type {3}.\nThis property will be ignored if it is decorated with a NotMappedAttribute.\nYou can also map the property to a different column in the result set with the ColumnAttribute.",
+                "No {0} with name {1} {2} found in the result set for type {3}.\nThis property will be ignored if it is decorated with a NotMappedAttribute.\nYou can also map the property to a different column in the result set with the ColumnAttribute.\nIf the stored procedure can sometimes return the column, decorate the column with the OptionalAttribute.",
                 cols,
                 props,
                 were,
