@@ -188,14 +188,8 @@
     <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\EnumAccessorFactory.cs">
       <Link>RowFactory\EnumAccessorFactory.cs</Link>
     </Compile>
-    <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\ExpandoObjectRowFactory.cs">
-      <Link>RowFactory\ExpandoObjectRowFactory.cs</Link>
-    </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\RowFactory.cs">
       <Link>RowFactory\RowFactory.cs</Link>
-    </Compile>
-    <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\RowFactoryBase.cs">
-      <Link>RowFactory\RowFactoryBase.cs</Link>
     </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\ValueAccessorFactory.cs">
       <Link>RowFactory\ValueAccessorFactory.cs</Link>
@@ -232,9 +226,6 @@
     </Compile>
     <Compile Include="..\VersionInfo.cs">
       <Link>Properties\VersionInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\DynamicRowFactory.cs">
-      <Link>RowFactory\DynamicRowFactory.cs</Link>
     </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\IRowFactory.cs">
       <Link>RowFactory\IRowFactory.cs</Link>

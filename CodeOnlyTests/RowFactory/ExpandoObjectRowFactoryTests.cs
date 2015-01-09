@@ -8,6 +8,7 @@ using Moq;
 using CodeOnlyStoredProcedure.RowFactory;
 using CodeOnlyStoredProcedure;
 using System.Threading;
+using System.Dynamic;
 
 #if NET40
 namespace CodeOnlyTests.Net40.RowFactory
@@ -67,7 +68,7 @@ namespace CodeOnlyTests.RowFactory
                 reader.Setup(r => r.GetName(It.IsAny<int>()))
                       .Returns((int i) => keys[i]);
 
-                var toTest = new ExpandoObjectRowFactory<dynamic>();
+                var toTest = RowFactory<dynamic>.Create();
 
                 var res = toTest.ParseRows(reader.Object, new IDataTransformer[0], CancellationToken.None).ToList();
 

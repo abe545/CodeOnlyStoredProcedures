@@ -61,23 +61,71 @@ namespace CodeOnlyStoredProcedure.RowFactory
                 convertNumeric = attrs.OfType<ConvertNumericAttribute>().Any();
             }
 
-            unboxedExpression = CreateUnboxedRetrieval<T>(dataReaderExpression, index, Enumerable.Empty<DataTransformerAttributeBase>());
+            unboxedExpression = CreateUnboxedRetrieval<T>(dataReaderExpression, index, transformers);
 
             var underlying = dbType;
             GetUnderlyingEnumType(ref underlying);
-            // TODO: Generate a switch statement to actually do the parsing, so that no boxing has to happen
-            parseStringExpression = Expression.Convert(
-                Expression.Convert(
-                    Expression.Call(
-                        typeof(Enum).GetMethod("Parse", new[] { typeof(Type), typeof(string) }),
-                        Expression.Constant(dbType),
-                        stringValueExpression
-                    ),
-                    underlying
+
+            var names    = Enum.GetNames (dbType);
+            var values   = Enum.GetValues(dbType);
+            var cases    = new List<SwitchCase>();
+            var defCases = new List<SwitchCase>();
+            var res      = Expression.Variable(underlying, "res");
+            var strings  = Expression.Variable(typeof(string[]), "strings");
+            var idx      = Expression.Variable(typeof(int), "i");
+
+            for (int i = 0; i < names.Length; ++i)
+            {
+                var n   = Expression.Constant(names[i]);
+                var val = Expression.Constant(Convert.ChangeType(values.GetValue(i), underlying));
+
+                cases   .Add(Expression.SwitchCase(Expression.Assign  (res, val), n));
+                defCases.Add(Expression.SwitchCase(Expression.OrAssign(res, val), n));
+            }
+
+            var str     = Expression.Variable(typeof(string), "str");
+            var endLoop = Expression.Label("endLoop");
+            var excep = Expression.Block( Expression.Throw(
+                                Expression.New(typeof(NotSupportedException).GetConstructor(new[] { typeof(string) }),
+                                    Expression.Call(typeof(string).GetMethod("Concat", new[] { typeof(string), typeof(string), typeof(string) }),
+                                        Expression.Constant("Could not parse the string \""), 
+                                        str, 
+                                        Expression.Constant("\" into an enum of type " + dbType + ".")
+                                    )
+                                )
+                            ), res);
+            var defExpr = Expression.Block(
+                new[] { idx, strings, str },
+                Expression.Assign(res, Expression.Constant(Convert.ChangeType(0, underlying))),
+                Expression.Assign(strings, Expression.Call(stringValueExpression, typeof(string).GetMethod("Split", new[] { typeof(char[]) }), Expression.Constant(new char[] { ',' }))),
+                Expression.Assign(idx, Expression.Constant(0)),
+                Expression.Loop(
+                    Expression.Block(
+                        Expression.Assign(str, Expression.Call(Expression.ArrayIndex(strings, idx), typeof(string).GetMethod("Trim", new Type[0]))),
+                        Expression.Switch(
+                            str, 
+                            excep,
+                            defCases.ToArray()
+                        ),
+                        Expression.PreIncrementAssign(idx),
+                        Expression.IfThen(Expression.GreaterThanOrEqual(idx, Expression.ArrayLength(strings)), Expression.Break(endLoop))
+                    )
                 ),
-                dbType
+                Expression.Label(endLoop),
+                res
             );
 
+            parseStringExpression = Expression.Block(
+                dbType,
+                new[] { res },
+                Expression.Switch(
+                    stringValueExpression,
+                    defExpr,
+                    cases.ToArray()
+                ),
+                Expression.Convert(res, dbType)
+            );
+            
             if (isNullable)
                 parseStringExpression = Expression.Convert(parseStringExpression, type);
         }
@@ -191,18 +239,15 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
                 body = Expression.Block(type, new[] { boxedValueExpression }, exprs);
             }
-            else
+            else if (dbColumnType != expectedType)
             {
-                if (dbColumnType != expectedType)
-                {
-                    if (convertNumeric)
-                        body = CreateUnboxedRetrieval<T>(dataReaderExpression, indexExpression, transformers, dbColumnType);
-                    else
-                        throw new StoredProcedureColumnException(type, dbColumnType, propertyName);
-                }
+                if (convertNumeric)
+                    body = CreateUnboxedRetrieval<T>(dataReaderExpression, indexExpression, transformers, dbColumnType);
                 else
-                    body = unboxedExpression;
+                    throw new StoredProcedureColumnException(type, dbColumnType, propertyName);
             }
+            else
+                body = unboxedExpression;
 
             return body;
         }

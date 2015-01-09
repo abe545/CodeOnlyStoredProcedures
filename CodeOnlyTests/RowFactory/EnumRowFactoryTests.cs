@@ -172,6 +172,22 @@ namespace CodeOnlyTests.RowFactory
             }
 
             [TestMethod]
+            public void ParsesMultipleFlagsViaName()
+            {
+                var rdr = new Mock<IDataReader>();
+                rdr.Setup(r => r.GetFieldType(0)).Returns(typeof(string));
+                rdr.Setup(r => r.GetString(0)).Returns("Red, Blue");
+                rdr.SetupSequence(r => r.Read())
+                   .Returns(true)
+                   .Returns(false);
+
+                var toTest = RowFactory<FlagsEnum>.Create();
+
+                toTest.ParseRows(rdr.Object, Enumerable.Empty<IDataTransformer>(), CancellationToken.None)
+                      .Single().Should().Be(FlagsEnum.Red | FlagsEnum.Blue);
+            }
+
+            [TestMethod]
             public void ReturnsEnumViaNameTransformsStringBeforeParsing()
             {
                 var rdr = new Mock<IDataReader>();
@@ -371,6 +387,15 @@ namespace CodeOnlyTests.RowFactory
         {
             Zero = 0,
             Max = ushort.MaxValue
+        }
+
+        [Flags]
+        private enum FlagsEnum : long
+        {
+            Black = 0,
+            Red = 1,
+            Green = 2,
+            Blue = 4
         }
     }
 }

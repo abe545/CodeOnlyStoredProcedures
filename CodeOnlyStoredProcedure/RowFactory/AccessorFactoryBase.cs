@@ -25,6 +25,8 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
         protected static bool IsNullable(Type type)
         {
+            Contract.Requires(type != null);
+
             return type.IsClass || (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>));
         }
 

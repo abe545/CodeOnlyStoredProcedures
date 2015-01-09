@@ -369,10 +369,10 @@ namespace CodeOnlyTests.RowFactory
             [TestMethod]
             public void DoesNotPassNullableToTransformationAttributes()
             {
-                // TODO: Test null and not null
                 var values = new Dictionary<string, object>
                 {
-                    { "Value", 1.0 }
+                    { "Value", 1.0 },
+                    { "FooBar", 4L }
                 };
 
                 var reader = CreateDataReader(values);
@@ -380,20 +380,75 @@ namespace CodeOnlyTests.RowFactory
                 var toTest = RowFactory<NullableChecker>.Create();
                 var res    = toTest.ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
-                res.Single().ShouldBeEquivalentTo(new NullableChecker { Value = 1.0 });
+                res.Single().ShouldBeEquivalentTo(new NullableChecker { Value = 1.0, FooBar = FooBar.Foo });
+            }
+
+            [TestMethod]
+            public void DoesNotPassNullableToTransformationAttributesWhenPassedNull()
+            {
+                var values = new Dictionary<string, object>
+                {
+                    { "Value", null },
+                    { "FooBar", null }
+                };
+
+                var reader = CreateDataReader(values);
+                Mock.Get(reader).Setup(r => r.GetFieldType(0)).Returns(typeof(int));
+                Mock.Get(reader).Setup(r => r.GetFieldType(1)).Returns(typeof(double));
+                var xformer = new Mock<IDataTransformer>();
+
+                var toTest = RowFactory<NullableChecker>.Create();
+                var res    = toTest.ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
+
+                res.Single().ShouldBeEquivalentTo(new NullableChecker());
             }
 
             [TestMethod]
             public void DoesNotPassNullableToTransformers()
             {
-                // TODO: Test null and not null
                 var values = new Dictionary<string, object>
                 {
-                    { "Value", null }
+                    { "Value", 42.0 },
+                    { "FooBar", 6 }
                 };
 
                 var reader  = CreateDataReader(values);
-                Mock.Get(reader).Setup(r => r.GetFieldType(0)).Returns(typeof(double));
+                Mock.Get(reader).Setup(r => r.GetFieldType(0)).Returns(typeof(int));
+                Mock.Get(reader).Setup(r => r.GetFieldType(1)).Returns(typeof(double));
+                var xformer = new Mock<IDataTransformer>();
+
+                xformer.Setup(x => x.CanTransform(It.IsAny<object>(), typeof(double), true, It.IsAny<IEnumerable<Attribute>>()))
+                       .Returns(true)
+                       .Verifiable();
+                xformer.Setup(x => x.Transform(It.IsAny<object>(), typeof(double), true, It.IsAny<IEnumerable<Attribute>>()))
+                       .Returns<object, Type, bool, IEnumerable<Attribute>>((o, t, b, e) =>
+                       {
+                           Assert.IsTrue(b, "isNullable must be true for a Nullable<T> property");
+                           if (t.IsGenericType)
+                               Assert.AreNotEqual(typeof(Nullable<>), t.GetGenericTypeDefinition(), "A Nullable<T> type can not be passed to a DataTransformerAttributeBase");
+
+                           return o;
+                       })
+                       .Verifiable();
+
+                var toTest = RowFactory<NullableChecker>.Create();
+                var res    = toTest.ParseRows(reader, new[] { xformer.Object }, CancellationToken.None);
+
+                res.Single().ShouldBeEquivalentTo(new NullableChecker { Value = 42, FooBar = FooBar.Bar });
+            }
+
+            [TestMethod]
+            public void DoesNotPassNullableToTransformersWhenPassedNull()
+            {
+                var values = new Dictionary<string, object>
+                {
+                    { "Value", null },
+                    { "FooBar", null }
+                };
+
+                var reader  = CreateDataReader(values);
+                Mock.Get(reader).Setup(r => r.GetFieldType(0)).Returns(typeof(int));
+                Mock.Get(reader).Setup(r => r.GetFieldType(1)).Returns(typeof(double));
                 var xformer = new Mock<IDataTransformer>();
 
                 xformer.Setup(x => x.CanTransform(It.IsAny<object>(), typeof(double), true, It.IsAny<IEnumerable<Attribute>>()))
@@ -555,7 +610,51 @@ namespace CodeOnlyTests.RowFactory
                 }
             }
 
-            private static IDataReader CreateDataReader(Dictionary<string, object> values)
+            [TestMethod]
+            public void StrongTypedDataTransformers_RetrievesValuesUnboxed()
+            {
+                var reader = CreateDataReader(new Dictionary<string, object>
+                    {
+                        { "Value", 42 }
+                    }, false);
+
+                var toTest = RowFactory<WithStrongTypedDataTransformer>.Create().ParseRows(
+                    reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
+                
+                toTest.Single().Should().NotBeNull("one row should have been returned")
+                      .And.Match<WithStrongTypedDataTransformer>(i => i.Value == 84, "the transformer doubles the result from the database");
+            }
+
+            [TestMethod]
+            public void EnumPropertiesWithWrongUnderlyingTypeWillThrowIfNotMarkedWithConvert()
+            {
+                var reader = CreateDataReader(new Dictionary<string, object>
+                    {
+                        { "FooBar", 4L }
+                    }, false);
+
+                var toTest = RowFactory<EnumValue>.Create();
+                
+                toTest.Invoking(t => t.ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None))
+                      .ShouldThrow<StoredProcedureColumnException>("the stored procedure returns a different type than the underlying type of the enum.");
+            }
+
+            [TestMethod]
+            public void EnumPropertiesWillConvertNumericTypes()
+            {
+                var reader = CreateDataReader(new Dictionary<string, object>
+                    {
+                        { "FooBar", 4L }
+                    }, false);
+
+                var toTest = RowFactory<EnumValueTypesConverted>.Create().ParseRows(
+                    reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
+
+                toTest.Single().Should().NotBeNull("one row should have been returned")
+                      .And.Match<EnumValueTypesConverted>(i => i.FooBar == FooBar.Foo, "the transformer doubles the result from the database");
+            }
+
+            private static IDataReader CreateDataReader(Dictionary<string, object> values, bool setupGetValue = true)
             {
                 var keys = values.Keys.OrderBy(s => s).ToList();
                 var vals = values.OrderBy(kv => kv.Key).Select(kv => kv.Value).ToArray();
@@ -584,10 +683,14 @@ namespace CodeOnlyTests.RowFactory
                           return false;
                       });
 
+                if (setupGetValue)
+                {
+                    reader.Setup(r => r.GetValue(It.IsAny<int>()))
+                          .Returns((int i) => vals[i]);
+                }
+
                 reader.Setup(r => r.GetName(It.IsAny<int>()))
                       .Returns((int i) => keys[i]);
-                reader.Setup(r => r.GetValue(It.IsAny<int>()))
-                      .Returns((int i) => vals[i]);
                 reader.Setup(r => r.GetString(It.IsAny<int>()))
                       .Returns((int i) => (string)vals[i]);
                 reader.Setup(r => r.GetInt16(It.IsAny<int>()))
@@ -675,6 +778,8 @@ namespace CodeOnlyTests.RowFactory
         {
             [NullableTransformation]
             public double? Value { get; set; }
+            [NullableTransformation, ConvertNumeric]
+            public FooBar? FooBar { get; set; }
         }
 
         private interface Interface
@@ -697,6 +802,23 @@ namespace CodeOnlyTests.RowFactory
             public bool Optional { get; set; }
             [OptionalResult, ConvertNumeric]
             public decimal Transformed { get; set; }
+        }
+
+        private class WithStrongTypedDataTransformer
+        {
+            [StrongTypedDataTransformer]
+            public uint Value { get; set; }
+        }
+
+        private class EnumValue
+        {
+            public FooBar FooBar { get; set; }
+        }
+
+        private class EnumValueTypesConverted
+        {
+            [ConvertNumeric]
+            public FooBar FooBar { get; set; }
         }
 
         private class StaticValueAttribute : DataTransformerAttributeBase
@@ -777,7 +899,21 @@ namespace CodeOnlyTests.RowFactory
                 return value;
             }
         }
-        
+
+        private class StrongTypedDataTransformer : DataTransformerAttributeBase, IDataTransformerAttribute<uint>
+        {
+            public uint Transform(uint value)
+            {
+                return value * 2;
+            }
+
+            public override object Transform(object value, Type targetType, bool isNullable)
+            {
+                return Transform((uint)value);
+            }
+        }
+
+
         private enum FooBar
         {
             Foo = 4,
