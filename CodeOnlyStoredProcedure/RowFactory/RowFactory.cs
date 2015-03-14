@@ -59,7 +59,7 @@ namespace CodeOnlyStoredProcedure
                 parser = CreateRowFactory(reader, dataTransformers);
 
             var res = new List<T>();
-            while (await reader.ReadAsync())
+            while (await reader.ReadAsync(token))
             {
                 token.ThrowIfCancellationRequested();
                 res.Add(parser(reader));

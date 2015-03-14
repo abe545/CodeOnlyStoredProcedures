@@ -111,9 +111,16 @@ public class StoredProcedureTemplate : Template
 		PopIndent();
     }
 
-	public void WriteReadResults()
+	public void WriteReadResults(string indent)
     {
-		PushIndent("\t\t\t\t");
+		PushIndent(indent);
+
+		WriteLine("var dbParameters = AddParameters(cmd);");
+		WriteLine("");
+		WriteLine("token.ThrowIfCancellationRequested();");
+		WriteLine("");
+		WriteLine("var reader = cmd.ExecuteReader();");
+
 		if (TypeCount == 1)
         {
 			WriteLine("results = T1Factory.ParseRows(reader, DataTransformers, token);");
@@ -124,7 +131,12 @@ public class StoredProcedureTemplate : Template
 		for (int i = 1; i <= TypeCount; ++i)
         {
 			if (i > 1)
+			{
+				WriteLine("");
 				WriteLine("reader.NextResult();");
+				WriteLine("token.ThrowIfCancellationRequested();");
+				WriteLine("");
+			}
 
 			WriteLine("var t" + i + " = T" + i + "Factory.ParseRows(reader, DataTransformers, token);");
         }
@@ -135,6 +147,12 @@ public class StoredProcedureTemplate : Template
 			Write(", t" + i);
 
 		WriteLine(");");
+		
+		WriteLine("");
+		WriteLine("token.ThrowIfCancellationRequested();");
+		WriteLine("");
+		WriteLine("TransferOutputParameters(CancellationToken.None, dbParameters);");
+
 		PopIndent();
     }
 
@@ -267,14 +285,7 @@ public class StoredProcedureTemplate : Template
 			<#+ GetResults(); #> results;
 			using (var cmd = connection.CreateCommand(Schema, Name, timeout, out connection))
             {
-                var dbParameters = AddParameters(cmd);
-				
-                token.ThrowIfCancellationRequested();
-                var reader = cmd.ExecuteReader();
-				<#+ WriteReadResults(); #>
-				
-                token.ThrowIfCancellationRequested();
-                TransferOutputParameters(CancellationToken.None, dbParameters);
+				<#+ WriteReadResults("\t\t\t\t"); #>
             }
 
             if (connection != null)
@@ -333,9 +344,20 @@ public class StoredProcedureTemplate : Template
 					return ExecuteAsync(asyncCapable, toClose, token);
 				else
 				{
-					cmd.Dispose();
-					if (toClose != null)
-						toClose.Close();
+					return Task.Factory.StartNew(() =>
+					{
+						<#+ GetResults(); #> results;
+						<#+ WriteReadResults("\t\t\t\t\t\t"); #>
+
+						cmd.Dispose();
+						if (toClose != null)
+							toClose.Close();
+
+						return results;
+					}, 
+					token,
+					TaskCreationOptions.None,
+					TaskScheduler.Default);
 				}
             }
 #endif
