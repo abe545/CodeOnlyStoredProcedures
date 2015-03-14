@@ -5,7 +5,7 @@ namespace CodeOnlyStoredProcedure.DataTransformation
     /// <summary>
     /// Removes all whitespace from a string value
     /// </summary>
-    public class TrimAttribute : DataTransformerAttributeBase
+    public class TrimAttribute : DataTransformerAttributeBase, IDataTransformerAttribute<string>
     {
         /// <summary>
         /// Creates a TrimAttribute, with the given application order.
@@ -41,6 +41,19 @@ namespace CodeOnlyStoredProcedure.DataTransformation
                 return string.Empty;
 
             return str.Trim();
+        }
+
+        /// <summary>
+        /// Removes all whitespace from the input.
+        /// </summary>
+        /// <param name="input">The value from the database.</param>
+        /// <returns>The trimmed string, or empty if a null value was passed.</returns>
+        public string Transform(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return string.Empty;
+
+            return input.Trim();
         }
     }
 }

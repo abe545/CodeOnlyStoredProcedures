@@ -122,8 +122,9 @@ namespace CodeOnlyTests.Dynamic
                       .Returns(false)
                       .Returns(true)
                       .Returns(false);
-                reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
-                      .Callback<object[]>(o => o[0] = resultSet == 0 ? "Foo" : "Bar");
+                reader.Setup(r => r.GetFieldType(It.IsAny<int>())).Returns(typeof(string));
+                reader.Setup(r => r.GetString(0))
+                      .Returns(() => resultSet == 0 ? "Foo" : "Bar");
                 reader.Setup(r => r.NextResult())
                       .Callback(() => ++resultSet)
                       .Returns(() => resultSet < 2);
@@ -309,7 +310,7 @@ namespace CodeOnlyTests.Dynamic
             }
 
             [TestMethod]
-            public void CanAllAsyncWithReturnValue()
+            public void CanExecuteAsyncWithReturnValue()
             {
                 var ctx = CreatePeople(parms =>
                 {
@@ -328,7 +329,7 @@ namespace CodeOnlyTests.Dynamic
             }
 
             [TestMethod]
-            public void CanAllAsyncWithRefParameterValue()
+            public void CanExecuteAsyncWithRefParameterValue()
             {
                 var ctx = CreatePeople(parms =>
                 {
@@ -348,7 +349,7 @@ namespace CodeOnlyTests.Dynamic
             }
 
             [TestMethod]
-            public void CanAllAsyncWithOutParameterValue()
+            public void CanExecuteAsyncWithOutParameterValue()
             {
                 var ctx = CreatePeople(parms =>
                 {
@@ -370,18 +371,19 @@ namespace CodeOnlyTests.Dynamic
             public void CanGetMultipleResultSetsAsync()
             {
                 int resultSet = 0;
-
                 var reader = new Mock<IDataReader>();
                 reader.SetupGet(r => r.FieldCount).Returns(1);
                 reader.Setup(r => r.GetName(0))
                       .Returns(() => resultSet == 0 ? "FirstName" : "LastName");
+                reader.Setup(r => r.GetFieldType(0)).Returns(typeof(string));
+                reader.Setup(r => r.GetOrdinal(It.IsAny<string>())).Returns(0);
                 reader.SetupSequence(r => r.Read())
                       .Returns(true)
                       .Returns(false)
                       .Returns(true)
                       .Returns(false);
-                reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
-                      .Callback<object[]>(o => o[0] = resultSet == 0 ? "Foo" : "Bar");
+                reader.Setup(r => r.GetString(0))
+                      .Returns(() => resultSet == 0 ? "Foo" : "Bar");
                 reader.Setup(r => r.NextResult())
                       .Callback(() => ++resultSet)
                       .Returns(() => resultSet < 2);
@@ -528,12 +530,18 @@ namespace CodeOnlyTests.Dynamic
             var reader = new Mock<IDataReader>();
             reader.SetupGet(r => r.FieldCount).Returns(1);
             reader.Setup(r => r.GetName(0)).Returns("FirstName");
+            reader.Setup(r => r.GetFieldType(0)).Returns(typeof(string));
+            reader.Setup(r => r.GetOrdinal("FirstName")).Returns(0);
 
             var setup = reader.SetupSequence(r => r.Read());
 
             var idx = 0;
-            reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
-                  .Callback<object[]>(o => o[0] = names[idx++]);
+            reader.Setup(r => r.GetValue(0))
+                  .Returns(() => names[idx++]);
+            reader.Setup(r => r.GetString(0))
+                  .Returns(() => names[idx++]);
+            reader.Setup(r => r.IsDBNull(It.IsAny<int>()))
+                  .Returns((int i) => names[i] == null);
 
             for (int i = 0; i < names.Length; ++i)
                 setup = setup.Returns(true);
