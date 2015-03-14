@@ -102,9 +102,9 @@ namespace CodeOnlyStoredProcedure.Dynamic
             Contract.Requires(transformers != null);
 
             this.executionMode = executionMode;
-            this.command      = connection.CreateCommand(schema, name, timeout, out this.connection);
-            this.transformers = transformers;
-            this.token        = token;
+            this.command       = connection.CreateCommand(schema, name, timeout, out this.connection);
+            this.transformers  = transformers;
+            this.token         = token;
 
             foreach (var p in parameters)
                 command.Parameters.Add(p.CreateDbDataParameter(command));
