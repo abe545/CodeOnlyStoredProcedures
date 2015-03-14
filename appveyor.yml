@@ -2,7 +2,7 @@ version: 2.0.0.{build}
 
 environment:
   releaseVersion: 2.0.0
-  packageVersion: 2.0.0-pre1
+  packageVersion: 2.0.0-pre2
 
 assembly_info:
   patch: true
