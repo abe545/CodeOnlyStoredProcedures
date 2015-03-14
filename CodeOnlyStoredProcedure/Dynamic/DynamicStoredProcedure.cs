@@ -2,15 +2,11 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.SqlClient;
 using System.Diagnostics.Contracts;
 using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 using System.Threading;
-using System.Threading.Tasks;
-using CodeOnlyStoredProcedure.Dynamic;
 using Microsoft.CSharp.RuntimeBinder;
 
 namespace CodeOnlyStoredProcedure.Dynamic
@@ -39,7 +35,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
         public DynamicStoredProcedure(IDbConnection                 connection,
                                       IEnumerable<IDataTransformer> transformers,
                                       CancellationToken             token,
-                                      int                           timeout = StoredProcedure.defaultTimeout,
+                                      int                           timeout       = StoredProcedure.defaultTimeout,
                                       string                        schema        = "dbo",
                                       DynamicExecutionMode          executionMode = DynamicExecutionMode.Any)
         {
@@ -47,11 +43,11 @@ namespace CodeOnlyStoredProcedure.Dynamic
             Contract.Requires(transformers != null);
             Contract.Requires(!string.IsNullOrEmpty(schema));
 
-            this.connection   = connection;
-            this.transformers = transformers;
-            this.schema       = schema;
-            this.token        = token;
-            this.timeout      = timeout;
+            this.connection    = connection;
+            this.transformers  = transformers;
+            this.schema        = schema;
+            this.token         = token;
+            this.timeout       = timeout;
             this.executionMode = executionMode;
         }
 
@@ -94,9 +90,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
                                                  attr.Schema));
                 }
                 else if (argType.IsClass && argType != typeof(string))
-                {
                     parameters.AddRange(argType.GetParameters(args[idx]));
-                }
                 else if ("returnvalue".Equals(parmName, StringComparison.InvariantCultureIgnoreCase) && direction != ParameterDirection.Input)
                 {
                     CoerceSynchronousExecutionMode(ref callingMode);
@@ -152,8 +146,8 @@ namespace CodeOnlyStoredProcedure.Dynamic
                 if (!prop.CanRead)
                     return null;
 
-                var idxParm  = Expression.Parameter(typeof(int), "index");
-                var objParm  = Expression.Parameter(typeof(InvokeMemberBinder), "o");
+                var idxParm = Expression.Parameter(typeof(int), "index");
+                var objParm = Expression.Parameter(typeof(InvokeMemberBinder), "o");
 
                 return Expression.Lambda<Func<InvokeMemberBinder, int, CSharpArgumentInfo>>(
                     Expression.MakeIndex(

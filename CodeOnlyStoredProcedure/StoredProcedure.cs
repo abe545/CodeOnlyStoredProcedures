@@ -8,11 +8,7 @@ using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-#if NET40
-using System.Collections.ObjectModel;
-#else
-using System.Collections.Immutable;
-#endif
+using System.Data.Common;
 
 namespace CodeOnlyStoredProcedure
 {
@@ -30,16 +26,10 @@ namespace CodeOnlyStoredProcedure
         internal const int defaultTimeout = 30;
 
         #region Private Fields
-        private readonly string schema;
-        private readonly string name;
-
-#if NET40
-        private readonly IEnumerable<IStoredProcedureParameter> parameters;
-        private readonly IEnumerable<IDataTransformer>          dataTransformers;
-#else
-        private readonly ImmutableList<IStoredProcedureParameter> parameters;
-        private readonly ImmutableList<IDataTransformer>          dataTransformers;
-#endif
+        private readonly string                      schema;
+        private readonly string                      name;
+        private readonly IStoredProcedureParameter[] parameters;
+        private readonly IDataTransformer[]          dataTransformers;
         #endregion
 
         #region Properties
@@ -92,14 +82,13 @@ namespace CodeOnlyStoredProcedure
         {
             get
             {
-                if (parameters == null || !parameters.Any())
+                if (parameters == null || parameters.Length == 0)
                     return string.Empty;
 
-                return parameters.Aggregate("", (s, p) => s == "" ? p.ToString() : s + ", " + p.ToString());
+                return Parameters.Aggregate("", (s, p) => s == "" ? p.ToString() : s + ", " + p.ToString());
             }
         }
 
-#if NET40
         /// <summary>
         /// Gets the <see cref="IStoredProcedureParameter"/>s to pass to the stored procedure.
         /// </summary>
@@ -126,34 +115,6 @@ namespace CodeOnlyStoredProcedure
                 return dataTransformers;
             }
         }
-#else
-        /// <summary>
-        /// Gets the <see cref="IStoredProcedureParameter"/>s to pass to the stored procedure.
-        /// </summary>
-        protected internal ImmutableList<IStoredProcedureParameter> Parameters
-        {
-            get
-            {
-                Contract.Ensures(Contract.Result<ImmutableList<IStoredProcedureParameter>>() != null);
-
-                return parameters;
-            }
-        }
-
-        /// <summary>
-        /// Gets the <see cref="IDataTransformer"/>s that will be used to transform the results.
-        /// </summary>
-        /// <remarks>These are only used in one of the StoredProcedure classes that return results.</remarks>
-        protected internal ImmutableList<IDataTransformer> DataTransformers
-        {
-            get
-            {
-                Contract.Ensures(Contract.Result<ImmutableList<IDataTransformer>>() != null);
-
-                return dataTransformers;
-            }
-        }
-#endif
         #endregion
 
         #region ctors
@@ -168,7 +129,6 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
         }
 
-#if NET40
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
         /// in the <paramref name="schema"/> schema.
@@ -205,51 +165,9 @@ namespace CodeOnlyStoredProcedure
 
             this.schema                 = schema;
             this.name                   = name;
-            this.parameters             = new ReadOnlyCollection<IStoredProcedureParameter>(parameters.ToArray());
-            this.dataTransformers       = new ReadOnlyCollection<IDataTransformer>         (dataTransformers.ToArray());
+            this.parameters             = parameters      .ToArray();
+            this.dataTransformers       = dataTransformers.ToArray();
         } 
-#else
-        /// <summary>
-        /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
-        /// in the <paramref name="schema"/> schema.
-        /// </summary>
-        /// <param name="schema">The schema of the stored procedure.</param>
-        /// <param name="name">The name of the stored procedure.</param>
-        public StoredProcedure(string schema, string name)
-            : this(schema, name,
-                   ImmutableList<IStoredProcedureParameter>.Empty,
-                   ImmutableList<IDataTransformer>.Empty)
-        {
-            Contract.Requires(!string.IsNullOrWhiteSpace(schema));
-            Contract.Requires(!string.IsNullOrWhiteSpace(name));
-        }
-
-        /// <summary>
-        /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
-        /// in the <paramref name="schema"/> schema, with the <see cref="IStoredProcedureParameter"/>s
-        /// to pass, the output action map, and the <see cref="IDataTransformer"/>s to 
-        /// use to transform the results.
-        /// </summary>
-        /// <param name="schema">The schema of the stored procedure.</param>
-        /// <param name="name">The name of the stored procedure.</param>
-        /// <param name="parameters">The <see cref="IStoredProcedureParameter"/>s to pass to the stored procedure.</param>
-        /// <param name="dataTransformers">The <see cref="IDataTransformer"/>s to transform the results.</param>
-        protected StoredProcedure(string                                   schema,
-                                  string                                   name,
-                                  ImmutableList<IStoredProcedureParameter> parameters,
-                                  ImmutableList<IDataTransformer>          dataTransformers)
-        {
-            Contract.Requires(!string.IsNullOrWhiteSpace(schema));
-            Contract.Requires(!string.IsNullOrWhiteSpace(name));
-            Contract.Requires(parameters       != null);
-            Contract.Requires(dataTransformers != null);
-
-            this.schema           = schema;
-            this.name             = name;
-            this.parameters       = parameters;
-            this.dataTransformers = dataTransformers;
-        } 
-#endif
         #endregion
 
         #region Create
@@ -290,13 +208,8 @@ namespace CodeOnlyStoredProcedure
         /// <param name="dataTransformers">The <see cref="IDataTransformer"/>s to transform the results.</param>
         /// <returns>A clone of the stored procedure.</returns>
         protected internal virtual StoredProcedure CloneCore(
-#if NET40
             IEnumerable<IStoredProcedureParameter> parameters,
             IEnumerable<IDataTransformer>          dataTransformers)
-#else
-            ImmutableList<IStoredProcedureParameter> parameters,
-            ImmutableList<IDataTransformer>          dataTransformers)
-#endif
         {
             Contract.Requires(parameters                        != null);
             Contract.Requires(dataTransformers                  != null);
@@ -316,11 +229,7 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(parameter != null);
             Contract.Ensures(Contract.Result<StoredProcedure>() != null);
 
-#if NET40
             return CloneCore(parameters.Concat(new[] { parameter }), dataTransformers);
-#else
-            return CloneCore(parameters.Add(parameter), dataTransformers);
-#endif
         } 
 
         /// <summary>
@@ -334,11 +243,7 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(transformer != null);
             Contract.Ensures(Contract.Result<StoredProcedure>() != null);
 
-#if NET40
             return CloneCore(parameters, dataTransformers.Concat(new[] { transformer }));
-#else
-            return CloneCore(parameters, dataTransformers.Add(transformer));
-#endif
         }
         #endregion
 
@@ -359,6 +264,26 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(connection != null);
 
             Execute(connection, CancellationToken.None, timeout);
+        }
+
+        private void Execute(IDbConnection connection, CancellationToken  token, int timeout)
+        {
+            Contract.Requires(connection != null);
+
+            token.ThrowIfCancellationRequested();
+            using (var cmd = connection.CreateCommand(schema, name, timeout, out connection))
+            {
+                var dbParameters = AddParameters(cmd);
+
+                token.ThrowIfCancellationRequested();
+                cmd.ExecuteNonQuery();
+
+                token.ThrowIfCancellationRequested();
+                TransferOutputParameters(CancellationToken.None, dbParameters);
+            }
+
+            if (connection != null)
+                connection.Close();
         }
         #endregion
 
@@ -402,11 +327,35 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(connection != null);
             Contract.Ensures (Contract.Result<Task>() != null);
 
-            return Task.Factory.StartNew(
-                () => Execute(connection, token, timeout),
-                token,
-                TaskCreationOptions.None,
-                TaskScheduler.Default);
+#if !NET40
+            var baseClass = connection as DbConnection;
+            if (baseClass != null)
+            {
+                IDbConnection toClose;
+                using (var cmd = connection.CreateCommand(schema, name, timeout, out toClose))
+                {
+                    var asyncCapable = cmd as DbCommand;
+                    if (asyncCapable != null)
+                    {
+                        var dbParameters = AddParameters(cmd);
+                        return asyncCapable.ExecuteNonQueryAsync(token)
+                                           .ContinueWith(r =>
+                                           {
+                                               if (r.Status == TaskStatus.RanToCompletion)
+                                                   TransferOutputParameters(token, dbParameters);
+
+                                               if (toClose != null)
+                                                   toClose.Close();
+
+                                               if (!r.IsCanceled && r.IsFaulted)
+                                                   throw r.Exception;
+                                           }, token);
+                    }
+                }
+            }
+#endif
+
+            return Task.Factory.StartNew(() => Execute(connection, token, timeout), token, TaskCreationOptions.None, TaskScheduler.Default);
         }
         #endregion
 
@@ -433,7 +382,7 @@ namespace CodeOnlyStoredProcedure
         /// <returns>The string representation of this StoredProcedure.</returns>
         public override string ToString()
         {
-            if (parameters == null || !parameters.Any())
+            if (parameters == null || parameters.Length == 0)
                 return FullName;
 
             return string.Format("{0}({1})", FullName, Arguments);
@@ -448,88 +397,40 @@ namespace CodeOnlyStoredProcedure
             return FullName.GetHashCode();
         }
 
-        internal virtual object InternalCall(
-            IDbConnection connection,
-            int           commandTimeout = defaultTimeout)
+        /// <summary>
+        /// Adds the parameters that are defined for this stored procedure to the <see cref="IDbCommand"/> used
+        /// to execute the stored procedure.
+        /// </summary>
+        /// <param name="cmd">The <see cref="IDbCommand"/> to add the parameters to.</param>
+        /// <returns>The <see cref="IDbDataParameter"/>s that were created.</returns>
+        protected IDbDataParameter[] AddParameters(IDbCommand cmd)
         {
-            Contract.Requires(connection != null);
+            var dbParameters = new List<IDbDataParameter>();
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                var dbP = parameters[i].CreateDbDataParameter(cmd);
+                cmd.Parameters.Add(dbP);
+                dbParameters.Add(dbP);
+            }
 
-            Execute(connection, commandTimeout);
-            return null;
+            return dbParameters.ToArray();
         }
 
-        internal virtual object InternalCallAsync(
-            IDbConnection     connection,
-            CancellationToken token,
-            int               commandTimeout = defaultTimeout)
+        /// <summary>
+        /// Transfers any output values after the stored procedure has finished executing.
+        /// </summary>
+        /// <param name="token">The <see cref="CancellationToken"/> to use to cancel the operation.</param>
+        /// <param name="dbParameters">The <see cref="IDbDataParameter"/>s that were passed to the stored procedure.</param>
+        protected void TransferOutputParameters(CancellationToken token, IDbDataParameter[] dbParameters)
         {
-            Contract.Requires(connection != null);
-
-            return ExecuteAsync(connection, token, commandTimeout);
-        }
-
-        // Suppress this message, because the sp name is never set via user input
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2100:Review SQL queries for security vulnerabilities")]
-        internal IDictionary<Type, IList> Execute(
-            IDbConnection     connection,
-            CancellationToken token,
-            int               commandTimeout = defaultTimeout,
-            IEnumerable<Type> outputTypes    = null)
-        {
-            Contract.Requires(connection != null);
-            Contract.Ensures(Contract.Result<IDictionary<Type, IList>>() != null);
-
-            IDbConnection toClose = null;
-            try
+            foreach (var parm in dbParameters.Where(p => p.Direction != ParameterDirection.Input))
             {
-                using (var cmd = connection.CreateCommand(schema, name, commandTimeout, out toClose))
-                {
-                    var dbParameters = parameters.Select(p => p.CreateDbDataParameter(cmd)).ToArray();
-                    foreach (var p in dbParameters)
-                        cmd.Parameters.Add(p);
+                token.ThrowIfCancellationRequested();
 
-                    token.ThrowIfCancellationRequested();
-
-                    IDictionary<Type, IList> results;
-                    if (outputTypes != null && outputTypes.Any())
-                        results = cmd.Execute(token, outputTypes, dataTransformers);
-                    else
-                    {
-                        cmd.DoExecute(c => c.ExecuteNonQuery(), token);
-                        results = new Dictionary<Type, IList>();
-                    }
-
-                    foreach (var parm in dbParameters.Where(p => p.Direction != ParameterDirection.Input))
-                    {
-                        var spParm = parameters.OfType<IOutputStoredProcedureParameter>()
-                                               .FirstOrDefault(p => p.ParameterName == parm.ParameterName);
-                        if (spParm != null)
-                            spParm.TransferOutputValue(parm.Value);
-                    }
-
-                    return results;
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
-            catch(TimeoutException)
-            {
-                throw;
-            }
-            catch (AggregateException ag)
-            {
-                throw new Exception("Error reading from stored proc " + FullName + ":" + Environment.NewLine + ag.InnerException.Message, ag.InnerException);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Error reading from stored proc " + FullName + ":" + Environment.NewLine + ex.Message, ex);
-            }
-            finally
-            {
-                if (toClose != null)
-                    toClose.Close();
+                var spParm = parameters.OfType<IOutputStoredProcedureParameter>()
+                                       .FirstOrDefault(p => p.ParameterName == parm.ParameterName);
+                if (spParm != null)
+                    spParm.TransferOutputValue(parm.Value);
             }
         }
 

@@ -28,24 +28,24 @@ namespace CodeOnlyStoredProcedure.Dynamic
             {
                 try
                 {
-                    targetContext.Post(s =>
+                    targetContext.Post(e =>
                     {
-                        throw (Exception)s;
+                        throw (Exception)e;
                     }, exception);
                     return;
                 }
                 catch (Exception ex)
                 {
                     exception = new AggregateException(new Exception[]
-			        {
-				        exception,
-				        ex
-			        });
+                    {
+                        exception,
+                        ex
+                    });
                 }
             }
-            ThreadPool.QueueUserWorkItem(s =>
+            ThreadPool.QueueUserWorkItem(e =>
             {
-                throw (Exception)s;
+                throw (Exception)e;
             }, exception);
         }
     }

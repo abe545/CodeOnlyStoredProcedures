@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using CodeOnlyStoredProcedure;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using FluentAssertions;
 
 #if NET40
 namespace CodeOnlyTests.Net40
@@ -18,50 +19,109 @@ namespace CodeOnlyTests
         [TestMethod]
         public void TestGetMappedProperties_GetsAllPublicProperties()
         {
-            var props = typeof(Model).GetMappedProperties().ToArray();
-
-            CollectionAssert.AreEquivalent(typeof(Model).GetProperties(), props, "Not all public properties returned.");
+            typeof(Model).GetMappedProperties()
+                .Should().ContainInOrder(typeof(Model).GetProperties(), "all public properties should be mapped");
         }
 
         [TestMethod]
         public void TestGetMappedProperties_DoesNotIncludeNotMappedProperties()
         {
-            var prop = typeof(ModelNotMapped).GetMappedProperties().Single();
-
-            Assert.AreEqual("Bar", prop.Name, "Wrong property returned.");
+            typeof(ModelNotMapped).GetMappedProperties()
+                .Should().ContainSingle(pi => pi.Name == "Bar", "Bar is the only mapped property");
         }
 
         [TestMethod]
         public void TestGetMappedProperties_DoesNotIncludeReadOnlyPropertiesWhenSpecified()
         {
-            var prop = typeof(ModelReadOnlyProperty).GetMappedProperties(requireWritable: true).Single();
-
-            Assert.AreEqual("Foo", prop.Name, "Wrong property returned.");
+            typeof(ModelReadOnlyProperty).GetMappedProperties()
+                .Should().ContainSingle(pi => pi.Name == "Foo", "Foo is the only writeable property");
         }
 
         [TestMethod]
         public void TestGetMappedProperties_DoesNotIncludePropertiesWithPrivateSettersWhenRequiresWritableSpecified()
         {
-            var prop = typeof(ModelPrivateSetter).GetMappedProperties(requireWritable: true).Single();
-
-            Assert.AreEqual("Foo", prop.Name, "Wrong property returned.");
+            typeof(ModelPrivateSetter).GetMappedProperties()
+                .Should().ContainSingle(pi => pi.Name == "Foo", "Foo is the only property with a public setter");
         }
 
         [TestMethod]
         public void TestGetMappedProperties_DoesNotIncludeWriteOnlyPropertiesWhenSpecified()
         {
-            var prop = typeof(ModelWriteOnlyProperty).GetMappedProperties(requireReadable: true).Single();
-
-            Assert.AreEqual("Foo", prop.Name, "Wrong property returned.");
+            typeof(ModelWriteOnlyProperty).GetMappedProperties()
+                .Should().ContainSingle(pi => pi.Name == "Foo", "Foo is the only readable property");
         }
 
         [TestMethod]
         public void TestGetMappedProperties_DoesNotIncludePropertiesWithPrivateGetterWhenRequireReadableSpecified()
         {
-            var prop = typeof(ModelPrivateGetter).GetMappedProperties(requireReadable: true).Single();
+            typeof(ModelPrivateGetter).GetMappedProperties()
+                .Should().ContainSingle(pi => pi.Name == "Foo", "Foo is the only property with a public getter");
+        }
 
-            Assert.AreEqual("Foo", prop.Name, "Wrong property returned.");
-        } 
+        [TestMethod]
+        public void TestGetMappedProperties_GetsOptionalProperties()
+        {
+            typeof(WithOptionalProperty).GetMappedProperties()
+                .Should().ContainInOrder(typeof(WithOptionalProperty).GetProperties(), "optional properties should have no effect");
+        }
+        #endregion
+
+        #region GetRequiredPropertyNames
+        [TestMethod]
+        public void TestGetRequiredPropertyNames_GetsAllPropertyNames()
+        {
+            typeof(Model).GetRequiredPropertyNames()
+                .Should().ContainInOrder(typeof(Model).GetProperties().Select(pi => pi.Name), "all public properties are required by default");
+        }
+
+        [TestMethod]
+        public void TestGetRequiredPropertyNames_DoesNotIncludeNotMappedProperties()
+        {
+            typeof(ModelNotMapped).GetRequiredPropertyNames()
+                .Should().ContainSingle(s => s == "Bar", "Bar is the only mapped property");
+        }
+
+        [TestMethod]
+        public void TestGetRequiredPropertyNames_DoesNotIncludeReadOnlyPropertiesWhenSpecified()
+        {
+            typeof(ModelReadOnlyProperty).GetRequiredPropertyNames()
+                .Should().ContainSingle(s => s == "Foo", "Foo is the only writeable property");
+        }
+
+        [TestMethod]
+        public void TestGetRequiredPropertyNames_DoesNotIncludePropertiesWithPrivateSettersWhenRequiresWritableSpecified()
+        {
+            typeof(ModelPrivateSetter).GetRequiredPropertyNames()
+                .Should().ContainSingle(s => s == "Foo", "Foo is the only property with a public setter");
+        }
+
+        [TestMethod]
+        public void TestGetRequiredPropertyNames_DoesNotIncludeWriteOnlyPropertiesWhenSpecified()
+        {
+            typeof(ModelWriteOnlyProperty).GetRequiredPropertyNames()
+                .Should().ContainSingle(s => s == "Foo", "Foo is the only readable property");
+        }
+
+        [TestMethod]
+        public void TestGetRequiredPropertyNames_DoesNotIncludePropertiesWithPrivateGetterWhenRequireReadableSpecified()
+        {
+            typeof(ModelPrivateGetter).GetRequiredPropertyNames()
+                .Should().ContainSingle(s => s == "Foo", "Foo is the only property with a public getter");
+        }
+
+        [TestMethod]
+        public void TestGetRequiredPropertyNames_DoesNotIncludeOptionalProperties()
+        {
+            typeof(WithOptionalProperty).GetRequiredPropertyNames()
+                .Should().ContainSingle(s => s == "Bar", "Foo is marked optional, so should not be included");
+        }
+
+        [TestMethod]
+        public void TestGetRequiredPropertyNames_GetsTheRenamedProperties()
+        {
+            typeof(RenamedProperties).GetRequiredPropertyNames()
+                .Should().Contain(new[] { "One", "Two", "Three" }, because: "the properties have been mapped to other columns in the result set");
+        }
         #endregion
 
         #region GetResultPropertiesBySqlName
@@ -70,9 +130,9 @@ namespace CodeOnlyTests
         {
             var props = typeof(Model).GetResultPropertiesBySqlName();
 
-            Assert.AreEqual(2, props.Count, "More than the public properties returned.");
-            Assert.IsTrue(props.ContainsKey("Foo"));
-            Assert.IsTrue(props.ContainsKey("Bar"));
+            props.Should().HaveCount(2, "because Model has 2 public properties.").And
+                 .ContainKey("Foo", "because it is a public property.").And
+                 .ContainKey("Bar", "because it is a public property.");
         }
 
         [TestMethod]
@@ -80,9 +140,9 @@ namespace CodeOnlyTests
         {
             var props = typeof(ModelNotMapped).GetResultPropertiesBySqlName();
 
-            Assert.AreEqual(1, props.Count, "Not mapped property returned.");
-            Assert.IsFalse(props.ContainsKey("Foo"), "Not mapped property returned.");
-            Assert.IsTrue(props.ContainsKey("Bar"), "Mapped property not returned.");
+            props.Should().HaveCount(1, "because ModelNotMapped has 1 mapped public property.").And
+                 .NotContainKey("Foo", "because it is a public property marked with the NotMapped attribute.").And
+                 .ContainKey("Bar", "because it is a public property.");
         }
 
         [TestMethod]
@@ -90,9 +150,9 @@ namespace CodeOnlyTests
         {
             var props = typeof(ModelReadOnlyProperty).GetResultPropertiesBySqlName();
 
-            Assert.AreEqual(1, props.Count, "Read-only property returned.");
-            Assert.IsFalse(props.ContainsKey("Bar"), "Read-only property returned.");
-            Assert.IsTrue(props.ContainsKey("Foo"), "Writeable property not returned.");
+            props.Should().HaveCount(1, "because ModelReadOnlyProperty has 1 writable public property.").And
+                 .ContainKey("Foo", "because it is a public writeable property.").And
+                 .NotContainKey("Bar", "because it is a public read-only property.");
         }
         
         [TestMethod]
@@ -100,16 +160,14 @@ namespace CodeOnlyTests
         {
             var props = typeof(RenamedProperties).GetResultPropertiesBySqlName();
 
-            PropertyInfo prop;
+            props.Should().HaveCount(3, "because Model has 3 renamed public properties.").And
+                 .ContainKey("One", "because it is a renamed public property.").And
+                 .ContainKey("Two", "because it is a renamed public property.").And
+                 .ContainKey("Three", "because it is a renamed public property.");
 
-            Assert.IsTrue(props.TryGetValue("One", out prop), "Property not renamed via ColumnAttribute");
-            Assert.AreEqual("Foo", prop.Name, "Wrong property returned for property renamed via ColumnAttribute");
-
-            Assert.IsTrue(props.TryGetValue("Two", out prop), "Property not renamed via TableValuedParameterAttribute");
-            Assert.AreEqual("Bar", prop.Name, "Wrong property returned for property renamed via TableValuedParameterAttribute");
-
-            Assert.IsTrue(props.TryGetValue("Three", out prop), "Property not renamed via StoredProcedureParameterAttribute");
-            Assert.AreEqual("Baz", prop.Name, "Wrong property returned for property renamed via StoredProcedureParameterAttribute");
+            props["One"].Name.Should().Be("Foo", "because it is the name of the property that was renamed via ColumnAttribute.");
+            props["Two"].Name.Should().Be("Bar", "because it is the name of the property that was renamed via TableValuedParameterAttribute.");
+            props["Three"].Name.Should().Be("Baz", "because it is the name of the property that was renamed via StoredProcedureParameterAttribute.");
         }
         #endregion
 
@@ -117,90 +175,150 @@ namespace CodeOnlyTests
         [TestMethod]
         public void IsValidResultType_ReturnsTrueForString()
         {
-            Assert.IsTrue(typeof(string).IsValidResultType());
+            typeof(String).IsValidResultType().Should().BeTrue("because String is an integral type");
         }
 
         [TestMethod]
         public void IsValidResultType_ReturnsTrueForChar()
         {
-            Assert.IsTrue(typeof(char).IsValidResultType());
+            typeof(Char).IsValidResultType().Should().BeTrue("because Char is an integral type");
         }
 
         [TestMethod]
         public void IsValidResultType_ReturnsTrueForInt32()
         {
-            Assert.IsTrue(typeof(Int32).IsValidResultType());
+            typeof(Int32).IsValidResultType().Should().BeTrue("because Int32 is an integral type");
         }
 
         [TestMethod]
         public void IsValidResultType_ReturnsTrueForInt64()
         {
-            Assert.IsTrue(typeof(Int64).IsValidResultType());
+            typeof(Int64).IsValidResultType().Should().BeTrue("because Int64 is an integral type");
         }
 
         [TestMethod]
         public void IsValidResultType_ReturnsTrueForInt16()
         {
-            Assert.IsTrue(typeof(Int16).IsValidResultType());
+            typeof(Int16).IsValidResultType().Should().BeTrue("because Int16 is an integral type");
         }
 
         [TestMethod]
         public void IsValidResultType_ReturnsTrueForDouble()
         {
-            Assert.IsTrue(typeof(Double).IsValidResultType());
+            typeof(Double).IsValidResultType().Should().BeTrue("because Double is an integral type");
         }
 
         [TestMethod]
         public void IsValidResultType_ReturnsTrueForSingle()
         {
-            Assert.IsTrue(typeof(Single).IsValidResultType());
+            typeof(Single).IsValidResultType().Should().BeTrue("because Single is an integral type");
         }
 
         [TestMethod]
         public void IsValidResultType_ReturnsTrueForDecimal()
         {
-            Assert.IsTrue(typeof(Decimal).IsValidResultType());
+            typeof(Decimal).IsValidResultType().Should().BeTrue("because Decimal is an integral type");
         }
 
         [TestMethod]
         public void IsValidResultType_ReturnsTrueForBoolean()
         {
-            Assert.IsTrue(typeof(Boolean).IsValidResultType());
+            typeof(Boolean).IsValidResultType().Should().BeTrue("because Boolean is an integral type");
         }
         
         [TestMethod]
         public void IsValidResultType_ReturnsTrueForDateTime()
         {
-            Assert.IsTrue(typeof(DateTime).IsValidResultType());
+            typeof(DateTime).IsValidResultType().Should().BeTrue("because DateTime is an integral type");
         }
 
         [TestMethod]
         public void IsValidResultType_ReturnsTrueForGuid()
         {
-            Assert.IsTrue(typeof(Guid).IsValidResultType());
+            typeof(Guid).IsValidResultType().Should().BeTrue("because Guid is an integral type");
+        }
+
+        [TestMethod]
+        public void IsValidResultType_ReturnsTrueForNullableChar()
+        {
+            typeof(Char?).IsValidResultType().Should().BeTrue("because nullable Char is an integral type");
+        }
+
+        [TestMethod]
+        public void IsValidResultType_ReturnsTrueForNullableInt32()
+        {
+            typeof(Int32?).IsValidResultType().Should().BeTrue("because nullable Int32 is an integral type");
+        }
+
+        [TestMethod]
+        public void IsValidResultType_ReturnsTrueForNullableInt64()
+        {
+            typeof(Int64?).IsValidResultType().Should().BeTrue("because nullable Int64 is an integral type");
+        }
+
+        [TestMethod]
+        public void IsValidResultType_ReturnsTrueForNullableInt16()
+        {
+            typeof(Int16?).IsValidResultType().Should().BeTrue("because nullable Int16 is an integral type");
+        }
+
+        [TestMethod]
+        public void IsValidResultType_ReturnsTrueForNullableDouble()
+        {
+            typeof(Double?).IsValidResultType().Should().BeTrue("because nullable Double is an integral type");
+        }
+
+        [TestMethod]
+        public void IsValidResultType_ReturnsTrueForNullableSingle()
+        {
+            typeof(Single?).IsValidResultType().Should().BeTrue("because nullable Single is an integral type");
+        }
+
+        [TestMethod]
+        public void IsValidResultType_ReturnsTrueForNullableDecimal()
+        {
+            typeof(Decimal?).IsValidResultType().Should().BeTrue("because nullable Decimal is an integral type");
+        }
+
+        [TestMethod]
+        public void IsValidResultType_ReturnsTrueForNullableBoolean()
+        {
+            typeof(Boolean?).IsValidResultType().Should().BeTrue("because nullable Boolean is an integral type");
+        }
+
+        [TestMethod]
+        public void IsValidResultType_ReturnsTrueForNullableDateTime()
+        {
+            typeof(DateTime?).IsValidResultType().Should().BeTrue("because nullable DateTime is an integral type");
+        }
+
+        [TestMethod]
+        public void IsValidResultType_ReturnsTrueForNullableGuid()
+        {
+            typeof(Guid?).IsValidResultType().Should().BeTrue("because nullable Guid is an integral type");
         }
 
         [TestMethod]
         public void IsValidResultType_ReturnsFalseForUnmappedInterface()
         {
-            lock (TypeExtensions.interfaceMap)
+            lock (CodeOnlyStoredProcedure.TypeExtensions.interfaceMap)
             {
                 // make sure that there is nothing in the map
-                TypeExtensions.interfaceMap.Clear();
-                Assert.IsFalse(typeof(IModel).IsValidResultType());
+                CodeOnlyStoredProcedure.TypeExtensions.interfaceMap.Clear();
+                typeof(IModel).IsValidResultType().Should().BeFalse("because unmapped interfaces can not be constructed");
             }
         }
 
         [TestMethod]
         public void IsValidResultType_ReturnsTrueForMappedInterface()
         {
-            lock (TypeExtensions.interfaceMap)
+            lock (CodeOnlyStoredProcedure.TypeExtensions.interfaceMap)
             {
                 // make sure that there is nothing in the map
-                TypeExtensions.interfaceMap.Clear();
-                TypeExtensions.interfaceMap.TryAdd(typeof(IModel), typeof(Model));
+                CodeOnlyStoredProcedure.TypeExtensions.interfaceMap.Clear();
+                CodeOnlyStoredProcedure.TypeExtensions.interfaceMap.TryAdd(typeof(IModel), typeof(Model));
 
-                Assert.IsTrue(typeof(IModel).IsValidResultType());
+                typeof(IModel).IsValidResultType().Should().BeTrue("because mapped interfaces can be constructed");
             }
         }
         #endregion
@@ -258,6 +376,13 @@ namespace CodeOnlyTests
             public string Bar { get; set; }
             [StoredProcedureParameter(Name = "Three")]
             public string Baz { get; set; }
+        }
+
+        private class WithOptionalProperty
+        {
+            [OptionalResult]
+            public string Foo { get; set; }
+            public string Bar { get; set; }
         }
         #endregion
     }

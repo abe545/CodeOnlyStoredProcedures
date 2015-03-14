@@ -6,12 +6,13 @@ namespace CodeOnlyStoredProcedure.DataTransformation
     /// DataTransformer Attribute that will call String.Intern on the input. This can potentially
     /// save a lot of memory if you have many strings that constanty recur
     /// </summary>
-    public class InternAttribute : DataTransformerAttributeBase
+    public class InternAttribute : DataTransformerAttributeBase, IDataTransformerAttribute<string>
     {
         /// <summary>
         /// Creates an InternAttribute, with the given application order.
         /// </summary>
-        /// <param name="order">The order in which to apply the attribute. Defaults to <see cref="Int32.MaxValue"/></param>
+        /// <param name="order">The order in which to apply the attribute. Defaults to <see cref="Int32.MaxValue"/>, so the final 
+        /// string will be interned.</param>
         public InternAttribute(int order = int.MaxValue)
             : base(order)
         {
@@ -36,6 +37,16 @@ namespace CodeOnlyStoredProcedure.DataTransformation
                 throw new NotSupportedException("Can only intern strings.");
 
             return string.Intern((string)value);
+        }
+
+        /// <summary>
+        /// Returns the interned string.
+        /// </summary>
+        /// <param name="input">The value from the database.</param>
+        /// <returns>The interned string</returns>
+        public string Transform(string input)
+        {
+            return string.Intern(input);
         }
     }
 }

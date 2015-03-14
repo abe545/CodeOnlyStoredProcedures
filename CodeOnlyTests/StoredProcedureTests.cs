@@ -10,9 +10,6 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-#if !NET40
-using System.Collections.Immutable;
-#endif
 
 #if NET40
 namespace CodeOnlyTests.Net40
@@ -174,13 +171,9 @@ namespace CodeOnlyTests
             var p1 = Mock.Of<IStoredProcedureParameter>(p => p.ParameterName == "Foo");
             var p2 = Mock.Of<IStoredProcedureParameter>(p => p.ParameterName == "Bar");
 
-#if NET40
             var parms = new[] { p1, p2 };
             var transformers = new IDataTransformer[0];
-#else
-            var parms = ImmutableList<IStoredProcedureParameter>.Empty.Add(p1).Add(p2);
-            var transformers = ImmutableList<IDataTransformer>.Empty;
-#endif
+
             var sp = new StoredProcedure("schema", "Test");
             var toTest = sp.CloneCore(parms, transformers);
 
@@ -316,65 +309,13 @@ namespace CodeOnlyTests
 
             var toTest = new StoredProcedure("foo", "bar");
 
-            var res = toTest.Execute(conn.Object, CancellationToken.None, 100);
+            toTest.Execute(conn.Object, 100);
 
-            Assert.AreEqual(0, res.Count);
             Assert.AreEqual("[foo].[bar]", cmd.Object.CommandText);
             Assert.AreEqual(CommandType.StoredProcedure, cmd.Object.CommandType);
             Assert.AreEqual(100, cmd.Object.CommandTimeout);
 
             cmd.Verify(c => c.ExecuteNonQuery(), Times.Once());
-        }
-
-        [TestMethod]
-        public void TestExecuteDoesNotExecuteCommandIfPassedCancelledToken()
-        {
-            var cmd = new Mock<IDbCommand>();
-            cmd.SetupAllProperties();
-
-            var conn = new Mock<IDbConnection>();
-            conn.Setup(c => c.CreateCommand())
-                .Returns(cmd.Object);
-
-            var cts = new CancellationTokenSource();
-            var toTest = new StoredProcedure("foo", "bar");
-
-            var token = cts.Token;
-            var task = new Task(() =>
-                {
-                    cts.Cancel();
-                    toTest.Execute(conn.Object, token);
-                }, token);
-
-            task.RunSynchronously();
-
-            cmd.Verify(c => c.ExecuteNonQuery(), Times.Never(), "StoredProcedure executed after the token was cancelled.");
-            Assert.IsTrue(task.IsCanceled, "Cancellation not processed successfully");
-        }
-
-        [TestMethod]
-        public void TestExecuteAbortsWhenTimeoutPasses()
-        {
-            var cmd = new Mock<IDbCommand>();
-            cmd.SetupAllProperties();
-            cmd.Setup(c => c.ExecuteNonQuery())
-               .Callback(() => Thread.Sleep(2000))
-               .Returns(2);
-
-            var conn = new Mock<IDbConnection>();
-            conn.Setup(c => c.CreateCommand())
-                .Returns(cmd.Object);
-
-            var toTest = new StoredProcedure("foo", "bar");
-
-            try
-            {
-                toTest.Execute(conn.Object, CancellationToken.None, 1);
-                Assert.Fail("Execute returned even though it should have timed out.");
-            }
-            catch (TimeoutException)
-            {
-            }
         }
 
         [TestMethod]
@@ -478,40 +419,6 @@ namespace CodeOnlyTests
                     Assert.AreEqual("Precondition failed: typeof(T1).IsValidResultType()",
                                     ex.Message);
                 }
-            }
-        }
-
-        [TestMethod]
-        public void MappedInterface_ReturnsImplementationWhenExecuted()
-        {
-            lock (TypeExtensions.interfaceMap)
-            {
-                // clear any mapped interfaces
-                TypeExtensions.interfaceMap.Clear();
-                StoredProcedure.MapResultType<Interface, InterfaceImpl>();
-
-                var con = new Mock<IDbConnection>();
-                var cmd = new Mock<IDbCommand>();
-                var rdr = new Mock<IDataReader>();
-
-                con.Setup(c => c.CreateCommand()).Returns(cmd.Object);
-                cmd.Setup(c => c.ExecuteReader()).Returns(rdr.Object);
-                rdr.SetupGet(r => r.FieldCount).Returns(1);
-                rdr.Setup(r => r.GetName(0)).Returns("Id");
-                rdr.SetupSequence(r => r.Read())
-                   .Returns(true)
-                   .Returns(false);
-                rdr.Setup(r => r.GetValues(It.IsAny<object[]>()))
-                   .Callback((object[] o) => o[0] = "42")
-                   .Returns(1);
-
-                var sp = new StoredProcedure<Interface>("foo", "bar");
-
-                var res = sp.Execute(con.Object);
-
-                Assert.AreEqual(1, res.Count(), "No results returned");
-                Assert.IsInstanceOfType(res.Single(), typeof(InterfaceImpl));
-                Assert.AreEqual("42", res.Single().Id);
             }
         }
         #endregion
