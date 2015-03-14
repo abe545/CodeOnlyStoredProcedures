@@ -11,6 +11,7 @@
 Code Only Stored Procedures will not create any Stored Procedures on your database. Instead, its aim is to make it easy to call your existing stored procedures by writing simple code.</description>
         <releaseNotes>2.0.0
 Removed dependency on SQL Server for all stored procedures (except those that accept Table Valued Parameters)
+Performance improvements
 
 1.3.1
 Fixed bug where none of the named properties of StoredProcedureParameterAttribute could be set on an object, because they were nullable.
@@ -39,11 +40,8 @@ Significantly improved speed of the code that converts values to enum values.
 Added xml comments to all public methods. While not complete documentation, they are a huge first step.</releaseNotes>
         <tags>StoredProcedure EntityFramework EF</tags>
         <dependencies>
-            <group targetFramework=".NETFramework4.5">
-                <dependency id="Microsoft.Bcl.Immutable" version="1.0.34" />
-            </group>
             <group targetFramework=".NETFramework4.0">
-                <dependency id="EntityFramework" version="6.1.1" />
+                <dependency id="EntityFramework" version="6.1.3" />
             </group>
         </dependencies>
         <references>
