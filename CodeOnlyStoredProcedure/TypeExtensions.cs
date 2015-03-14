@@ -121,6 +121,8 @@ namespace CodeOnlyStoredProcedure
         {
             Contract.Requires(type != null);
 
+            UnwrapNullable(ref type);
+
             if (type == typeof(Int32))
                 return DbType.Int32;
             else if (type == typeof(Double))
@@ -167,8 +169,7 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(parameter != null);
             Contract.Requires(type      != null);
 
-            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
-                type = type.GetGenericArguments().Single();
+            UnwrapNullable(ref type);
 
             if (specifiedType != null)
                 parameter.DbType = specifiedType.Value;
@@ -211,6 +212,8 @@ namespace CodeOnlyStoredProcedure
 
             if (!specifiedSqlDbType.HasValue)
             {
+                UnwrapNullable(ref type);
+
                 if (type == typeof(string))
                     specifiedSqlDbType = SqlDbType.NVarChar;
                 else if (type == typeof(char))
@@ -274,6 +277,8 @@ namespace CodeOnlyStoredProcedure
         {
             Contract.Requires(type != null);
 
+            UnwrapNullable(ref type);
+
             return type.IsEnum || integralTypes.Contains(type);
         }
 
@@ -329,6 +334,12 @@ namespace CodeOnlyStoredProcedure
 
                 yield return parameter;
             }
+        }
+
+        private static void UnwrapNullable(ref Type type)
+        {
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+                type = type.GetGenericArguments()[0];
         }
     }
 }
