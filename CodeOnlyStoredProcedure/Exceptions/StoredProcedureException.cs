@@ -7,7 +7,7 @@ namespace CodeOnlyStoredProcedure
     /// Base class for all exceptions thrown by this library
     /// </summary>
     [Serializable]
-    public abstract class StoredProcedureException : Exception
+    public class StoredProcedureException : Exception
     {
         /// <summary>
         /// Creates a new StoredProcedureException

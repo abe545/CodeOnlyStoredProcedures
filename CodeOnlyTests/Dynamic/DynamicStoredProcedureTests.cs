@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CodeOnlyStoredProcedure;
 using CodeOnlyStoredProcedure.Dynamic;
+using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 
@@ -20,6 +21,38 @@ namespace CodeOnlyTests.Dynamic
     public class DynamicStoredProcedureTests
     {
         private static IEnumerable<IDataTransformer> transformers = Enumerable.Empty<IDataTransformer>();
+
+        [TestClass]
+        public class Schema
+        {
+            [TestMethod]
+            public void CanSpecifyCustomSchema()
+            {
+                var ctx = CreatePeople("Foo");
+
+                dynamic toTest = new DynamicStoredProcedure(ctx, transformers, CancellationToken.None);
+
+                IEnumerable<string> people = toTest.foo.usp_GetPeople();
+                people.Should().ContainSingle("Foo", "because only one person should have been returned.");
+
+                // our setup will only ever return this one object
+                var cmd = ctx.CreateCommand();
+                cmd.CommandText.Should().Be("[foo].[usp_GetPeople]", "because we called the stored procedure with another schema.");
+            }
+
+            [TestMethod]
+            public void MultipleSchemasThrowsException()
+            {
+                var ctx = CreatePeople("Foo");
+
+                dynamic toTest = new DynamicStoredProcedure(ctx, transformers, CancellationToken.None);
+                IEnumerable<string> res = null;
+                Action shouldThrow = () => res = toTest.foo.bar.usp_GetPeople();
+
+                shouldThrow.ShouldThrow<StoredProcedureException>("because you can only specify one schema")
+                           .WithMessage("Schema already specified once. \n\tExisting schema: foo\n\tAdditional schema: bar");
+            }
+        }
 
         [TestClass]
         public class Synchronous
@@ -550,6 +583,7 @@ namespace CodeOnlyTests.Dynamic
 
             var parms = new DataParameterCollection();
             var cmd = new Mock<IDbCommand>();
+            cmd.SetupAllProperties();
             cmd.Setup(c => c.ExecuteReader())
                .Callback(() => readerCallback(parms))
                .Returns(reader.Object);

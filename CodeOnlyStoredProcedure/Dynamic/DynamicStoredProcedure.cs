@@ -36,8 +36,24 @@ namespace CodeOnlyStoredProcedure.Dynamic
                                       IEnumerable<IDataTransformer> transformers,
                                       CancellationToken             token,
                                       int                           timeout       = StoredProcedure.defaultTimeout,
-                                      string                        schema        = "dbo",
                                       DynamicExecutionMode          executionMode = DynamicExecutionMode.Any)
+        {
+            Contract.Requires(connection   != null);
+            Contract.Requires(transformers != null);
+
+            this.connection    = connection;
+            this.transformers  = transformers;
+            this.token         = token;
+            this.timeout       = timeout;
+            this.executionMode = executionMode;
+        }
+
+        private DynamicStoredProcedure(IDbConnection                 connection,
+                                       IEnumerable<IDataTransformer> transformers,
+                                       CancellationToken             token,
+                                       int                           timeout,
+                                       string                        schema,
+                                       DynamicExecutionMode          executionMode)
         {
             Contract.Requires(connection   != null);
             Contract.Requires(transformers != null);
@@ -53,6 +69,9 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
         public override bool TryGetMember(GetMemberBinder binder, out object result)
         {
+            if (!string.IsNullOrEmpty(schema))
+                throw new StoredProcedureException(string.Format("Schema already specified once. \n\tExisting schema: {0}\n\tAdditional schema: {1}", schema, binder.Name));
+
             result = new DynamicStoredProcedure(connection, transformers, token, timeout, binder.Name, executionMode);
             return true;
         }
@@ -115,7 +134,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
             result = new DynamicStoredProcedureResults(
                 connection,
-                schema,
+                schema ?? "dbo",
                 binder.Name,
                 timeout,
                 parameters,
