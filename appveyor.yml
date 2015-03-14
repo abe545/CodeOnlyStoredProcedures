@@ -24,25 +24,25 @@ before_build:
 build:
   project: CodeOnlyStoredProcedure.sln
 
-after_build:
-  - nuget pack CodeOnlyStoredProcedures.nuspec -Symbols -NonInteractive -Verbosity detailed
-  - ps: Get-ChildItem .\*.nupkg | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name }
-
 test:
   assemblies:
     - CodeOnlyTests.dll
     - CodeOnlyTests-NET40.dll
 
-# run smoke tests
+# run smoke tests, and create the nuget package artifacts
 after_test:
   - .\SmokeTests\bin\Release\SmokeTests.exe
   - .\SmokeTests-NET40\bin\Release\SmokeTests-NET40.exe
+  - nuget pack CodeOnlyStoredProcedures.nuspec -Symbols -NonInteractive -Verbosity detailed
 
-deploy:
-  - provider: NuGet
-    server: 
-      secure: KWCy/cmXPCGCHxgZeYVi0Z5eq7MZCUDzY9oqGs9kpMPNvbAYfK5s0aOS8JwzEOlb699R302QO80G2DiLB7Naow==
-    api_key:
-      secure: BpvfN0VAXhEcYOXAk1rq6OFRg85yKBz4Zc+GMXhdvb8=
-    skip_symbols: true
-    artifact: /.*\.nupkg/
+artifacts:
+  - path: '*.nupkg'
+
+#deploy:
+#  - provider: NuGet
+#    server: 
+#      secure: KWCy/cmXPCGCHxgZeYVi0Z5eq7MZCUDzY9oqGs9kpMPNvbAYfK5s0aOS8JwzEOlb699R302QO80G2DiLB7Naow==
+#    api_key:
+#      secure: BpvfN0VAXhEcYOXAk1rq6OFRg85yKBz4Zc+GMXhdvb8=
+#    skip_symbols: true
+#    artifact: /.*\.nupkg/
