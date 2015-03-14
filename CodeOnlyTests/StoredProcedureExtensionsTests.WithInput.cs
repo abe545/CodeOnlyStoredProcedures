@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Data;
 using CodeOnlyStoredProcedure;
 using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -27,10 +28,30 @@ namespace CodeOnlyTests
 
             toTest.Parameters.Should().HaveCount(2, "because 2 properties were defined on the anonymous type passed to WithInput");
 
-            toTest.Parameters.Should().ContainSingle(p => p.ParameterName == "Id").Which
-                .Should().BeOfType<InputParameter>().Which.Value.Should().Be(1);
-            toTest.Parameters.Should().ContainSingle(p => p.ParameterName == "Name").Which
-                .Should().BeOfType<InputParameter>().Which.Value.Should().Be("Foo");
+            TestSingleInputParameter(toTest, "Id", 1, DbType.Int32);
+            TestSingleInputParameter(toTest, "Name", "Foo", DbType.String);
+        }
+
+        [TestMethod]
+        public void TestWithInputParsesAnonymousTypesWithStringNullValue()
+        {
+            var orig = new StoredProcedure("Test");
+
+            var toTest = orig.WithInput(new
+            {
+                Id = 1,
+                Name = "Foo",
+                Value = default(string)
+            });
+            
+            toTest.Should().NotBeSameAs(orig, "because StoredProcedures should be immutable");
+            orig.Parameters.Should().BeEmpty("because StoredProcedures should be immutable");
+
+            toTest.Parameters.Should().HaveCount(3, "because 3 properties were defined on the anonymous type passed to WithInput");
+
+            TestSingleInputParameter(toTest, "Id", 1, DbType.Int32);
+            TestSingleInputParameter(toTest, "Name", "Foo", DbType.String);
+            TestSingleInputParameter(toTest, "Value", null, DbType.String);
         }
 
         [TestMethod]
@@ -48,6 +69,24 @@ namespace CodeOnlyTests
 
             toTest.Parameters.Should().ContainSingle(p => p.ParameterName == "InputName", "because Foo is decorated with a StoredProcedureAttribute renaming it").Which
                 .Should().BeOfType<InputParameter>().Which.Value.Should().Be("Bar");
+        }
+
+        [TestMethod]
+        public void TestWithInputDoesNotAddNullValues()
+        {
+            var orig = new StoredProcedure("Test");
+
+            var input = new NullableColumns { Name = "Foo", NullableDouble = null, NullableInt = null };
+            var toTest = orig.WithInput(input);
+
+            toTest.Should().NotBeSameAs(orig, "because StoredProcedures should be immutable");
+            orig.Parameters.Should().BeEmpty("because StoredProcedures should be immutable");
+
+            toTest.Parameters.Should().HaveCount(3, "because 3 properties are defined on the NullableColumns, which was passed to WithInput");
+
+            TestSingleInputParameter(toTest, "Name", "Foo", DbType.String);
+            TestSingleInputParameter(toTest, "NullableDouble", null, DbType.Double);
+            TestSingleInputParameter(toTest, "NullableInt", null, DbType.Int32);
         }
 
         [TestMethod]
@@ -136,6 +175,15 @@ namespace CodeOnlyTests
 
             param.Value.Should().BeOfType<List<TVPHelper>>().Which.Should().BeEquivalentTo(input.Table);
             param.TypeName.Should().Be("[TEST].[TVP_TEST]", "because that is the schema and table type specified on WithTableValuedParameter");
+        }
+
+        private static void TestSingleInputParameter(StoredProcedure toTest, string parameterName, object expectedValue, DbType expectedType)
+        {
+            var param = toTest.Parameters.Should().ContainSingle(p => p.ParameterName == parameterName).Which
+                .Should().BeOfType<InputParameter>().Which;
+
+            param.Value.Should().Be(expectedValue);
+            param.DbType.Should().Be(expectedType);
         }
     }
 }

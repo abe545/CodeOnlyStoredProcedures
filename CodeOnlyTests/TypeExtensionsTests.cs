@@ -130,9 +130,9 @@ namespace CodeOnlyTests
         {
             var props = typeof(Model).GetResultPropertiesBySqlName();
 
-            Assert.AreEqual(2, props.Count, "More than the public properties returned.");
-            Assert.IsTrue(props.ContainsKey("Foo"));
-            Assert.IsTrue(props.ContainsKey("Bar"));
+            props.Should().HaveCount(2, "because Model has 2 public properties.").And
+                 .ContainKey("Foo", "because it is a public property.").And
+                 .ContainKey("Bar", "because it is a public property.");
         }
 
         [TestMethod]
@@ -140,9 +140,9 @@ namespace CodeOnlyTests
         {
             var props = typeof(ModelNotMapped).GetResultPropertiesBySqlName();
 
-            Assert.AreEqual(1, props.Count, "Not mapped property returned.");
-            Assert.IsFalse(props.ContainsKey("Foo"), "Not mapped property returned.");
-            Assert.IsTrue(props.ContainsKey("Bar"), "Mapped property not returned.");
+            props.Should().HaveCount(1, "because ModelNotMapped has 1 mapped public property.").And
+                 .NotContainKey("Foo", "because it is a public property marked with the NotMapped attribute.").And
+                 .ContainKey("Bar", "because it is a public property.");
         }
 
         [TestMethod]
@@ -150,9 +150,9 @@ namespace CodeOnlyTests
         {
             var props = typeof(ModelReadOnlyProperty).GetResultPropertiesBySqlName();
 
-            Assert.AreEqual(1, props.Count, "Read-only property returned.");
-            Assert.IsFalse(props.ContainsKey("Bar"), "Read-only property returned.");
-            Assert.IsTrue(props.ContainsKey("Foo"), "Writeable property not returned.");
+            props.Should().HaveCount(1, "because ModelReadOnlyProperty has 1 writable public property.").And
+                 .ContainKey("Foo", "because it is a public writeable property.").And
+                 .NotContainKey("Bar", "because it is a public read-only property.");
         }
         
         [TestMethod]
@@ -160,16 +160,14 @@ namespace CodeOnlyTests
         {
             var props = typeof(RenamedProperties).GetResultPropertiesBySqlName();
 
-            PropertyInfo prop;
+            props.Should().HaveCount(3, "because Model has 3 renamed public properties.").And
+                 .ContainKey("One", "because it is a renamed public property.").And
+                 .ContainKey("Two", "because it is a renamed public property.").And
+                 .ContainKey("Three", "because it is a renamed public property.");
 
-            Assert.IsTrue(props.TryGetValue("One", out prop), "Property not renamed via ColumnAttribute");
-            Assert.AreEqual("Foo", prop.Name, "Wrong property returned for property renamed via ColumnAttribute");
-
-            Assert.IsTrue(props.TryGetValue("Two", out prop), "Property not renamed via TableValuedParameterAttribute");
-            Assert.AreEqual("Bar", prop.Name, "Wrong property returned for property renamed via TableValuedParameterAttribute");
-
-            Assert.IsTrue(props.TryGetValue("Three", out prop), "Property not renamed via StoredProcedureParameterAttribute");
-            Assert.AreEqual("Baz", prop.Name, "Wrong property returned for property renamed via StoredProcedureParameterAttribute");
+            props["One"].Name.Should().Be("Foo", "because it is the name of the property that was renamed via ColumnAttribute.");
+            props["Two"].Name.Should().Be("Bar", "because it is the name of the property that was renamed via TableValuedParameterAttribute.");
+            props["Three"].Name.Should().Be("Baz", "because it is the name of the property that was renamed via StoredProcedureParameterAttribute.");
         }
         #endregion
 
@@ -177,67 +175,127 @@ namespace CodeOnlyTests
         [TestMethod]
         public void IsValidResultType_ReturnsTrueForString()
         {
-            Assert.IsTrue(typeof(string).IsValidResultType());
+            typeof(String).IsValidResultType().Should().BeTrue("because String is an integral type");
         }
 
         [TestMethod]
         public void IsValidResultType_ReturnsTrueForChar()
         {
-            Assert.IsTrue(typeof(char).IsValidResultType());
+            typeof(Char).IsValidResultType().Should().BeTrue("because Char is an integral type");
         }
 
         [TestMethod]
         public void IsValidResultType_ReturnsTrueForInt32()
         {
-            Assert.IsTrue(typeof(Int32).IsValidResultType());
+            typeof(Int32).IsValidResultType().Should().BeTrue("because Int32 is an integral type");
         }
 
         [TestMethod]
         public void IsValidResultType_ReturnsTrueForInt64()
         {
-            Assert.IsTrue(typeof(Int64).IsValidResultType());
+            typeof(Int64).IsValidResultType().Should().BeTrue("because Int64 is an integral type");
         }
 
         [TestMethod]
         public void IsValidResultType_ReturnsTrueForInt16()
         {
-            Assert.IsTrue(typeof(Int16).IsValidResultType());
+            typeof(Int16).IsValidResultType().Should().BeTrue("because Int16 is an integral type");
         }
 
         [TestMethod]
         public void IsValidResultType_ReturnsTrueForDouble()
         {
-            Assert.IsTrue(typeof(Double).IsValidResultType());
+            typeof(Double).IsValidResultType().Should().BeTrue("because Double is an integral type");
         }
 
         [TestMethod]
         public void IsValidResultType_ReturnsTrueForSingle()
         {
-            Assert.IsTrue(typeof(Single).IsValidResultType());
+            typeof(Single).IsValidResultType().Should().BeTrue("because Single is an integral type");
         }
 
         [TestMethod]
         public void IsValidResultType_ReturnsTrueForDecimal()
         {
-            Assert.IsTrue(typeof(Decimal).IsValidResultType());
+            typeof(Decimal).IsValidResultType().Should().BeTrue("because Decimal is an integral type");
         }
 
         [TestMethod]
         public void IsValidResultType_ReturnsTrueForBoolean()
         {
-            Assert.IsTrue(typeof(Boolean).IsValidResultType());
+            typeof(Boolean).IsValidResultType().Should().BeTrue("because Boolean is an integral type");
         }
         
         [TestMethod]
         public void IsValidResultType_ReturnsTrueForDateTime()
         {
-            Assert.IsTrue(typeof(DateTime).IsValidResultType());
+            typeof(DateTime).IsValidResultType().Should().BeTrue("because DateTime is an integral type");
         }
 
         [TestMethod]
         public void IsValidResultType_ReturnsTrueForGuid()
         {
-            Assert.IsTrue(typeof(Guid).IsValidResultType());
+            typeof(Guid).IsValidResultType().Should().BeTrue("because Guid is an integral type");
+        }
+
+        [TestMethod]
+        public void IsValidResultType_ReturnsTrueForNullableChar()
+        {
+            typeof(Char?).IsValidResultType().Should().BeTrue("because nullable Char is an integral type");
+        }
+
+        [TestMethod]
+        public void IsValidResultType_ReturnsTrueForNullableInt32()
+        {
+            typeof(Int32?).IsValidResultType().Should().BeTrue("because nullable Int32 is an integral type");
+        }
+
+        [TestMethod]
+        public void IsValidResultType_ReturnsTrueForNullableInt64()
+        {
+            typeof(Int64?).IsValidResultType().Should().BeTrue("because nullable Int64 is an integral type");
+        }
+
+        [TestMethod]
+        public void IsValidResultType_ReturnsTrueForNullableInt16()
+        {
+            typeof(Int16?).IsValidResultType().Should().BeTrue("because nullable Int16 is an integral type");
+        }
+
+        [TestMethod]
+        public void IsValidResultType_ReturnsTrueForNullableDouble()
+        {
+            typeof(Double?).IsValidResultType().Should().BeTrue("because nullable Double is an integral type");
+        }
+
+        [TestMethod]
+        public void IsValidResultType_ReturnsTrueForNullableSingle()
+        {
+            typeof(Single?).IsValidResultType().Should().BeTrue("because nullable Single is an integral type");
+        }
+
+        [TestMethod]
+        public void IsValidResultType_ReturnsTrueForNullableDecimal()
+        {
+            typeof(Decimal?).IsValidResultType().Should().BeTrue("because nullable Decimal is an integral type");
+        }
+
+        [TestMethod]
+        public void IsValidResultType_ReturnsTrueForNullableBoolean()
+        {
+            typeof(Boolean?).IsValidResultType().Should().BeTrue("because nullable Boolean is an integral type");
+        }
+
+        [TestMethod]
+        public void IsValidResultType_ReturnsTrueForNullableDateTime()
+        {
+            typeof(DateTime?).IsValidResultType().Should().BeTrue("because nullable DateTime is an integral type");
+        }
+
+        [TestMethod]
+        public void IsValidResultType_ReturnsTrueForNullableGuid()
+        {
+            typeof(Guid?).IsValidResultType().Should().BeTrue("because nullable Guid is an integral type");
         }
 
         [TestMethod]
@@ -247,7 +305,7 @@ namespace CodeOnlyTests
             {
                 // make sure that there is nothing in the map
                 CodeOnlyStoredProcedure.TypeExtensions.interfaceMap.Clear();
-                Assert.IsFalse(typeof(IModel).IsValidResultType());
+                typeof(IModel).IsValidResultType().Should().BeFalse("because unmapped interfaces can not be constructed");
             }
         }
 
@@ -260,7 +318,7 @@ namespace CodeOnlyTests
                 CodeOnlyStoredProcedure.TypeExtensions.interfaceMap.Clear();
                 CodeOnlyStoredProcedure.TypeExtensions.interfaceMap.TryAdd(typeof(IModel), typeof(Model));
 
-                Assert.IsTrue(typeof(IModel).IsValidResultType());
+                typeof(IModel).IsValidResultType().Should().BeTrue("because mapped interfaces can be constructed");
             }
         }
         #endregion
