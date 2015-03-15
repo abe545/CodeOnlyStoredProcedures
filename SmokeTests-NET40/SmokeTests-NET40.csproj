@@ -107,6 +107,10 @@
       <Link>Program.GetItemTests.cs</Link>
       <DependentUpon>Program.cs</DependentUpon>
     </Compile>
+    <Compile Include="..\SmokeTests\Program.GetHierarchicalItemTests.cs">
+      <Link>Program.GetItemTests.cs</Link>
+      <DependentUpon>Program.cs</DependentUpon>
+    </Compile>
     <Compile Include="..\SmokeTests\Program.GetSpokesTests.cs">
       <Link>Program.GetSpokesTests.cs</Link>
       <DependentUpon>Program.cs</DependentUpon>
