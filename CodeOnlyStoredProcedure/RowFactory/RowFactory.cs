@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Data.Common;
 using System.Dynamic;
@@ -19,7 +22,16 @@ namespace CodeOnlyStoredProcedure
 
         public static IRowFactory<T> Create()
         {
+            return Create(true);
+        }
+
+        private static IRowFactory<T> Create(bool generateHierarchicals)
+        {
             var itemType = typeof(T);
+            
+            if (itemType == typeof(object))
+                return new ExpandoObjectRowFactory();
+
             if (itemType.IsGenericType && itemType.GetGenericTypeDefinition() == typeof(Nullable<>))
                 itemType = itemType.GetGenericArguments()[0];
 
@@ -27,13 +39,21 @@ namespace CodeOnlyStoredProcedure
                 return new EnumRowFactory();
             if (itemType.IsSimpleType())
                 return new SimpleTypeRowFactory();
-            if (itemType == typeof(object))
-                return new ExpandoObjectRowFactory();
+            if (generateHierarchicals && itemType.GetMappedProperties().Any(p => p.PropertyType.IsEnumeratedType()))
+                return new HiearchicalTypeRowFactory();
             
             return new ComplexTypeRowFactory();
         }
 
+        public Type RowType { get { return typeof(T); } }
+
         protected abstract Func<IDataReader, T> CreateRowFactory(IDataReader reader, IEnumerable<IDataTransformer> xFormers);
+
+        public virtual bool MatchesColumns(IEnumerable<string> columnNames, out int leftoverColumns)
+        {
+            leftoverColumns = Math.Max(0, columnNames.Count() - 1);
+            return columnNames.Any();
+        }
 
         public virtual IEnumerable<T> ParseRows(IDataReader reader, IEnumerable<IDataTransformer> dataTransformers, CancellationToken token)
         {
@@ -66,6 +86,11 @@ namespace CodeOnlyStoredProcedure
             }
 
             return res;
+        }
+
+        async Task<IEnumerable> IRowFactory.ParseRowsAsync(DbDataReader reader, IEnumerable<IDataTransformer> transformers, CancellationToken token)
+        {
+            return await ParseRowsAsync(reader, transformers, token);
         }
 #endif
 
@@ -109,25 +134,28 @@ namespace CodeOnlyStoredProcedure
             private static readonly ParameterExpression                                           indexExpression      = Expression.Variable (typeof(int));
             private static readonly IEnumerable<Tuple<string, PropertyInfo, AccessorFactoryBase>> accessorsByColumnName;
             private static readonly Type                                                          implType;
+            private static readonly ISet<string>                                                  dbColumnNames;
 
             static ComplexTypeRowFactory()
             {
                 if (!TypeExtensions.interfaceMap.TryGetValue(resultType, out implType))
                     implType = resultType;
 
-                accessorsByColumnName = implType.GetResultPropertiesBySqlName()
-                                                .Select(kv =>
-                                                {
-                                                    var type = kv.Value.PropertyType;
-                                                    if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
-                                                        type = type.GetGenericArguments().Single();
+                var props = implType.GetResultPropertiesBySqlName();
+                dbColumnNames = new HashSet<string>(props.Keys.ToArray());
+                accessorsByColumnName = props.Where(kv => !kv.Value.PropertyType.IsEnumeratedType())
+                                             .Select(kv =>
+                                             {
+                                                 var type = kv.Value.PropertyType;
+                                                 if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+                                                     type = type.GetGenericArguments().Single();
 
-                                                    if (type.IsEnum)
-                                                        return Tuple.Create(kv.Key, kv.Value, (AccessorFactoryBase)Activator.CreateInstance(typeof(EnumAccessorFactory<>).MakeGenericType(kv.Value.PropertyType), dataReaderExpression, indexExpression, kv.Value, kv.Key));
+                                                 if (type.IsEnum)
+                                                     return Tuple.Create(kv.Key, kv.Value, (AccessorFactoryBase)Activator.CreateInstance(typeof(EnumAccessorFactory<>).MakeGenericType(kv.Value.PropertyType), dataReaderExpression, indexExpression, kv.Value, kv.Key));
 
-                                                    return Tuple.Create(kv.Key, kv.Value, (AccessorFactoryBase)Activator.CreateInstance(typeof(ValueAccessorFactory<>).MakeGenericType(kv.Value.PropertyType), dataReaderExpression, indexExpression, kv.Value, kv.Key));
-                                                })
-                                                .ToArray();
+                                                 return Tuple.Create(kv.Key, kv.Value, (AccessorFactoryBase)Activator.CreateInstance(typeof(ValueAccessorFactory<>).MakeGenericType(kv.Value.PropertyType), dataReaderExpression, indexExpression, kv.Value, kv.Key));
+                                             })
+                                             .ToArray();
             }
 
             protected override Func<IDataReader, T> CreateRowFactory(IDataReader reader, IEnumerable<IDataTransformer> xFormers)
@@ -162,6 +190,12 @@ namespace CodeOnlyStoredProcedure
                     Expression.Block(resultType, new[] { row, indexExpression }, exprs),
                     dataReaderExpression).Compile();
             }
+
+            public override bool MatchesColumns(IEnumerable<string> columnNames, out int leftoverColumns)
+            {
+                leftoverColumns = columnNames.Except(dbColumnNames).Count();
+                return columnNames.All(dbColumnNames.Contains);
+            }
         }
 
         class ExpandoObjectRowFactory : RowFactory<T>
@@ -188,6 +222,136 @@ namespace CodeOnlyStoredProcedure
 
                 return Expression.Lambda<Func<IDataReader, T>>(Expression.Block(typeof(T), new[] { exp, val }, all.ToArray()), rdr)
                                  .Compile();
+            }
+
+            public override bool MatchesColumns(IEnumerable<string> columnNames, out int leftoverColumns)
+            {
+                leftoverColumns = 0;
+                return true;
+            }
+        }
+
+        private class HiearchicalTypeRowFactory : RowFactory<T>
+        {
+            private static readonly IEnumerable<IRowFactory> rowFactories;
+
+            static HiearchicalTypeRowFactory()
+            {
+                var factories = new List<IRowFactory>();
+                object falseObj = false;
+
+                var types = new Queue<Type>();
+                var added = new HashSet<Type>();
+                types.Enqueue(typeof(T));
+
+                while (types.Count > 0)
+                {
+                    var t = types.Dequeue();
+                    if (!added.Add(t))
+                        continue;
+
+                    var props = t.GetMappedProperties();
+                    var key = GetKeyProperty(t.Name, props);
+
+                    foreach (var child in props)
+                    {
+                        if (child.PropertyType.IsEnumeratedType())
+                        {
+                            if (key == null)
+                                throw new NotSupportedException("Can not generate a hierarchy for children of type " + t.Name + " because a key could not be determined. You should decorate a property with a Key attribute to designate it as such, or mark the properties that are IEnumerables as NotMapped, to prevent this error.");
+
+                            var childType = child.PropertyType.GetGenericArguments()[0]; 
+                            types.Enqueue(childType);
+
+                            var foreignKeyName = t.Name + "Id";
+                            var fkAttr = (ForeignKeyAttribute)Attribute.GetCustomAttribute(child, typeof(ForeignKeyAttribute));
+                            if (fkAttr != null)
+                                foreignKeyName = fkAttr.Name;
+
+                            var fk = childType.GetMappedProperties().FirstOrDefault(p => p.Name == foreignKeyName);
+                            if (fk == null)
+                                throw new NotSupportedException("Could not find the foreign key property on " + childType.Name + ". Expected property named " + foreignKeyName + ", but was not found.");
+                            else if (fk.PropertyType != key.PropertyType)
+                                throw new NotSupportedException("Key types are not matched for " + childType.Name + ". Key on parent type: " + key.PropertyType + ".\nForeign key type on child: " + fk.PropertyType);
+
+                            // TODO: generate compiled method for assigning the children
+                        }
+                    }
+
+                    factories.Add(typeof(RowFactory<>).MakeGenericType(t)
+                                                      .GetMethod("Create", BindingFlags.NonPublic | BindingFlags.Static)
+                                                      .Invoke(null, new [] { falseObj }) as IRowFactory);
+                }
+
+                rowFactories = new ReadOnlyCollection<IRowFactory>(factories);
+            }
+
+            private static PropertyInfo GetKeyProperty(string className, IEnumerable<PropertyInfo> props)
+            {
+                var exp = props.Where(p => Attribute.GetCustomAttribute(p, typeof(KeyAttribute)) != null).SingleOrDefault();
+                if (exp != null)
+                    return exp;
+
+                var id = props.SingleOrDefault(p => p.Name == "Id");
+                if (id != null)
+                    return id;
+
+                var idName = className + "Id";
+                return props.SingleOrDefault(p => p.Name == idName);
+            }
+
+            public override IEnumerable<T> ParseRows(IDataReader reader, IEnumerable<IDataTransformer> dataTransformers, CancellationToken token)
+            {
+                var toRead = rowFactories.ToList();
+                var results = new Dictionary<Type, IEnumerable>();
+                var first = true;
+
+                while (toRead.Count > 0)
+                {
+                    token.ThrowIfCancellationRequested();
+
+                    if (first)
+                        first = false;
+                    else if (!reader.NextResult())
+                        throw new StoredProcedureResultsException(typeof(T), toRead.Select(f => f.RowType).ToArray());
+
+                    var colNames = Enumerable.Range(0, reader.FieldCount).Select(i => reader.GetName(i)).ToArray();
+                    IRowFactory factory = null;
+                    int fewestRemaining = Int32.MaxValue;
+                    foreach (var f in toRead)
+                    {
+                        int i;
+                        if (f.MatchesColumns(colNames, out i))
+                        {
+                            if (i < fewestRemaining)
+                            {
+                                fewestRemaining = i;
+                                factory = f;
+                            }
+                        }
+                    }
+
+                    // should this throw? probably.
+                    if (factory == null)
+                        continue;
+
+                    toRead.Remove(factory);
+                    results[factory.RowType] = factory.ParseRows(reader, dataTransformers, token);
+                }
+
+                return (IEnumerable<T>)results[typeof(T)];
+            }
+
+#if !NET40
+            public override async Task<IEnumerable<T>> ParseRowsAsync(DbDataReader reader, IEnumerable<IDataTransformer> dataTransformers, CancellationToken token)
+            {
+                return await base.ParseRowsAsync(reader, dataTransformers, token);
+            }
+#endif
+
+            protected override Func<IDataReader, T> CreateRowFactory(IDataReader reader, IEnumerable<IDataTransformer> xFormers)
+            {
+                throw new NotSupportedException("How did this code execute?");
             }
         }
     }
