@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using CodeOnlyStoredProcedure;
 
 namespace SmokeTests
@@ -9,26 +10,52 @@ namespace SmokeTests
     {
         static bool DoGetHierarchicalItemTests(SmokeDb db)
         {
-            Console.WriteLine("Calling usp_GetCitiesAndStates synchronously - ");
+            Console.Write("Calling usp_GetCitiesAndStates synchronously - ");
             var results = db.GetCitiesAndStates.Execute(db.Database.Connection, timeout);
 
             if (!TestGetStatesResults(results, "usp_GetCitiesAndStates"))
                 return false;
 
-            Console.WriteLine("Calling usp_GetStatesAndCities synchronously - ");
+            Console.Write("Calling usp_GetStatesAndCities synchronously - ");
             results = db.GetStatesAndCities.Execute(db.Database.Connection, timeout);
 
             if (!TestGetStatesResults(results, "usp_GetStatesAndCities"))
                 return false;
 
-            Console.WriteLine("Calling usp_GetCitiesAndStates synchronously (dynamic syntax) - ");
+            Console.Write("Calling usp_GetCitiesAndStates synchronously (dynamic syntax) - ");
             results = db.Database.Connection.Execute(timeout).usp_GetCitiesAndStates();
 
             if (!TestGetStatesResults(results, "usp_GetCitiesAndStates"))
                 return false;
 
-            Console.WriteLine("Calling usp_GetStatesAndCities synchronously (dynamic syntax) - ");
+            Console.Write("Calling usp_GetStatesAndCities synchronously (dynamic syntax) - ");
             results = db.Database.Connection.Execute(timeout).usp_GetStatesAndCities();
+
+            if (!TestGetStatesResults(results, "usp_GetStatesAndCities"))
+                return false;
+
+            Console.Write("Calling usp_GetCitiesAndStates asynchronously - ");
+            results = db.GetCitiesAndStates.ExecuteAsync(db.Database.Connection, timeout).Result;
+
+            if (!TestGetStatesResults(results, "usp_GetCitiesAndStates"))
+                return false;
+
+            Console.Write("Calling usp_GetStatesAndCities asynchronously - ");
+            results = db.GetStatesAndCities.ExecuteAsync(db.Database.Connection, timeout).Result;
+
+            if (!TestGetStatesResults(results, "usp_GetStatesAndCities"))
+                return false;
+
+            Console.Write("Calling usp_GetCitiesAndStates asynchronously (dynamic syntax) - ");
+            Task<IEnumerable<State>> task = db.Database.Connection.ExecuteAsync(timeout).usp_GetStatesAndCities();
+            results = task.Result;
+
+            if (!TestGetStatesResults(results, "usp_GetCitiesAndStates"))
+                return false;
+
+            Console.Write("Calling usp_GetStatesAndCities asynchronously (dynamic syntax) - ");
+            task = db.Database.Connection.ExecuteAsync(timeout).usp_GetStatesAndCities();
+            results = task.Result;
 
             if (!TestGetStatesResults(results, "usp_GetStatesAndCities"))
                 return false;

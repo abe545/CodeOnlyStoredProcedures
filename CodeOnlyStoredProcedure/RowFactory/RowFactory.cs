@@ -234,15 +234,24 @@ namespace CodeOnlyStoredProcedure
         private class HiearchicalTypeRowFactory : RowFactory<T>
         {
             private static readonly IEnumerable<IRowFactory> rowFactories;
+            private static readonly IEnumerable<Tuple<Type, Type, Delegate>> childAssigners;
 
             static HiearchicalTypeRowFactory()
             {
                 var factories = new List<IRowFactory>();
                 object falseObj = false;
 
+                var assigners = new List<Tuple<Type, Type, Delegate>>();
                 var types = new Queue<Type>();
                 var added = new HashSet<Type>();
                 types.Enqueue(typeof(T));
+
+                var whereMethod = typeof(Enumerable).GetMethods()
+                                                    .Where(mi => mi.Name == "Where" && 
+                                                                 mi.GetParameters()[1].ParameterType.GetGenericTypeDefinition() == typeof(Func<,>))
+                                                    .Single();
+                var toArray = typeof(Enumerable).GetMethod("ToArray");
+                var toList = typeof(Enumerable).GetMethod("ToList");
 
                 while (types.Count > 0)
                 {
@@ -274,7 +283,24 @@ namespace CodeOnlyStoredProcedure
                             else if (fk.PropertyType != key.PropertyType)
                                 throw new NotSupportedException("Key types are not matched for " + childType.Name + ". Key on parent type: " + key.PropertyType + ".\nForeign key type on child: " + fk.PropertyType);
 
-                            // TODO: generate compiled method for assigning the children
+                            var childEnumerable = typeof(IEnumerable<>).MakeGenericType(childType);
+                            var parent = Expression.Parameter(t);
+                            var possible = Expression.Parameter(childEnumerable);
+                            var keyExpr = Expression.Property(parent, key);
+
+                            // possible.Where(c => c.ParentKey == key)
+                            var c = Expression.Parameter(childType);
+                            var funcType = typeof(Func<,>).MakeGenericType(childType, typeof(bool));
+                            var children = Expression.Call(whereMethod.MakeGenericMethod(childType),
+                                                           possible,
+                                                           Expression.Lambda(funcType, Expression.Equal(keyExpr, Expression.Property(c, fk)), c));
+                            if (child.PropertyType.IsArray) // .ToArray()
+                                children = Expression.Call(toArray.MakeGenericMethod(childType), children);
+                            else // .ToList()
+                                children = Expression.Call(toList.MakeGenericMethod(childType), children);
+
+                            var assign = Expression.Assign(Expression.Property(parent, child), children);
+                            assigners.Add(Tuple.Create(t, childType, Expression.Lambda(assign, parent, possible).Compile()));
                         }
                     }
 
@@ -284,6 +310,7 @@ namespace CodeOnlyStoredProcedure
                 }
 
                 rowFactories = new ReadOnlyCollection<IRowFactory>(factories);
+                childAssigners = new ReadOnlyCollection<Tuple<Type, Type, Delegate>>(assigners);
             }
 
             private static PropertyInfo GetKeyProperty(string className, IEnumerable<PropertyInfo> props)
@@ -315,29 +342,21 @@ namespace CodeOnlyStoredProcedure
                     else if (!reader.NextResult())
                         throw new StoredProcedureResultsException(typeof(T), toRead.Select(f => f.RowType).ToArray());
 
-                    var colNames = Enumerable.Range(0, reader.FieldCount).Select(i => reader.GetName(i)).ToArray();
-                    IRowFactory factory = null;
-                    int fewestRemaining = Int32.MaxValue;
-                    foreach (var f in toRead)
-                    {
-                        int i;
-                        if (f.MatchesColumns(colNames, out i))
-                        {
-                            if (i < fewestRemaining)
-                            {
-                                fewestRemaining = i;
-                                factory = f;
-                            }
-                        }
-                    }
+                    token.ThrowIfCancellationRequested();
+
+                    var factory = GetBestFactory(reader, toRead);
 
                     // should this throw? probably.
                     if (factory == null)
                         continue;
 
+                    token.ThrowIfCancellationRequested();
+
                     toRead.Remove(factory);
                     results[factory.RowType] = factory.ParseRows(reader, dataTransformers, token);
                 }
+
+                BuildHierarchy(results);
 
                 return (IEnumerable<T>)results[typeof(T)];
             }
@@ -345,9 +364,70 @@ namespace CodeOnlyStoredProcedure
 #if !NET40
             public override async Task<IEnumerable<T>> ParseRowsAsync(DbDataReader reader, IEnumerable<IDataTransformer> dataTransformers, CancellationToken token)
             {
-                return await base.ParseRowsAsync(reader, dataTransformers, token);
+                var toRead = rowFactories.ToList();
+                var results = new Dictionary<Type, IEnumerable>();
+                var first = true;
+
+                while (toRead.Count > 0)
+                {
+                    token.ThrowIfCancellationRequested();
+
+                    if (first)
+                        first = false;
+                    else if (!await reader.NextResultAsync())
+                        throw new StoredProcedureResultsException(typeof(T), toRead.Select(f => f.RowType).ToArray());
+
+                    token.ThrowIfCancellationRequested();
+
+                    var factory = GetBestFactory(reader, toRead);
+
+                    // should this throw? probably.
+                    if (factory == null)
+                        continue;
+
+                    token.ThrowIfCancellationRequested();
+
+                    toRead.Remove(factory);
+                    results[factory.RowType] = await factory.ParseRowsAsync(reader, dataTransformers, token);
+                }
+
+                BuildHierarchy(results);
+
+                return (IEnumerable<T>)results[typeof(T)];
             }
 #endif
+
+            private static IRowFactory GetBestFactory(IDataReader reader, List<IRowFactory> toRead)
+            {
+                var colNames = Enumerable.Range(0, reader.FieldCount).Select(i => reader.GetName(i)).ToArray();
+                IRowFactory factory = null;
+                int fewestRemaining = Int32.MaxValue;
+                foreach (var f in toRead)
+                {
+                    int i;
+                    if (f.MatchesColumns(colNames, out i))
+                    {
+                        if (i < fewestRemaining)
+                        {
+                            fewestRemaining = i;
+                            factory = f;
+                        }
+                    }
+                }
+                return factory;
+            }
+
+            private static void BuildHierarchy(Dictionary<Type, IEnumerable> results)
+            {
+                foreach (var tuple in childAssigners)
+                {
+                    var parents  = results[tuple.Item1];
+                    var children = results[tuple.Item2];
+
+                    foreach (var o in parents)
+                        tuple.Item3.DynamicInvoke(o, children);
+                }
+            }
 
             protected override Func<IDataReader, T> CreateRowFactory(IDataReader reader, IEnumerable<IDataTransformer> xFormers)
             {
