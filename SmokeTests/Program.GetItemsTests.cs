@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CodeOnlyStoredProcedure;
+using CodeOnlyStoredProcedure.DataTransformation;
 
 namespace SmokeTests
 {
@@ -32,6 +33,18 @@ namespace SmokeTests
             res = resTask.Result;
             if (!TestGetItemsResults(res))
                 return false;
+
+            Console.Write("Calling usp_GetItems with an IDataTransformer - ");
+            res = db.GetItems.WithDataTransformer(new InternAllStringsTransformer()).Execute(db.Database.Connection, timeout);
+            if (!TestGetItemsResults(res))
+                return false;
+
+            // if any of the strings are not interned, the transformer didn't run
+            if (res.Any(i => string.IsInterned(i.Name) == null))
+            {
+                WriteError("The IDataTransformer was not run on for all the rows");
+                return false;
+            }
 
             Console.Write("Calling usp_GetItems two times asynchronoulsy simultaneously - ");
             var t1 = db.GetItems.ExecuteAsync(db.Database.Connection, timeout);

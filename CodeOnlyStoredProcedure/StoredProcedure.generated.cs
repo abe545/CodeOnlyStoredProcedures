@@ -105,14 +105,12 @@ namespace CodeOnlyStoredProcedure
 			IEnumerable<T1> results;
 			using (var cmd = connection.CreateCommand(Schema, Name, timeout, out connection))
             {
-                var dbParameters = AddParameters(cmd);
-				
-                token.ThrowIfCancellationRequested();
-                var reader = cmd.ExecuteReader();
+				var dbParameters = AddParameters(cmd);
+
+				token.ThrowIfCancellationRequested();
+
+				var reader = cmd.ExecuteReader();
 				results = T1Factory.ParseRows(reader, DataTransformers, token);
-				
-                token.ThrowIfCancellationRequested();
-                TransferOutputParameters(CancellationToken.None, dbParameters);
             }
 
             if (connection != null)
@@ -171,9 +169,25 @@ namespace CodeOnlyStoredProcedure
 					return ExecuteAsync(asyncCapable, toClose, token);
 				else
 				{
-					cmd.Dispose();
-					if (toClose != null)
-						toClose.Close();
+					return Task.Factory.StartNew(() =>
+					{
+						IEnumerable<T1> results;
+						var dbParameters = AddParameters(cmd);
+
+						token.ThrowIfCancellationRequested();
+
+						var reader = cmd.ExecuteReader();
+						results = T1Factory.ParseRows(reader, DataTransformers, token);
+
+						cmd.Dispose();
+						if (toClose != null)
+							toClose.Close();
+
+						return results;
+					}, 
+					token,
+					TaskCreationOptions.None,
+					TaskScheduler.Default);
 				}
             }
 #endif
@@ -323,17 +337,22 @@ namespace CodeOnlyStoredProcedure
 			Tuple<IEnumerable<T1>, IEnumerable<T2>> results;
 			using (var cmd = connection.CreateCommand(Schema, Name, timeout, out connection))
             {
-                var dbParameters = AddParameters(cmd);
-				
-                token.ThrowIfCancellationRequested();
-                var reader = cmd.ExecuteReader();
+				var dbParameters = AddParameters(cmd);
+
+				token.ThrowIfCancellationRequested();
+
+				var reader = cmd.ExecuteReader();
 				var t1 = T1Factory.ParseRows(reader, DataTransformers, token);
+
 				reader.NextResult();
+				token.ThrowIfCancellationRequested();
+
 				var t2 = T2Factory.ParseRows(reader, DataTransformers, token);
 				results = Tuple.Create(t1, t2);
-				
-                token.ThrowIfCancellationRequested();
-                TransferOutputParameters(CancellationToken.None, dbParameters);
+
+				token.ThrowIfCancellationRequested();
+
+				TransferOutputParameters(CancellationToken.None, dbParameters);
             }
 
             if (connection != null)
@@ -392,9 +411,35 @@ namespace CodeOnlyStoredProcedure
 					return ExecuteAsync(asyncCapable, toClose, token);
 				else
 				{
-					cmd.Dispose();
-					if (toClose != null)
-						toClose.Close();
+					return Task.Factory.StartNew(() =>
+					{
+						Tuple<IEnumerable<T1>, IEnumerable<T2>> results;
+						var dbParameters = AddParameters(cmd);
+
+						token.ThrowIfCancellationRequested();
+
+						var reader = cmd.ExecuteReader();
+						var t1 = T1Factory.ParseRows(reader, DataTransformers, token);
+
+						reader.NextResult();
+						token.ThrowIfCancellationRequested();
+
+						var t2 = T2Factory.ParseRows(reader, DataTransformers, token);
+						results = Tuple.Create(t1, t2);
+
+						token.ThrowIfCancellationRequested();
+
+						TransferOutputParameters(CancellationToken.None, dbParameters);
+
+						cmd.Dispose();
+						if (toClose != null)
+							toClose.Close();
+
+						return results;
+					}, 
+					token,
+					TaskCreationOptions.None,
+					TaskScheduler.Default);
 				}
             }
 #endif
@@ -550,19 +595,27 @@ namespace CodeOnlyStoredProcedure
 			Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>> results;
 			using (var cmd = connection.CreateCommand(Schema, Name, timeout, out connection))
             {
-                var dbParameters = AddParameters(cmd);
-				
-                token.ThrowIfCancellationRequested();
-                var reader = cmd.ExecuteReader();
+				var dbParameters = AddParameters(cmd);
+
+				token.ThrowIfCancellationRequested();
+
+				var reader = cmd.ExecuteReader();
 				var t1 = T1Factory.ParseRows(reader, DataTransformers, token);
+
 				reader.NextResult();
+				token.ThrowIfCancellationRequested();
+
 				var t2 = T2Factory.ParseRows(reader, DataTransformers, token);
+
 				reader.NextResult();
+				token.ThrowIfCancellationRequested();
+
 				var t3 = T3Factory.ParseRows(reader, DataTransformers, token);
 				results = Tuple.Create(t1, t2, t3);
-				
-                token.ThrowIfCancellationRequested();
-                TransferOutputParameters(CancellationToken.None, dbParameters);
+
+				token.ThrowIfCancellationRequested();
+
+				TransferOutputParameters(CancellationToken.None, dbParameters);
             }
 
             if (connection != null)
@@ -621,9 +674,40 @@ namespace CodeOnlyStoredProcedure
 					return ExecuteAsync(asyncCapable, toClose, token);
 				else
 				{
-					cmd.Dispose();
-					if (toClose != null)
-						toClose.Close();
+					return Task.Factory.StartNew(() =>
+					{
+						Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>> results;
+						var dbParameters = AddParameters(cmd);
+
+						token.ThrowIfCancellationRequested();
+
+						var reader = cmd.ExecuteReader();
+						var t1 = T1Factory.ParseRows(reader, DataTransformers, token);
+
+						reader.NextResult();
+						token.ThrowIfCancellationRequested();
+
+						var t2 = T2Factory.ParseRows(reader, DataTransformers, token);
+
+						reader.NextResult();
+						token.ThrowIfCancellationRequested();
+
+						var t3 = T3Factory.ParseRows(reader, DataTransformers, token);
+						results = Tuple.Create(t1, t2, t3);
+
+						token.ThrowIfCancellationRequested();
+
+						TransferOutputParameters(CancellationToken.None, dbParameters);
+
+						cmd.Dispose();
+						if (toClose != null)
+							toClose.Close();
+
+						return results;
+					}, 
+					token,
+					TaskCreationOptions.None,
+					TaskScheduler.Default);
 				}
             }
 #endif
@@ -784,21 +868,32 @@ namespace CodeOnlyStoredProcedure
 			Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>> results;
 			using (var cmd = connection.CreateCommand(Schema, Name, timeout, out connection))
             {
-                var dbParameters = AddParameters(cmd);
-				
-                token.ThrowIfCancellationRequested();
-                var reader = cmd.ExecuteReader();
+				var dbParameters = AddParameters(cmd);
+
+				token.ThrowIfCancellationRequested();
+
+				var reader = cmd.ExecuteReader();
 				var t1 = T1Factory.ParseRows(reader, DataTransformers, token);
+
 				reader.NextResult();
+				token.ThrowIfCancellationRequested();
+
 				var t2 = T2Factory.ParseRows(reader, DataTransformers, token);
+
 				reader.NextResult();
+				token.ThrowIfCancellationRequested();
+
 				var t3 = T3Factory.ParseRows(reader, DataTransformers, token);
+
 				reader.NextResult();
+				token.ThrowIfCancellationRequested();
+
 				var t4 = T4Factory.ParseRows(reader, DataTransformers, token);
 				results = Tuple.Create(t1, t2, t3, t4);
-				
-                token.ThrowIfCancellationRequested();
-                TransferOutputParameters(CancellationToken.None, dbParameters);
+
+				token.ThrowIfCancellationRequested();
+
+				TransferOutputParameters(CancellationToken.None, dbParameters);
             }
 
             if (connection != null)
@@ -857,9 +952,45 @@ namespace CodeOnlyStoredProcedure
 					return ExecuteAsync(asyncCapable, toClose, token);
 				else
 				{
-					cmd.Dispose();
-					if (toClose != null)
-						toClose.Close();
+					return Task.Factory.StartNew(() =>
+					{
+						Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>> results;
+						var dbParameters = AddParameters(cmd);
+
+						token.ThrowIfCancellationRequested();
+
+						var reader = cmd.ExecuteReader();
+						var t1 = T1Factory.ParseRows(reader, DataTransformers, token);
+
+						reader.NextResult();
+						token.ThrowIfCancellationRequested();
+
+						var t2 = T2Factory.ParseRows(reader, DataTransformers, token);
+
+						reader.NextResult();
+						token.ThrowIfCancellationRequested();
+
+						var t3 = T3Factory.ParseRows(reader, DataTransformers, token);
+
+						reader.NextResult();
+						token.ThrowIfCancellationRequested();
+
+						var t4 = T4Factory.ParseRows(reader, DataTransformers, token);
+						results = Tuple.Create(t1, t2, t3, t4);
+
+						token.ThrowIfCancellationRequested();
+
+						TransferOutputParameters(CancellationToken.None, dbParameters);
+
+						cmd.Dispose();
+						if (toClose != null)
+							toClose.Close();
+
+						return results;
+					}, 
+					token,
+					TaskCreationOptions.None,
+					TaskScheduler.Default);
 				}
             }
 #endif
@@ -1025,23 +1156,37 @@ namespace CodeOnlyStoredProcedure
 			Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>> results;
 			using (var cmd = connection.CreateCommand(Schema, Name, timeout, out connection))
             {
-                var dbParameters = AddParameters(cmd);
-				
-                token.ThrowIfCancellationRequested();
-                var reader = cmd.ExecuteReader();
+				var dbParameters = AddParameters(cmd);
+
+				token.ThrowIfCancellationRequested();
+
+				var reader = cmd.ExecuteReader();
 				var t1 = T1Factory.ParseRows(reader, DataTransformers, token);
+
 				reader.NextResult();
+				token.ThrowIfCancellationRequested();
+
 				var t2 = T2Factory.ParseRows(reader, DataTransformers, token);
+
 				reader.NextResult();
+				token.ThrowIfCancellationRequested();
+
 				var t3 = T3Factory.ParseRows(reader, DataTransformers, token);
+
 				reader.NextResult();
+				token.ThrowIfCancellationRequested();
+
 				var t4 = T4Factory.ParseRows(reader, DataTransformers, token);
+
 				reader.NextResult();
+				token.ThrowIfCancellationRequested();
+
 				var t5 = T5Factory.ParseRows(reader, DataTransformers, token);
 				results = Tuple.Create(t1, t2, t3, t4, t5);
-				
-                token.ThrowIfCancellationRequested();
-                TransferOutputParameters(CancellationToken.None, dbParameters);
+
+				token.ThrowIfCancellationRequested();
+
+				TransferOutputParameters(CancellationToken.None, dbParameters);
             }
 
             if (connection != null)
@@ -1100,9 +1245,50 @@ namespace CodeOnlyStoredProcedure
 					return ExecuteAsync(asyncCapable, toClose, token);
 				else
 				{
-					cmd.Dispose();
-					if (toClose != null)
-						toClose.Close();
+					return Task.Factory.StartNew(() =>
+					{
+						Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>> results;
+						var dbParameters = AddParameters(cmd);
+
+						token.ThrowIfCancellationRequested();
+
+						var reader = cmd.ExecuteReader();
+						var t1 = T1Factory.ParseRows(reader, DataTransformers, token);
+
+						reader.NextResult();
+						token.ThrowIfCancellationRequested();
+
+						var t2 = T2Factory.ParseRows(reader, DataTransformers, token);
+
+						reader.NextResult();
+						token.ThrowIfCancellationRequested();
+
+						var t3 = T3Factory.ParseRows(reader, DataTransformers, token);
+
+						reader.NextResult();
+						token.ThrowIfCancellationRequested();
+
+						var t4 = T4Factory.ParseRows(reader, DataTransformers, token);
+
+						reader.NextResult();
+						token.ThrowIfCancellationRequested();
+
+						var t5 = T5Factory.ParseRows(reader, DataTransformers, token);
+						results = Tuple.Create(t1, t2, t3, t4, t5);
+
+						token.ThrowIfCancellationRequested();
+
+						TransferOutputParameters(CancellationToken.None, dbParameters);
+
+						cmd.Dispose();
+						if (toClose != null)
+							toClose.Close();
+
+						return results;
+					}, 
+					token,
+					TaskCreationOptions.None,
+					TaskScheduler.Default);
 				}
             }
 #endif
@@ -1273,25 +1459,42 @@ namespace CodeOnlyStoredProcedure
 			Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>> results;
 			using (var cmd = connection.CreateCommand(Schema, Name, timeout, out connection))
             {
-                var dbParameters = AddParameters(cmd);
-				
-                token.ThrowIfCancellationRequested();
-                var reader = cmd.ExecuteReader();
+				var dbParameters = AddParameters(cmd);
+
+				token.ThrowIfCancellationRequested();
+
+				var reader = cmd.ExecuteReader();
 				var t1 = T1Factory.ParseRows(reader, DataTransformers, token);
+
 				reader.NextResult();
+				token.ThrowIfCancellationRequested();
+
 				var t2 = T2Factory.ParseRows(reader, DataTransformers, token);
+
 				reader.NextResult();
+				token.ThrowIfCancellationRequested();
+
 				var t3 = T3Factory.ParseRows(reader, DataTransformers, token);
+
 				reader.NextResult();
+				token.ThrowIfCancellationRequested();
+
 				var t4 = T4Factory.ParseRows(reader, DataTransformers, token);
+
 				reader.NextResult();
+				token.ThrowIfCancellationRequested();
+
 				var t5 = T5Factory.ParseRows(reader, DataTransformers, token);
+
 				reader.NextResult();
+				token.ThrowIfCancellationRequested();
+
 				var t6 = T6Factory.ParseRows(reader, DataTransformers, token);
 				results = Tuple.Create(t1, t2, t3, t4, t5, t6);
-				
-                token.ThrowIfCancellationRequested();
-                TransferOutputParameters(CancellationToken.None, dbParameters);
+
+				token.ThrowIfCancellationRequested();
+
+				TransferOutputParameters(CancellationToken.None, dbParameters);
             }
 
             if (connection != null)
@@ -1350,9 +1553,55 @@ namespace CodeOnlyStoredProcedure
 					return ExecuteAsync(asyncCapable, toClose, token);
 				else
 				{
-					cmd.Dispose();
-					if (toClose != null)
-						toClose.Close();
+					return Task.Factory.StartNew(() =>
+					{
+						Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>> results;
+						var dbParameters = AddParameters(cmd);
+
+						token.ThrowIfCancellationRequested();
+
+						var reader = cmd.ExecuteReader();
+						var t1 = T1Factory.ParseRows(reader, DataTransformers, token);
+
+						reader.NextResult();
+						token.ThrowIfCancellationRequested();
+
+						var t2 = T2Factory.ParseRows(reader, DataTransformers, token);
+
+						reader.NextResult();
+						token.ThrowIfCancellationRequested();
+
+						var t3 = T3Factory.ParseRows(reader, DataTransformers, token);
+
+						reader.NextResult();
+						token.ThrowIfCancellationRequested();
+
+						var t4 = T4Factory.ParseRows(reader, DataTransformers, token);
+
+						reader.NextResult();
+						token.ThrowIfCancellationRequested();
+
+						var t5 = T5Factory.ParseRows(reader, DataTransformers, token);
+
+						reader.NextResult();
+						token.ThrowIfCancellationRequested();
+
+						var t6 = T6Factory.ParseRows(reader, DataTransformers, token);
+						results = Tuple.Create(t1, t2, t3, t4, t5, t6);
+
+						token.ThrowIfCancellationRequested();
+
+						TransferOutputParameters(CancellationToken.None, dbParameters);
+
+						cmd.Dispose();
+						if (toClose != null)
+							toClose.Close();
+
+						return results;
+					}, 
+					token,
+					TaskCreationOptions.None,
+					TaskScheduler.Default);
 				}
             }
 #endif
@@ -1528,27 +1777,47 @@ namespace CodeOnlyStoredProcedure
 			Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>, IEnumerable<T7>> results;
 			using (var cmd = connection.CreateCommand(Schema, Name, timeout, out connection))
             {
-                var dbParameters = AddParameters(cmd);
-				
-                token.ThrowIfCancellationRequested();
-                var reader = cmd.ExecuteReader();
+				var dbParameters = AddParameters(cmd);
+
+				token.ThrowIfCancellationRequested();
+
+				var reader = cmd.ExecuteReader();
 				var t1 = T1Factory.ParseRows(reader, DataTransformers, token);
+
 				reader.NextResult();
+				token.ThrowIfCancellationRequested();
+
 				var t2 = T2Factory.ParseRows(reader, DataTransformers, token);
+
 				reader.NextResult();
+				token.ThrowIfCancellationRequested();
+
 				var t3 = T3Factory.ParseRows(reader, DataTransformers, token);
+
 				reader.NextResult();
+				token.ThrowIfCancellationRequested();
+
 				var t4 = T4Factory.ParseRows(reader, DataTransformers, token);
+
 				reader.NextResult();
+				token.ThrowIfCancellationRequested();
+
 				var t5 = T5Factory.ParseRows(reader, DataTransformers, token);
+
 				reader.NextResult();
+				token.ThrowIfCancellationRequested();
+
 				var t6 = T6Factory.ParseRows(reader, DataTransformers, token);
+
 				reader.NextResult();
+				token.ThrowIfCancellationRequested();
+
 				var t7 = T7Factory.ParseRows(reader, DataTransformers, token);
 				results = Tuple.Create(t1, t2, t3, t4, t5, t6, t7);
-				
-                token.ThrowIfCancellationRequested();
-                TransferOutputParameters(CancellationToken.None, dbParameters);
+
+				token.ThrowIfCancellationRequested();
+
+				TransferOutputParameters(CancellationToken.None, dbParameters);
             }
 
             if (connection != null)
@@ -1607,9 +1876,60 @@ namespace CodeOnlyStoredProcedure
 					return ExecuteAsync(asyncCapable, toClose, token);
 				else
 				{
-					cmd.Dispose();
-					if (toClose != null)
-						toClose.Close();
+					return Task.Factory.StartNew(() =>
+					{
+						Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>, IEnumerable<T7>> results;
+						var dbParameters = AddParameters(cmd);
+
+						token.ThrowIfCancellationRequested();
+
+						var reader = cmd.ExecuteReader();
+						var t1 = T1Factory.ParseRows(reader, DataTransformers, token);
+
+						reader.NextResult();
+						token.ThrowIfCancellationRequested();
+
+						var t2 = T2Factory.ParseRows(reader, DataTransformers, token);
+
+						reader.NextResult();
+						token.ThrowIfCancellationRequested();
+
+						var t3 = T3Factory.ParseRows(reader, DataTransformers, token);
+
+						reader.NextResult();
+						token.ThrowIfCancellationRequested();
+
+						var t4 = T4Factory.ParseRows(reader, DataTransformers, token);
+
+						reader.NextResult();
+						token.ThrowIfCancellationRequested();
+
+						var t5 = T5Factory.ParseRows(reader, DataTransformers, token);
+
+						reader.NextResult();
+						token.ThrowIfCancellationRequested();
+
+						var t6 = T6Factory.ParseRows(reader, DataTransformers, token);
+
+						reader.NextResult();
+						token.ThrowIfCancellationRequested();
+
+						var t7 = T7Factory.ParseRows(reader, DataTransformers, token);
+						results = Tuple.Create(t1, t2, t3, t4, t5, t6, t7);
+
+						token.ThrowIfCancellationRequested();
+
+						TransferOutputParameters(CancellationToken.None, dbParameters);
+
+						cmd.Dispose();
+						if (toClose != null)
+							toClose.Close();
+
+						return results;
+					}, 
+					token,
+					TaskCreationOptions.None,
+					TaskScheduler.Default);
 				}
             }
 #endif

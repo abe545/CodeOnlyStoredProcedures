@@ -654,6 +654,188 @@ namespace CodeOnlyTests.RowFactory
                       .And.Match<EnumValueTypesConverted>(i => i.FooBar == FooBar.Foo, "the transformer doubles the result from the database");
             }
 
+            [TestMethod]
+            public void NumericTypeWillConvertToTrueBoolIfMarkedWithConvert()
+            {
+                var reader = CreateDataReader(new Dictionary<string, object>
+                    {
+                        { "IsEnabled", 1 }
+                    }, false);
+
+                var toTest = RowFactory<ConvertToBool>.Create().ParseRows(
+                    reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
+
+                toTest.Should().ContainSingle("because one row is returned").Which
+                    .Should().Match<ConvertToBool>(i => i.IsEnabled, "the property should be converted to bool");
+            }
+
+            [TestMethod]
+            public void NumericTypeWillConvertToFalseBoolIfMarkedWithConvert()
+            {
+                var reader = CreateDataReader(new Dictionary<string, object>
+                    {
+                        { "IsEnabled", 0 }
+                    }, false);
+
+                var toTest = RowFactory<ConvertToBool>.Create().ParseRows(
+                    reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
+
+                toTest.Should().ContainSingle("because one row is returned").Which
+                    .Should().Match<ConvertToBool>(i => !i.IsEnabled, "the property should be converted to bool");
+            }
+
+            [TestMethod]
+            public void NumericTypeWillConvertToTrueBoolIfMarkedWithConvert_WhenTransformerPassed()
+            {
+                var reader = CreateDataReader(new Dictionary<string, object>
+                    {
+                        { "IsEnabled", 1 }
+                    }, true);
+
+                var toTest = RowFactory<ConvertToBool>.Create().ParseRows(
+                    reader, new[] { Mock.Of<IDataTransformer>() }, CancellationToken.None);
+
+                toTest.Should().ContainSingle("because one row is returned").Which
+                    .Should().Match<ConvertToBool>(i => i.IsEnabled, "the property should be converted to bool");
+            }
+
+            [TestMethod]
+            public void NumericTypeWillConvertToFalseBoolIfMarkedWithConvert_WhenTransformerPassed()
+            {
+                var reader = CreateDataReader(new Dictionary<string, object>
+                    {
+                        { "IsEnabled", 0L }
+                    }, true);
+
+                var toTest = RowFactory<ConvertToBool>.Create().ParseRows(
+                    reader, new[] { Mock.Of<IDataTransformer>() }, CancellationToken.None);
+
+                toTest.Should().ContainSingle("because one row is returned").Which
+                    .Should().Match<ConvertToBool>(i => !i.IsEnabled, "the property should be converted to bool");
+            }
+
+            [TestMethod]
+            public void NumericTypeWillConvertToTrueNullableBoolIfMarkedWithConvert()
+            {
+                var reader = CreateDataReader(new Dictionary<string, object>
+                    {
+                        { "IsEnabled", 1M }
+                    }, false);
+
+                var toTest = RowFactory<ConvertToNullableBool>.Create().ParseRows(
+                    reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
+
+                toTest.Should().ContainSingle("because one row is returned").Which
+                    .Should().Match<ConvertToNullableBool>(i => i.IsEnabled.Value, "the property should be converted to bool");
+            }
+
+            [TestMethod]
+            public void NullNumericTypeWillConvertToNullNullableBoolIfMarkedWithConvert()
+            {
+                var reader = CreateDataReader(new Dictionary<string, object>
+                    {
+                        { "IsEnabled", null }
+                    }, true);
+                Mock.Get(reader).Setup(rdr => rdr.GetFieldType(0)).Returns(typeof(int));
+
+                var toTest = RowFactory<ConvertToNullableBool>.Create().ParseRows(
+                    reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
+
+                toTest.Should().ContainSingle("because one row is returned").Which
+                    .Should().Match<ConvertToNullableBool>(i => !i.IsEnabled.HasValue, "the property should not have a value");
+            }
+
+            [TestMethod]
+            public void NumericTypeWillConvertToFalseNullableBoolIfMarkedWithConvert()
+            {
+                var reader = CreateDataReader(new Dictionary<string, object>
+                    {
+                        { "IsEnabled", 0 }
+                    }, false);
+
+                var toTest = RowFactory<ConvertToNullableBool>.Create().ParseRows(
+                    reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
+
+                toTest.Should().ContainSingle("because one row is returned").Which
+                    .Should().Match<ConvertToNullableBool>(i => !i.IsEnabled.Value, "the property should be converted to bool");
+            }
+
+            [TestMethod]
+            public void NumericTypeWillConvertToTrueNullableBoolIfMarkedWithConvert_WhenTransformerPassed()
+            {
+                var reader = CreateDataReader(new Dictionary<string, object>
+                    {
+                        { "IsEnabled", 1.0 }
+                    }, true);
+
+                var toTest = RowFactory<ConvertToNullableBool>.Create().ParseRows(
+                    reader, new[] { Mock.Of<IDataTransformer>() }, CancellationToken.None);
+
+                toTest.Should().ContainSingle("because one row is returned").Which
+                    .Should().Match<ConvertToNullableBool>(i => i.IsEnabled.Value, "the property should be converted to bool");
+            }
+
+            [TestMethod]
+            public void NumericTypeWillConvertToFalseNullableBoolIfMarkedWithConvert_WhenTransformerPassed()
+            {
+                var reader = CreateDataReader(new Dictionary<string, object>
+                    {
+                        { "IsEnabled", 0 }
+                    }, true);
+
+                var toTest = RowFactory<ConvertToNullableBool>.Create().ParseRows(
+                    reader, new[] { Mock.Of<IDataTransformer>() }, CancellationToken.None);
+
+                toTest.Should().ContainSingle("because one row is returned").Which
+                    .Should().Match<ConvertToNullableBool>(i => !i.IsEnabled.Value, "the property should be converted to bool");
+            }
+
+            [TestMethod]
+            public void NullNumericTypeWillConvertToNullNullableBoolIfMarkedWithConvert_WhenTransformerPassed()
+            {
+                var reader = CreateDataReader(new Dictionary<string, object>
+                    {
+                        { "IsEnabled", null }
+                    }, true);
+                Mock.Get(reader).Setup(rdr => rdr.GetFieldType(0)).Returns(typeof(short));
+
+                var toTest = RowFactory<ConvertToNullableBool>.Create().ParseRows(
+                    reader, new[] { Mock.Of<IDataTransformer>() }, CancellationToken.None);
+
+                toTest.Should().ContainSingle("because one row is returned").Which
+                    .Should().Match<ConvertToNullableBool>(i => !i.IsEnabled.HasValue, "the property should not have a value");
+            }
+
+            [TestMethod]
+            public void TrueBoolWillConvertToNumericTypeIfMarkedWithConvert()
+            {
+                var reader = CreateDataReader(new Dictionary<string, object>
+                    {
+                        { "IsEnabled", true }
+                    }, false);
+
+                var toTest = RowFactory<ConvertFromBool>.Create().ParseRows(
+                    reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
+
+                toTest.Should().ContainSingle("because one row is returned").Which
+                    .Should().Match<ConvertFromBool>(i => i.IsEnabled == 1, "the property should be converted from bool");
+            }
+
+            [TestMethod]
+            public void FalseBoolWillConvertToNumericTypeIfMarkedWithConvert()
+            {
+                var reader = CreateDataReader(new Dictionary<string, object>
+                    {
+                        { "IsEnabled", false }
+                    }, false);
+
+                var toTest = RowFactory<ConvertFromBool>.Create().ParseRows(
+                    reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
+
+                toTest.Should().ContainSingle("because one row is returned").Which
+                    .Should().Match<ConvertFromBool>(i => i.IsEnabled == 0, "the property should be converted from bool");
+            }
+
             private static IDataReader CreateDataReader(Dictionary<string, object> values, bool setupGetValue = true)
             {
                 var keys = values.Keys.OrderBy(s => s).ToList();
@@ -819,6 +1001,24 @@ namespace CodeOnlyTests.RowFactory
         {
             [ConvertNumeric]
             public FooBar FooBar { get; set; }
+        }
+
+        private class ConvertToBool
+        {
+            [ConvertNumeric]
+            public bool IsEnabled { get; set; }
+        }
+
+        private class ConvertToNullableBool
+        {
+            [ConvertNumeric]
+            public bool? IsEnabled { get; set; }
+        }
+
+        private class ConvertFromBool
+        {
+            [ConvertNumeric]
+            public int IsEnabled { get; set; }
         }
 
         private class StaticValueAttribute : DataTransformerAttributeBase
