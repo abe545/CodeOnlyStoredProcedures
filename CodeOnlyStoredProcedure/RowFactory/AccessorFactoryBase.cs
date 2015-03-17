@@ -275,7 +275,14 @@ namespace CodeOnlyStoredProcedure.RowFactory
             if (expectedDbType != null)
             {
                 res = Expression.Call(dbReader, typeof(IDataRecord).GetMethod("Get" + Type.GetTypeCode(expectedDbType)), index);
-                res = Expression.Convert(res, dbType);
+                if (type == typeof(bool) || type == typeof(bool?))
+                {
+                    res = Expression.NotEqual(res, Zero(expectedDbType));
+                    if (type == typeof(bool?))
+                        res = Expression.Convert(res, type);
+                }
+                else
+                    res = Expression.Convert(res, dbType);
             }
             else
                 res = Expression.Call(dbReader, typeof(IDataRecord).GetMethod("Get" + Type.GetTypeCode(dbType)), index);
@@ -323,6 +330,24 @@ namespace CodeOnlyStoredProcedure.RowFactory
             body.Add(retVal);
 
             return Expression.Block(type, parms, body);
+        }
+
+        protected static Expression Zero(Type dbType, bool isNullable = false)
+        {
+            if (dbType == typeof(short))
+                return Expression.Constant((short)0, isNullable ? typeof(short?) : dbType);
+            if (dbType == typeof(byte))
+                return Expression.Constant((byte)0, isNullable ? typeof(byte?) : dbType);
+            if (dbType == typeof(double))
+                return Expression.Constant(0.0, isNullable ? typeof(double?) : dbType);
+            if (dbType == typeof(float))
+                return Expression.Constant(0f, isNullable ? typeof(float?) : dbType);
+            if (dbType == typeof(decimal))
+                return Expression.Constant(0M, isNullable ? typeof(decimal?) : dbType);
+            if (dbType == typeof(long))
+                return Expression.Constant(0L, isNullable ? typeof(long?) : dbType);
+
+            return Expression.Constant(0, isNullable ? typeof(int?) : dbType);
         }
     }
 }

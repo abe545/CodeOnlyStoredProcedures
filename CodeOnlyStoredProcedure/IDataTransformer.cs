@@ -24,7 +24,7 @@ namespace CodeOnlyStoredProcedure
         /// <param name="propertyAttributes">The attributes applied to the property.</param>
         /// <returns>True if Transform will produce a valid result; false otherwise.</returns>
         [Pure]
-        bool   CanTransform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes);
+        bool CanTransform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes);
         /// <summary>
         /// When implemented, transforms the input value in some way
         /// </summary>
@@ -41,21 +41,6 @@ namespace CodeOnlyStoredProcedure
     [ContractClassFor(typeof(IDataTransformer))]
     abstract class IDataTransformerContract : IDataTransformer
     {
-        public Type OutputType
-        {
-            get 
-            {
-                Contract.Ensures(Contract.Result<Type>() != null);
-                return null;
-            }
-        }
-
-        public bool CanTransformInput(Type type)
-        {
-            Contract.Requires(type != null);
-            return false;
-        }
-
         public bool CanTransform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes)
         {
             Contract.Requires(targetType != null);
