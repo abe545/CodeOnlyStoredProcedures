@@ -50,9 +50,9 @@ namespace CodeOnlyTests.RowFactory
 
                 var toTest = RowFactory<IntEnum>.Create();
                 var xf = new Mock<IDataTransformer>();
-                xf.Setup(x => x.CanTransform(-1, typeof(IntEnum), false, It.IsAny<IEnumerable<Attribute>>()))
+                xf.Setup(x => x.CanTransform(-1, typeof(IntEnum), false, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
                   .Returns(true);
-                xf.Setup(x => x.Transform(-1, typeof(IntEnum), false, It.IsAny<IEnumerable<Attribute>>()))
+                xf.Setup(x => x.Transform(-1, typeof(IntEnum), false, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
                   .Returns(1);
 
                 toTest.ParseRows(rdr.Object, new[] { xf.Object }, CancellationToken.None)
@@ -87,9 +87,9 @@ namespace CodeOnlyTests.RowFactory
 
                 var toTest = RowFactory<UshortEnum>.Create();
                 var xf = new Mock<IDataTransformer>();
-                xf.Setup(x => x.CanTransform((short)-1, typeof(UshortEnum), false, It.IsAny<IEnumerable<Attribute>>()))
+                xf.Setup(x => x.CanTransform((short)-1, typeof(UshortEnum), false, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
                   .Returns(true);
-                xf.Setup(x => x.Transform((short)-1, typeof(UshortEnum), false, It.IsAny<IEnumerable<Attribute>>()))
+                xf.Setup(x => x.Transform((short)-1, typeof(UshortEnum), false, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
                   .Returns(ushort.MaxValue);
 
                 toTest.ParseRows(rdr.Object, new[] { xf.Object }, CancellationToken.None)
@@ -146,9 +146,9 @@ namespace CodeOnlyTests.RowFactory
 
                 var toTest = RowFactory<IntEnum?>.Create();
                 var xf = new Mock<IDataTransformer>();
-                xf.Setup(x => x.CanTransform(-1, typeof(IntEnum), true, It.IsAny<IEnumerable<Attribute>>()))
+                xf.Setup(x => x.CanTransform(-1, typeof(IntEnum), true, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
                   .Returns(true);
-                xf.Setup(x => x.Transform(-1, typeof(IntEnum), true, It.IsAny<IEnumerable<Attribute>>()))
+                xf.Setup(x => x.Transform(-1, typeof(IntEnum), true, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
                   .Returns(1);
 
                 toTest.ParseRows(rdr.Object, new[] { xf.Object }, CancellationToken.None)
@@ -199,9 +199,9 @@ namespace CodeOnlyTests.RowFactory
 
                 var toTest = RowFactory<IntEnum>.Create();
                 var xf = new Mock<IDataTransformer>();
-                xf.Setup(x => x.CanTransform("One", typeof(IntEnum), false, It.IsAny<IEnumerable<Attribute>>()))
+                xf.Setup(x => x.CanTransform("One", typeof(IntEnum), false, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
                   .Returns(true);
-                xf.Setup(x => x.Transform("One", typeof(IntEnum), false, It.IsAny<IEnumerable<Attribute>>()))
+                xf.Setup(x => x.Transform("One", typeof(IntEnum), false, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
                   .Returns("Two");
 
                 toTest.ParseRows(rdr.Object, new[] { xf.Object }, CancellationToken.None)
@@ -258,9 +258,9 @@ namespace CodeOnlyTests.RowFactory
 
                 var toTest = RowFactory<IntEnum?>.Create();
                 var xf = new Mock<IDataTransformer>();
-                xf.Setup(x => x.CanTransform("Blah", typeof(IntEnum), true, It.IsAny<IEnumerable<Attribute>>()))
+                xf.Setup(x => x.CanTransform("Blah", typeof(IntEnum), true, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
                   .Returns(true);
-                xf.Setup(x => x.Transform("Blah", typeof(IntEnum), true, It.IsAny<IEnumerable<Attribute>>()))
+                xf.Setup(x => x.Transform("Blah", typeof(IntEnum), true, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
                   .Returns("One");
 
                 toTest.ParseRows(rdr.Object, new[] { xf.Object }, CancellationToken.None)

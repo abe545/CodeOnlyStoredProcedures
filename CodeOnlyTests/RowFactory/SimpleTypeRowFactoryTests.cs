@@ -49,9 +49,9 @@ namespace CodeOnlyTests.RowFactory
                    .Returns(false);
 
                 var xformer = new Mock<IDataTransformer>();
-                xformer.Setup(x => x.CanTransform(99, typeof(int), false, It.IsAny<IEnumerable<Attribute>>()))
+                xformer.Setup(x => x.CanTransform(99, typeof(int), false, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
                        .Returns(true);
-                xformer.Setup(x => x.Transform(99, typeof(int), false, It.IsAny<IEnumerable<Attribute>>()))
+                xformer.Setup(x => x.Transform(99, typeof(int), false, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
                        .Returns(42);
 
                 var toTest = RowFactory<int>.Create();
@@ -154,9 +154,9 @@ namespace CodeOnlyTests.RowFactory
                    .ReturnsAsync(false);
 
                 var xformer = new Mock<IDataTransformer>();
-                xformer.Setup(x => x.CanTransform(99, typeof(int), false, It.IsAny<IEnumerable<Attribute>>()))
+                xformer.Setup(x => x.CanTransform(99, typeof(int), false, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
                        .Returns(true);
-                xformer.Setup(x => x.Transform(99, typeof(int), false, It.IsAny<IEnumerable<Attribute>>()))
+                xformer.Setup(x => x.Transform(99, typeof(int), false, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
                        .Returns(42);
 
                 var toTest = RowFactory<int>.Create();

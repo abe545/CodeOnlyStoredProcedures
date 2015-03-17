@@ -10,19 +10,19 @@ namespace CodeOnlyStoredProcedure.RowFactory
 {
     internal class EnumAccessorFactory<T> : AccessorFactoryBase
     {
-        private static readonly Lazy<MethodInfo>    getStringMethod       = new Lazy<MethodInfo>(() => typeof(IDataRecord).GetMethod("GetString"));
-        private        readonly ParameterExpression boxedValueExpression  = Expression.Variable (typeof(object));
-        private        readonly ParameterExpression stringValueExpression = Expression.Variable (typeof(string));
-        private        readonly ParameterExpression dataReaderExpression;
-        private        readonly Expression          indexExpression;
-        private        readonly Expression          boxedExpression;
-        private        readonly Expression          unboxedExpression;
-        private        readonly Expression          parseStringExpression;
-        private        readonly Expression          attributeExpression;
-        private        readonly string              errorMessage;
-        private        readonly string              propertyName;
-        private        readonly bool                convertNumeric;
-        private        readonly IEnumerable<DataTransformerAttributeBase> transformers = Enumerable.Empty<DataTransformerAttributeBase>();
+        static readonly Lazy<MethodInfo>                          getStringMethod       = new Lazy<MethodInfo>(() => typeof(IDataRecord).GetMethod("GetString"));
+               readonly IEnumerable<DataTransformerAttributeBase> transformers          = Enumerable.Empty<DataTransformerAttributeBase>();
+               readonly ParameterExpression                       boxedValueExpression  = Expression.Variable (typeof(object));
+               readonly ParameterExpression                       stringValueExpression = Expression.Variable (typeof(string));
+               readonly ParameterExpression                       dataReaderExpression;
+               readonly Expression                                indexExpression;
+               readonly Expression                                boxedExpression;
+               readonly Expression                                unboxedExpression;
+               readonly Expression                                parseStringExpression;
+               readonly Expression                                attributeExpression;
+               readonly string                                    errorMessage;
+               readonly string                                    propertyName;
+               readonly bool                                      convertNumeric;
 
         public EnumAccessorFactory(ParameterExpression dataReaderExpression, Expression index, PropertyInfo propertyInfo, string columnName)
         {
@@ -48,7 +48,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
                 propertyName = "result";
                 errorMessage = "Null value is not allowed for single column result set that returns " +
                                 typeof(T) + ", but null was the result from the stored procedure.";
-                attributeExpression = Expression.Constant(null, typeof(Attribute[]));
+                attributeExpression = Expression.Constant(new Attribute[0]);
             }
             else
             {
@@ -175,7 +175,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
                 if (xFormers.Any())
                 {
                     exprs.Add(Expression.Assign(boxedValueExpression, stringValueExpression));
-                    AddTransformers(type, boxedValueExpression, Expression.Constant(null, typeof(Attribute[])), xFormers, exprs);
+                    AddTransformers(type, boxedValueExpression, attributeExpression, xFormers, exprs);
                     exprs.Add(Expression.Assign(stringValueExpression, Expression.Convert(boxedValueExpression, typeof(string))));
                 }
 

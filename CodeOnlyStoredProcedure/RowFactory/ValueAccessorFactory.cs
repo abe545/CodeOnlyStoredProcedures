@@ -10,16 +10,16 @@ namespace CodeOnlyStoredProcedure.RowFactory
 {
     internal class ValueAccessorFactory<T> : AccessorFactoryBase
     {
-        private readonly IEnumerable<DataTransformerAttributeBase> transformers = Enumerable.Empty<DataTransformerAttributeBase>();
-        private readonly ParameterExpression boxedValueExpression = Expression.Variable(typeof(object), "value");
-        private readonly ParameterExpression dataReaderExpression;
-        private readonly Expression          indexExpression;
-        private readonly Expression          boxedExpression;
-        private readonly Expression          unboxedExpression;
-        private readonly Expression          attributeExpression;
-        private readonly string              errorMessage;
-        private readonly string              propertyName;
-        private readonly bool                convertNumeric;
+        readonly IEnumerable<DataTransformerAttributeBase> transformers         = Enumerable.Empty<DataTransformerAttributeBase>();
+        readonly ParameterExpression                       boxedValueExpression = Expression.Variable(typeof(object), "value");
+        readonly ParameterExpression                       dataReaderExpression;
+        readonly Expression                                indexExpression;
+        readonly Expression                                boxedExpression;
+        readonly Expression                                unboxedExpression;
+        readonly Expression                                attributeExpression;
+        readonly string                                    errorMessage;
+        readonly string                                    propertyName;
+        readonly bool                                      convertNumeric;
 
         public ValueAccessorFactory(ParameterExpression dataReaderExpression, Expression index, PropertyInfo propertyInfo, string columnName)
         {
@@ -38,7 +38,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
                 propertyName = "result";
                 errorMessage = "Null value is not allowed for single column result set that returns " +
                                 typeof(T) + ", but null was the result from the stored procedure.";
-                attributeExpression = Expression.Constant(null, typeof(Attribute[]));
+                attributeExpression = Expression.Constant(new Attribute[0]);
             }
             else
             {

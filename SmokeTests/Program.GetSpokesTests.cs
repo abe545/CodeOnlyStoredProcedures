@@ -24,6 +24,21 @@ namespace SmokeTests
             else
                 WriteSuccess();
 
+
+            Console.Write("Calling usp_GetSpokes synchronously (No parameters, with IDataTransformer) - ");
+
+            spokes = db.GetSpokes
+                       .WithDataTransformer(new DoublingTransformer())
+                       .Execute(db.Database.Connection, timeout);
+
+            if (!spokes.SequenceEqual(new[] { 8, 16, 32 }))
+            {
+                WriteError("\tthe transformer was not run.");
+                return false;
+            }
+            else
+                WriteSuccess();
+
             Console.Write("Calling usp_GetSpokes asynchronously (Dynamic Syntax no parameters) - ");
 
             spokes = db.Database.Connection.Execute(timeout).usp_GetSpokes<int>();
@@ -281,5 +296,19 @@ namespace SmokeTests
 
             return true;
         }
+
+        private class DoublingTransformer : IDataTransformer
+        {
+            public bool CanTransform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes)
+            {
+                return targetType == typeof(int);
+            }
+
+            public object Transform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes)
+            {
+                return 2 * (int)value;
+            }
+        }
+
     }
 }
