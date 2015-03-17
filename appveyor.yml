@@ -2,7 +2,7 @@ version: 2.0.0.{build}
 
 environment:
   releaseVersion: 2.0.0
-  packageVersion: 2.0.0-pre2
+  packageVersion: 2.0.0-pre3
 
 assembly_info:
   patch: true
@@ -38,11 +38,11 @@ after_test:
 artifacts:
   - path: '*.nupkg'
 
-#deploy:
-#  - provider: NuGet
-#    server: 
-#      secure: KWCy/cmXPCGCHxgZeYVi0Z5eq7MZCUDzY9oqGs9kpMPNvbAYfK5s0aOS8JwzEOlb699R302QO80G2DiLB7Naow==
-#    api_key:
-#      secure: BpvfN0VAXhEcYOXAk1rq6OFRg85yKBz4Zc+GMXhdvb8=
-#    skip_symbols: true
-#    artifact: /.*\.nupkg/
+deploy:
+  - provider: NuGet
+    on:
+      branch: master
+    api_key:
+      secure: YpmJQ9N6F0dfai0xFAoerzB7nruq9NOlhDquhAliwy5cS2A87wU7U+X4Q5eH8vyx
+    skip_symbols: false
+    artifact: /.*\.nupkg/
