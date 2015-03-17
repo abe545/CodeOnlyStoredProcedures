@@ -76,7 +76,23 @@ namespace CodeOnlyStoredProcedure.RowFactory
                 if (dbColumnType != expectedType)
                 {
                     if (convertNumeric)
-                        res = Expression.Convert(res, type);
+                    {
+                        if (expectedType == typeof(bool))
+                        {
+                            if (isNullable)
+                            {
+                                // res = res == null ? null : (bool?)(bool)res
+                                res = Expression.Condition(
+                                    Expression.Equal(res, Expression.Constant(null)),
+                                    Expression.Constant(default(bool?), typeof(bool?)),
+                                    Expression.Convert(Expression.NotEqual(res, Zero(dbColumnType, true)), typeof(bool?)));
+                            }
+                            else
+                                res = Expression.NotEqual(res, Zero(dbColumnType));
+                        }
+                        else
+                            res = Expression.Convert(res, type);
+                    }
                     else
                         throw new StoredProcedureColumnException(type, dbColumnType, propertyName);
                 }
