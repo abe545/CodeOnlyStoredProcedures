@@ -11,7 +11,11 @@ using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 
+#if NET40
+namespace CodeOnlyTests.Net40.RowFactory
+#else
 namespace CodeOnlyTests.RowFactory
+#endif
 {
     [TestClass]
     public class ComplexTypeRowFactoryTests

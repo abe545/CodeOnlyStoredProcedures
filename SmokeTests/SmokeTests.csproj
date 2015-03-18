@@ -122,6 +122,9 @@
     <Compile Include="Program.GetExistingPeopleTests.cs">
       <DependentUpon>Program.cs</DependentUpon>
     </Compile>
+    <Compile Include="Program.GetHierarchicalItemTests.cs">
+      <DependentUpon>Program.cs</DependentUpon>
+    </Compile>
     <Compile Include="Program.GetItemsTests.cs">
       <DependentUpon>Program.cs</DependentUpon>
     </Compile>

@@ -53,6 +53,12 @@ namespace SmokeTests
                 return -1;
             }
 
+            if (!DoGetHierarchicalItemTests(toTest))
+            {
+                Exiting();
+                return -1;
+            }
+
             Console.ForegroundColor = ConsoleColor.DarkGreen;
             Console.WriteLine("All tests ran successfully!");
             Exiting();

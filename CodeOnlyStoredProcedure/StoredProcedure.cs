@@ -334,23 +334,20 @@ namespace CodeOnlyStoredProcedure
                 IDbConnection toClose;
                 using (var cmd = connection.CreateCommand(schema, name, timeout, out toClose))
                 {
+                    var dbParameters = AddParameters(cmd);
                     var asyncCapable = cmd as DbCommand;
-                    if (asyncCapable != null)
-                    {
-                        var dbParameters = AddParameters(cmd);
-                        return asyncCapable.ExecuteNonQueryAsync(token)
-                                           .ContinueWith(r =>
-                                           {
-                                               if (r.Status == TaskStatus.RanToCompletion)
-                                                   TransferOutputParameters(token, dbParameters);
+                    return asyncCapable.ExecuteNonQueryAsync(token)
+                                        .ContinueWith(r =>
+                                        {
+                                            if (r.Status == TaskStatus.RanToCompletion)
+                                                TransferOutputParameters(token, dbParameters);
 
-                                               if (toClose != null)
-                                                   toClose.Close();
+                                            if (toClose != null)
+                                                toClose.Close();
 
-                                               if (!r.IsCanceled && r.IsFaulted)
-                                                   throw r.Exception;
-                                           }, token);
-                    }
+                                            if (!r.IsCanceled && r.IsFaulted)
+                                                throw r.Exception;
+                                        }, token);
                 }
             }
 #endif
