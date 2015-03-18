@@ -269,7 +269,7 @@ namespace CodeOnlyStoredProcedure
                             if (key == null)
                                 throw new NotSupportedException("Can not generate a hierarchy for children of type " + t.Name + " because a key could not be determined. You should decorate a property with a Key attribute to designate it as such, or mark the properties that are IEnumerables as NotMapped, to prevent this error.");
 
-                            var childType = child.PropertyType.GetGenericArguments()[0]; 
+                            var childType = child.PropertyType.GetEnumeratedType();
                             types.Enqueue(childType);
 
                             var foreignKeyName = t.Name + "Id";
