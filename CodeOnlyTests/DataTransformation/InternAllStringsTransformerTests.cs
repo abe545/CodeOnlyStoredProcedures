@@ -81,8 +81,9 @@ namespace CodeOnlyTests.DataTransformation
         [TestMethod]
         public void TypedTransformNullReturnsNull()
         {
-            var res = toTest.Transform(null, Enumerable.Empty<Attribute>());
-            res.Should().BeNull("because null was passed to the transformer.");
+            toTest.Invoking(t => t.Transform(null, Enumerable.Empty<Attribute>())
+                                  .Should().BeNull("because null was passed to the transformer."))
+                  .ShouldNotThrow();
         }
 
         [TestMethod]
