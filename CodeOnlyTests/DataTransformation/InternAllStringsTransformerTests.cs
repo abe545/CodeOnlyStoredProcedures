@@ -70,7 +70,7 @@ namespace CodeOnlyTests.DataTransformation
             // we also have to use the executing assembly, so both the .net 4.0 & 4.5
             // assemblies can run the test. Otherwise, if one of them interns the
             // string, the other will fail.
-            var str = Assembly.GetExecutingAssembly().FullName + GetType() + DateTime.Now;
+            var str = Assembly.GetExecutingAssembly().FullName + GetType() + DateTime.UtcNow.AddDays(1);
             string.IsInterned(str).Should().BeNull(); // just make sure
 
             toTest.Invoking(t => t.Transform(str, typeof(string), false, Enumerable.Empty<Attribute>())
