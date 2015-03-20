@@ -3,6 +3,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Linq;
 using System.Reflection;
+using FluentAssertions;
 
 #if NET40
 namespace CodeOnlyTests.Net40.DataTransformation
@@ -22,38 +23,47 @@ namespace CodeOnlyTests.DataTransformation
         }
 
         [TestMethod]
-        public void TestCanTransformReturnsFalseForNonStringTargetType()
+        public void CanTransformReturnsFalseForNonStringTargetType()
         {
-            Assert.IsFalse(toTest.CanTransform("foo", typeof(int), false, Enumerable.Empty<Attribute>()));
+            toTest.Invoking(t => t.CanTransform("foo", typeof(int), false, Enumerable.Empty<Attribute>())
+                                  .Should().BeFalse("because the target type is not string"))
+                  .ShouldNotThrow();
         }
 
         [TestMethod]
-        public void TestCanTransformReturnsFalseForNonStringInput()
+        public void CanTransformReturnsFalseForNonStringInput()
         {
-            Assert.IsFalse(toTest.CanTransform(false, typeof(string), false, Enumerable.Empty<Attribute>()));
+            toTest.Invoking(t => t.CanTransform(false, typeof(string), false, Enumerable.Empty<Attribute>())
+                                  .Should().BeFalse("because the input is not a string"))
+                  .ShouldNotThrow();
         }
 
         [TestMethod]
-        public void TestCanTransformReturnsFalseForNullInput()
+        public void CanTransformReturnsFalseForNullInput()
         {
-            Assert.IsFalse(toTest.CanTransform(null, typeof(string), false, Enumerable.Empty<Attribute>()));
+            toTest.Invoking(t => t.CanTransform(null, typeof(string), false, Enumerable.Empty<Attribute>())
+                                  .Should().BeFalse("because the input is null"))
+                  .ShouldNotThrow();
         }
 
         [TestMethod]
-        public void TestCanTransformReturnsTrueForString()
+        public void CanTransformReturnsTrueForString()
         {
-            Assert.IsTrue(toTest.CanTransform("foo", typeof(string), false, Enumerable.Empty<Attribute>()));
+            toTest.Invoking(t => t.CanTransform("foo", typeof(string), false, Enumerable.Empty<Attribute>())
+                                  .Should().BeTrue("because all strings can be interned"))
+                  .ShouldNotThrow();
         }
 
         [TestMethod]
-        public void TestTransformReturnsEmptyForEmpty()
+        public void TransformReturnsEmptyForEmpty()
         {
-            var res = toTest.Transform(string.Empty, typeof(string), false, Enumerable.Empty<Attribute>());
-            Assert.ReferenceEquals(string.Empty, res);
+            toTest.Invoking(t => t.Transform(string.Empty, typeof(string), false, Enumerable.Empty<Attribute>())
+                                  .Should().BeSameAs(string.Empty, "because the empty string is already interned"))
+                  .ShouldNotThrow();
         }
 
         [TestMethod]
-        public void TestTransformInternsString()
+        public void TransformInternsString()
         {
             // can't use a string literal for the test, because the compiler interns
             // them automatically
@@ -61,10 +71,34 @@ namespace CodeOnlyTests.DataTransformation
             // assemblies can run the test. Otherwise, if one of them interns the
             // string, the other will fail.
             var str = Assembly.GetExecutingAssembly().FullName + GetType() + DateTime.Now;
-            Assert.IsNull(string.IsInterned(str)); // just make sure
+            string.IsInterned(str).Should().BeNull(); // just make sure
 
-            var res = (string)toTest.Transform(str, typeof(string), false, Enumerable.Empty<Attribute>());
-            Assert.ReferenceEquals(string.IsInterned(res), res);
+            toTest.Invoking(t => t.Transform(str, typeof(string), false, Enumerable.Empty<Attribute>())
+                                  .Should().BeSameAs(string.IsInterned(str), "because the string should be interned"))
+                  .ShouldNotThrow();
+        }
+
+        [TestMethod]
+        public void TypedTransformNullReturnsNull()
+        {
+            var res = toTest.Transform(null, Enumerable.Empty<Attribute>());
+            res.Should().BeNull("because null was passed to the transformer.");
+        }
+
+        [TestMethod]
+        public void TypedTransformInternsString()
+        {
+            // can't use a string literal for the test, because the compiler interns
+            // them automatically
+            // we also have to use the executing assembly, so both the .net 4.0 & 4.5
+            // assemblies can run the test. Otherwise, if one of them interns the
+            // string, the other will fail.
+            var str = Assembly.GetExecutingAssembly().FullName + GetType() + DateTime.UtcNow;
+            string.IsInterned(str).Should().BeNull(); // just make sure
+
+            toTest.Invoking(t => t.Transform(str, Enumerable.Empty<Attribute>())
+                                  .Should().BeSameAs(string.IsInterned(str), "because the string should be interned"))
+                  .ShouldNotThrow();
         }
     }
 }

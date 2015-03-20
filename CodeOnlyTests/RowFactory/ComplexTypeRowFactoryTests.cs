@@ -92,7 +92,7 @@ namespace CodeOnlyTests.RowFactory
                 var toTest = RowFactory<SingleResultSet>.Create();
                 var res    = toTest.ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
-                res.Single()
+                res.Should().ContainSingle().Which
                    .ShouldBeEquivalentTo(
                    new SingleResultSet
                    {
@@ -126,7 +126,7 @@ namespace CodeOnlyTests.RowFactory
                 var toTest = RowFactory<SingleResultSet>.Create();
                 var res    = toTest.ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
-                res.Single()
+                res.Should().ContainSingle().Which
                    .ShouldBeEquivalentTo(
                    new SingleResultSet
                    {
@@ -153,7 +153,7 @@ namespace CodeOnlyTests.RowFactory
                 var toTest = RowFactory<RenamedColumn>.Create();
                 var res    = toTest.ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
-                res.Single()
+                res.Should().ContainSingle().Which
                    .ShouldBeEquivalentTo(
                    new RenamedColumn
                    {
@@ -181,7 +181,7 @@ namespace CodeOnlyTests.RowFactory
                 var res    = toTest.ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
                 // all values are null by default
-                res.Single().ShouldBeEquivalentTo(new NullableColumns());
+                res.Should().ContainSingle().Which.ShouldBeEquivalentTo(new NullableColumns());
             }
 
             [TestMethod]
@@ -214,7 +214,7 @@ namespace CodeOnlyTests.RowFactory
                 var toTest = RowFactory<WithStaticValue>.Create();
                 var res    = toTest.ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
-                res.Single().Name.Should().Be("Foobar", "the database value should be passed through the DataTransformerAttribute");
+                res.Should().ContainSingle().Which.Name.Should().Be("Foobar", "the database value should be passed through the DataTransformerAttribute");
             }
 
             [TestMethod]
@@ -231,7 +231,7 @@ namespace CodeOnlyTests.RowFactory
                 var toTest = RowFactory<WithStaticValue>.Create();
                 var res    = toTest.ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
-                res.Single().Name.Should().Be("Foobar", "the database value should be passed through the DataTransformerAttribute");
+                res.Should().ContainSingle().Which.Name.Should().Be("Foobar", "the database value should be passed through the DataTransformerAttribute");
             }
 
             [TestMethod]
@@ -246,7 +246,7 @@ namespace CodeOnlyTests.RowFactory
                 var toTest = RowFactory<RenamedColumnWithStaticValue>.Create();
                 var res    = toTest.ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
-                res.Single().Name.Should().Be("Foobar", "the database value should be passed through the DataTransformerAttribute");
+                res.Should().ContainSingle().Which.Name.Should().Be("Foobar", "the database value should be passed through the DataTransformerAttribute");
             }
 
             [TestMethod]
@@ -261,7 +261,7 @@ namespace CodeOnlyTests.RowFactory
                 var toTest = RowFactory<WithStaticValueToUpper>.Create();
                 var res    = toTest.ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
-                res.Single().Name.Should().Be("IS UPPER?", "the database value should be passed through the DataTransformerAttributes in the order they specify");
+                res.Should().ContainSingle().Which.Name.Should().Be("IS UPPER?", "the database value should be passed through the DataTransformerAttributes in the order they specify");
             }
             
             [TestMethod]
@@ -278,7 +278,7 @@ namespace CodeOnlyTests.RowFactory
                                               new IDataTransformer[] { new StaticTransformer { Result = "Foobar" } },
                                               CancellationToken.None);
 
-                res.Single().ShouldBeEquivalentTo(new SingleColumn { Column = "Foobar" }, "the column should be transformed");
+                res.Should().ContainSingle().Which.ShouldBeEquivalentTo(new SingleColumn { Column = "Foobar" }, "the column should be transformed");
             }
 
             [TestMethod]
@@ -298,7 +298,7 @@ namespace CodeOnlyTests.RowFactory
                                               new IDataTransformer[] { new StaticTransformer { Result = "Foobar" } },
                                               CancellationToken.None);
 
-                res.Single().ShouldBeEquivalentTo(new SingleColumn { Column = "Foobar" }, "the column should be transformed");
+                res.Should().ContainSingle().Which.ShouldBeEquivalentTo(new SingleColumn { Column = "Foobar" }, "the column should be transformed");
             }
 
             [TestMethod]
@@ -315,7 +315,7 @@ namespace CodeOnlyTests.RowFactory
                                               new IDataTransformer[] { new StaticTransformer { Result = "Foobar" } },
                                               CancellationToken.None);
 
-                res.Single().ShouldBeEquivalentTo(new RenamedColumn { Column = "Foobar" }, "the column should be transformed");
+                res.Should().ContainSingle().Which.ShouldBeEquivalentTo(new RenamedColumn { Column = "Foobar" }, "the column should be transformed");
             }
 
             [TestMethod]
@@ -326,13 +326,13 @@ namespace CodeOnlyTests.RowFactory
                     { "Column", "Hello, world!" }
                 };
 
-                var reader = CreateDataReader(values);
+                var reader = CreateDataReader(values, true);
                 var toTest = RowFactory<SingleColumn>.Create();
                 var res    = toTest.ParseRows(reader,
                                               new IDataTransformer[] { new NeverTransformer() },
                                               CancellationToken.None);
 
-                res.Single().ShouldBeEquivalentTo(new SingleColumn { Column = "Hello, world!" }, "the column should not be transformed");
+                res.Should().ContainSingle().Which.ShouldBeEquivalentTo(new SingleColumn { Column = "Hello, world!" }, "the column should not be transformed");
             }
 
             [TestMethod]
@@ -343,14 +343,14 @@ namespace CodeOnlyTests.RowFactory
                     { "Column", null }
                 };
 
-                var reader = CreateDataReader(values);
+                var reader = CreateDataReader(values, true);
                 Mock.Get(reader).Setup(r => r.GetFieldType(0)).Returns(typeof(string));
                 var toTest = RowFactory<SingleColumn>.Create();
                 var res    = toTest.ParseRows(reader,
                                               new IDataTransformer[] { new NeverTransformer() },
                                               CancellationToken.None);
 
-                res.Single().ShouldBeEquivalentTo(new SingleColumn(), "the column should not be transformed");
+                res.Should().ContainSingle().Which.ShouldBeEquivalentTo(new SingleColumn(), "the column should not be transformed");
             }
 
             [TestMethod]
@@ -361,13 +361,13 @@ namespace CodeOnlyTests.RowFactory
                     { "MyRenamedColumn", "Hello, world!" }
                 };
 
-                var reader = CreateDataReader(values);
+                var reader = CreateDataReader(values, true);
                 var toTest = RowFactory<RenamedColumn>.Create();
                 var res    = toTest.ParseRows(reader,
                                               new IDataTransformer[] { new NeverTransformer() },
                                               CancellationToken.None);
 
-                res.Single().ShouldBeEquivalentTo(new RenamedColumn { Column = "Hello, world!" }, "the column should not be transformed");
+                res.Should().ContainSingle().Which.ShouldBeEquivalentTo(new RenamedColumn { Column = "Hello, world!" }, "the column should not be transformed");
             }
 
             [TestMethod]
@@ -379,12 +379,12 @@ namespace CodeOnlyTests.RowFactory
                     { "FooBar", 4L }
                 };
 
-                var reader = CreateDataReader(values);
+                var reader = CreateDataReader(values, true);
 
                 var toTest = RowFactory<NullableChecker>.Create();
                 var res    = toTest.ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
-                res.Single().ShouldBeEquivalentTo(new NullableChecker { Value = 1.0, FooBar = FooBar.Foo });
+                res.Should().ContainSingle().Which.ShouldBeEquivalentTo(new NullableChecker { Value = 1.0, FooBar = FooBar.Foo });
             }
 
             [TestMethod]
@@ -396,7 +396,7 @@ namespace CodeOnlyTests.RowFactory
                     { "FooBar", null }
                 };
 
-                var reader = CreateDataReader(values);
+                var reader = CreateDataReader(values, true);
                 Mock.Get(reader).Setup(r => r.GetFieldType(0)).Returns(typeof(int));
                 Mock.Get(reader).Setup(r => r.GetFieldType(1)).Returns(typeof(double));
                 var xformer = new Mock<IDataTransformer>();
@@ -404,7 +404,7 @@ namespace CodeOnlyTests.RowFactory
                 var toTest = RowFactory<NullableChecker>.Create();
                 var res    = toTest.ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
-                res.Single().ShouldBeEquivalentTo(new NullableChecker());
+                res.Should().ContainSingle().Which.ShouldBeEquivalentTo(new NullableChecker());
             }
 
             [TestMethod]
@@ -416,15 +416,15 @@ namespace CodeOnlyTests.RowFactory
                     { "FooBar", 6 }
                 };
 
-                var reader  = CreateDataReader(values);
+                var reader  = CreateDataReader(values, true);
                 Mock.Get(reader).Setup(r => r.GetFieldType(0)).Returns(typeof(int));
                 Mock.Get(reader).Setup(r => r.GetFieldType(1)).Returns(typeof(double));
                 var xformer = new Mock<IDataTransformer>();
 
-                xformer.Setup(x => x.CanTransform(It.IsAny<object>(), typeof(double), true, It.IsAny<IEnumerable<Attribute>>()))
+                xformer.Setup(x => x.CanTransform(It.IsAny<object>(), typeof(double), true, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
                        .Returns(true)
                        .Verifiable();
-                xformer.Setup(x => x.Transform(It.IsAny<object>(), typeof(double), true, It.IsAny<IEnumerable<Attribute>>()))
+                xformer.Setup(x => x.Transform(It.IsAny<object>(), typeof(double), true, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
                        .Returns<object, Type, bool, IEnumerable<Attribute>>((o, t, b, e) =>
                        {
                            Assert.IsTrue(b, "isNullable must be true for a Nullable<T> property");
@@ -438,7 +438,7 @@ namespace CodeOnlyTests.RowFactory
                 var toTest = RowFactory<NullableChecker>.Create();
                 var res    = toTest.ParseRows(reader, new[] { xformer.Object }, CancellationToken.None);
 
-                res.Single().ShouldBeEquivalentTo(new NullableChecker { Value = 42, FooBar = FooBar.Bar });
+                res.Should().ContainSingle().Which.ShouldBeEquivalentTo(new NullableChecker { Value = 42, FooBar = FooBar.Bar });
             }
 
             [TestMethod]
@@ -450,18 +450,19 @@ namespace CodeOnlyTests.RowFactory
                     { "FooBar", null }
                 };
 
-                var reader  = CreateDataReader(values);
+                var reader  = CreateDataReader(values, true);
                 Mock.Get(reader).Setup(r => r.GetFieldType(0)).Returns(typeof(int));
                 Mock.Get(reader).Setup(r => r.GetFieldType(1)).Returns(typeof(double));
                 var xformer = new Mock<IDataTransformer>();
 
-                xformer.Setup(x => x.CanTransform(It.IsAny<object>(), typeof(double), true, It.IsAny<IEnumerable<Attribute>>()))
+                xformer.Setup(x => x.CanTransform(It.IsAny<object>(), typeof(double), true, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
                        .Returns(true)
                        .Verifiable();
-                xformer.Setup(x => x.Transform(It.IsAny<object>(), typeof(double), true, It.IsAny<IEnumerable<Attribute>>()))
+                xformer.Setup(x => x.Transform(It.IsAny<object>(), typeof(double), true, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
                        .Returns<object, Type, bool, IEnumerable<Attribute>>((o, t, b, e) =>
                        {
-                           Assert.IsTrue(b, "isNullable must be true for a Nullable<T> property");
+                           b.Should().BeTrue("isNullable must be true for a Nullable<T> property");
+                           
                            if (t.IsGenericType)
                                Assert.AreNotEqual(typeof(Nullable<>), t.GetGenericTypeDefinition(), "A Nullable<T> type can not be passed to a DataTransformerAttributeBase");
 
@@ -472,7 +473,152 @@ namespace CodeOnlyTests.RowFactory
                 var toTest = RowFactory<NullableChecker>.Create();
                 var res    = toTest.ParseRows(reader, new[] { xformer.Object }, CancellationToken.None);
 
-                res.Single().ShouldBeEquivalentTo(new NullableChecker());
+                res.Should().ContainSingle().Which.ShouldBeEquivalentTo(new NullableChecker());
+            }
+
+            [TestMethod]
+            public void TypedTransformerTransformsStrings()
+            {
+                var values = new Dictionary<string, object>
+                {
+                    { "Column", "Foo" }
+                };
+
+                var reader  = CreateDataReader(values, false);
+                var xformer = new Mock<IDataTransformer<string>>();
+
+                xformer.Setup(x => x.Transform("Foo", It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
+                       .Returns("Bar");
+
+                var toTest = RowFactory<SingleColumn>.Create();
+                var res    = toTest.ParseRows(reader, new[] { xformer.Object }, CancellationToken.None);
+
+                res.Should().ContainSingle().Which.ShouldBeEquivalentTo(new SingleColumn { Column = "Bar" });
+                xformer.Verify(x => x.CanTransform(It.IsAny<object>(), It.IsAny<Type>(), It.IsAny<bool>(), It.IsAny<IEnumerable<Attribute>>()), Times.Never());
+                xformer.Verify(x => x.Transform(It.IsAny<object>(), It.IsAny<Type>(), It.IsAny<bool>(), It.IsAny<IEnumerable<Attribute>>()), Times.Never());
+            }
+
+            [TestMethod]
+            public void TypedTransformerNotUsedForColumnWithDifferentType()
+            {
+                var values = new Dictionary<string, object>
+                {
+                    { "Column", "Foo" }
+                };
+
+                var reader  = CreateDataReader(values, false);
+                var xformer = new Mock<IDataTransformer<int>>();
+
+                var toTest = RowFactory<SingleColumn>.Create();
+                var res    = toTest.ParseRows(reader, new[] { xformer.Object }, CancellationToken.None);
+
+                res.Should().ContainSingle().Which.ShouldBeEquivalentTo(new SingleColumn { Column = "Foo" });
+                xformer.Verify(x => x.CanTransform(It.IsAny<object>(), It.IsAny<Type>(), It.IsAny<bool>(), It.IsAny<IEnumerable<Attribute>>()), Times.Never());
+                xformer.Verify(x => x.Transform(It.IsAny<object>(), It.IsAny<Type>(), It.IsAny<bool>(), It.IsAny<IEnumerable<Attribute>>()), Times.Never());
+                xformer.Verify(x => x.Transform(It.IsAny<int>(), It.IsAny<IEnumerable<Attribute>>()), Times.Never());
+            }
+
+            [TestMethod]
+            public void TypedTransformerTransformsValueTypes()
+            {
+                var values = new Dictionary<string, object>
+                {
+                    { "Value", 13 }
+                };
+
+                var reader  = CreateDataReader(values, false);
+                var xformer = new Mock<IDataTransformer<int>>();
+                xformer.Setup(x => x.Transform(13, It.IsAny<IEnumerable<Attribute>>()))
+                       .Returns(42);
+
+                var toTest = RowFactory<ConvertToInt>.Create();
+                var res    = toTest.ParseRows(reader, new[] { xformer.Object }, CancellationToken.None);
+
+                res.Should().ContainSingle().Which.ShouldBeEquivalentTo(new ConvertToInt { Value = 42 });
+                xformer.Verify(x => x.CanTransform(It.IsAny<object>(), It.IsAny<Type>(), It.IsAny<bool>(), It.IsAny<IEnumerable<Attribute>>()), Times.Never());
+                xformer.Verify(x => x.Transform(It.IsAny<object>(), It.IsAny<Type>(), It.IsAny<bool>(), It.IsAny<IEnumerable<Attribute>>()), Times.Never());
+            }
+
+            [TestMethod]
+            public void TypedTransformerTransformsConvertedValueTypes()
+            {
+                var values = new Dictionary<string, object>
+                {
+                    { "Value", 13M }
+                };
+
+                var reader  = CreateDataReader(values, false);
+                var xformer = new Mock<IDataTransformer<double>>();
+                xformer.Setup(x => x.Transform(13, It.IsAny<IEnumerable<Attribute>>()))
+                       .Returns(42);
+
+                var toTest = RowFactory<ConvertToDouble>.Create();
+                var res    = toTest.ParseRows(reader, new[] { xformer.Object }, CancellationToken.None);
+
+                res.Should().ContainSingle().Which.ShouldBeEquivalentTo(new ConvertToDouble { Value = 42 });
+                xformer.Verify(x => x.CanTransform(It.IsAny<object>(), It.IsAny<Type>(), It.IsAny<bool>(), It.IsAny<IEnumerable<Attribute>>()), Times.Never());
+                xformer.Verify(x => x.Transform(It.IsAny<object>(), It.IsAny<Type>(), It.IsAny<bool>(), It.IsAny<IEnumerable<Attribute>>()), Times.Never());
+            }
+
+            [TestMethod]
+            public void MultipleTypedTransformersDoNotCauseValuesToBeRetrievedBoxed()
+            {
+                var values = new Dictionary<string, object>
+                {
+                    { "Value",  42M  },
+                    { "FooBar", "Not a Match" }
+                };
+
+                var reader = CreateDataReader(values);
+                var xformer1 = new Transformer<string>(Tuple.Create("Not a Match", "Bar"));
+                var xformer2 = new Transformer<double>(Tuple.Create(42.0, 84.0));
+
+                var toTest = RowFactory<MultipleChecker>.Create();
+                var res    = toTest.ParseRows(reader, new IDataTransformer[] { xformer1, xformer2 }, CancellationToken.None);
+
+                res.Should().ContainSingle().Which
+                   .ShouldBeEquivalentTo(
+                   new MultipleChecker
+                   {
+                       Value = 84.0,
+                       FooBar = FooBar.Bar
+                   });
+            }
+
+            [TestMethod]
+            public void AllTypedTransformersDoNotCauseValuesToBeRetrievedBoxed()
+            {
+                var values = new Dictionary<string, object>
+                {
+                    { "String",  "Hello, World!"           },
+                    { "Double",  42.0                      },
+                    { "Decimal", 100M                      },
+                    { "Int",     99                        },
+                    { "Long",    1028130L                  },
+                    { "Date",    new DateTime(1982, 1, 31) },
+                    { "FooBar",  "Bar"                     }
+                };
+
+                var reader = CreateDataReader(values);
+                var xformer1 = new Transformer<string>(Tuple.Create("Hello, World!", "Hello, World!Hello, World!"));
+                var xformer2 = new Transformer<int>(Tuple.Create(99, 33));
+                var xformer3 = new Transformer<double>(Tuple.Create(42.0, 45.0));
+
+                var toTest = RowFactory<SingleResultSet>.Create();
+                var res    = toTest.ParseRows(reader, new IDataTransformer[] { xformer1, xformer2, xformer3 }, CancellationToken.None);
+
+                res.Should().ContainSingle().Which
+                   .ShouldBeEquivalentTo(
+                   new SingleResultSet
+                   {
+                       String = "Hello, World!Hello, World!",
+                       Double = 45.0,
+                       Decimal = 100M,
+                       Int = 33,
+                       Long = 1028130L,
+                       Date = new DateTime(1982, 1, 31),
+                       FooBar = FooBar.Bar
+                   });
             }
 
             [TestMethod]
@@ -620,7 +766,7 @@ namespace CodeOnlyTests.RowFactory
                 var reader = CreateDataReader(new Dictionary<string, object>
                     {
                         { "Value", 42 }
-                    }, false);
+                    });
 
                 var toTest = RowFactory<WithStrongTypedDataTransformer>.Create().ParseRows(
                     reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
@@ -635,7 +781,7 @@ namespace CodeOnlyTests.RowFactory
                 var reader = CreateDataReader(new Dictionary<string, object>
                     {
                         { "FooBar", 4L }
-                    }, false);
+                    });
 
                 var toTest = RowFactory<EnumValue>.Create();
                 
@@ -649,13 +795,57 @@ namespace CodeOnlyTests.RowFactory
                 var reader = CreateDataReader(new Dictionary<string, object>
                     {
                         { "FooBar", 4L }
-                    }, false);
+                    });
 
                 var toTest = RowFactory<EnumValueTypesConverted>.Create().ParseRows(
                     reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
                 toTest.Single().Should().NotBeNull("one row should have been returned")
-                      .And.Match<EnumValueTypesConverted>(i => i.FooBar == FooBar.Foo, "the transformer doubles the result from the database");
+                      .And.Match<EnumValueTypesConverted>(i => i.FooBar == FooBar.Foo, "The value should be converted to the underlying type.");
+            }
+
+            [TestMethod]
+            public void EnumPropertiesCallTypedConverterTransformNumericResult()
+            {
+                var reader = CreateDataReader(new Dictionary<string, object>
+                    {
+                        { "FooBar", 4L }
+                    });
+
+                var xformer = new Mock<IDataTransformer<FooBar>>();
+                xformer.Setup(x => x.Transform(FooBar.Foo, It.IsAny<IEnumerable<Attribute>>()))
+                       .Returns(FooBar.Bar);
+
+                var toTest = RowFactory<EnumValueTypesConverted>.Create().ParseRows(
+                    reader, new[] { xformer.Object }, CancellationToken.None);
+
+                toTest.Single().Should().NotBeNull("one row should have been returned")
+                      .And.Match<EnumValueTypesConverted>(i => i.FooBar == FooBar.Bar, "The value should be altered by the Transformer.");
+
+                xformer.Verify(x => x.CanTransform(It.IsAny<object>(), It.IsAny<Type>(), It.IsAny<bool>(), It.IsAny<IEnumerable<Attribute>>()), Times.Never());
+                xformer.Verify(x => x.Transform(It.IsAny<object>(), It.IsAny<Type>(), It.IsAny<bool>(), It.IsAny<IEnumerable<Attribute>>()), Times.Never());
+            }
+
+            [TestMethod]
+            public void EnumPropertiesCallTypedConverterTransformStringResult()
+            {
+                var reader = CreateDataReader(new Dictionary<string, object>
+                    {
+                        { "FooBar", "Foo" }
+                    });
+
+                var xformer = new Mock<IDataTransformer<FooBar>>();
+                xformer.Setup(x => x.Transform(FooBar.Foo, It.IsAny<IEnumerable<Attribute>>()))
+                       .Returns(FooBar.Bar);
+
+                var toTest = RowFactory<EnumValueTypesConverted>.Create().ParseRows(
+                    reader, new[] { xformer.Object }, CancellationToken.None);
+
+                toTest.Single().Should().NotBeNull("one row should have been returned")
+                      .And.Match<EnumValueTypesConverted>(i => i.FooBar == FooBar.Bar, "The value should be altered by the Transformer.");
+
+                xformer.Verify(x => x.CanTransform(It.IsAny<object>(), It.IsAny<Type>(), It.IsAny<bool>(), It.IsAny<IEnumerable<Attribute>>()), Times.Never());
+                xformer.Verify(x => x.Transform(It.IsAny<object>(), It.IsAny<Type>(), It.IsAny<bool>(), It.IsAny<IEnumerable<Attribute>>()), Times.Never());
             }
 
             [TestMethod]
@@ -664,7 +854,7 @@ namespace CodeOnlyTests.RowFactory
                 var reader = CreateDataReader(new Dictionary<string, object>
                     {
                         { "IsEnabled", 1 }
-                    }, false);
+                    });
 
                 var toTest = RowFactory<ConvertToBool>.Create().ParseRows(
                     reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
@@ -679,7 +869,7 @@ namespace CodeOnlyTests.RowFactory
                 var reader = CreateDataReader(new Dictionary<string, object>
                     {
                         { "IsEnabled", 0 }
-                    }, false);
+                    });
 
                 var toTest = RowFactory<ConvertToBool>.Create().ParseRows(
                     reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
@@ -719,12 +909,46 @@ namespace CodeOnlyTests.RowFactory
             }
 
             [TestMethod]
+            public void NumericTypeWillConvertToTrueBoolIfMarkedWithConvert_WhenTypedTransformerPassed()
+            {
+                var reader = CreateDataReader(new Dictionary<string, object>
+                    {
+                        { "IsEnabled", 0 }
+                    }, true);
+
+                var xformer = new Mock<IDataTransformer<bool>>();
+                xformer.Setup(x => x.Transform(false, It.IsAny<IEnumerable<Attribute>>()))
+                       .Returns(true);
+
+                var toTest = RowFactory<ConvertToBool>.Create().ParseRows(
+                    reader, new[] { xformer.Object }, CancellationToken.None);
+
+                toTest.Should().ContainSingle("because one row is returned").Which
+                    .Should().Match<ConvertToBool>(i => i.IsEnabled == true, "the property should be converted to bool");
+            }
+
+            [TestMethod]
+            public void NumericTypeWillConvertToFalseBoolIfMarkedWithConvert_WhenTypedTransformerPassed()
+            {
+                var reader = CreateDataReader(new Dictionary<string, object>
+                    {
+                        { "IsEnabled", 0L }
+                    }, true);
+
+                var toTest = RowFactory<ConvertToBool>.Create().ParseRows(
+                    reader, new[] { Mock.Of<IDataTransformer<bool>>() }, CancellationToken.None);
+
+                toTest.Should().ContainSingle("because one row is returned").Which
+                    .Should().Match<ConvertToBool>(i => !i.IsEnabled, "the property should be converted to bool");
+            }
+
+            [TestMethod]
             public void NumericTypeWillConvertToTrueNullableBoolIfMarkedWithConvert()
             {
                 var reader = CreateDataReader(new Dictionary<string, object>
                     {
                         { "IsEnabled", 1M }
-                    }, false);
+                    });
 
                 var toTest = RowFactory<ConvertToNullableBool>.Create().ParseRows(
                     reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
@@ -755,7 +979,7 @@ namespace CodeOnlyTests.RowFactory
                 var reader = CreateDataReader(new Dictionary<string, object>
                     {
                         { "IsEnabled", 0 }
-                    }, false);
+                    });
 
                 var toTest = RowFactory<ConvertToNullableBool>.Create().ParseRows(
                     reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
@@ -815,14 +1039,14 @@ namespace CodeOnlyTests.RowFactory
             {
                 var reader = CreateDataReader(new Dictionary<string, object>
                     {
-                        { "IsEnabled", true }
-                    }, false);
+                        { "Value", true }
+                    });
 
-                var toTest = RowFactory<ConvertFromBool>.Create().ParseRows(
+                var toTest = RowFactory<ConvertToInt>.Create().ParseRows(
                     reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
                 toTest.Should().ContainSingle("because one row is returned").Which
-                    .Should().Match<ConvertFromBool>(i => i.IsEnabled == 1, "the property should be converted from bool");
+                    .Should().Match<ConvertToInt>(i => i.Value == 1, "the property should be converted from bool");
             }
 
             [TestMethod]
@@ -830,17 +1054,17 @@ namespace CodeOnlyTests.RowFactory
             {
                 var reader = CreateDataReader(new Dictionary<string, object>
                     {
-                        { "IsEnabled", false }
-                    }, false);
+                        { "Value", false }
+                    });
 
-                var toTest = RowFactory<ConvertFromBool>.Create().ParseRows(
+                var toTest = RowFactory<ConvertToInt>.Create().ParseRows(
                     reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
                 toTest.Should().ContainSingle("because one row is returned").Which
-                    .Should().Match<ConvertFromBool>(i => i.IsEnabled == 0, "the property should be converted from bool");
+                    .Should().Match<ConvertToInt>(i => i.Value == 0, "the property should be converted from bool");
             }
 
-            private static IDataReader CreateDataReader(Dictionary<string, object> values, bool setupGetValue = true)
+            private static IDataReader CreateDataReader(Dictionary<string, object> values, bool setupGetValue = false)
             {
                 var keys = values.Keys.OrderBy(s => s).ToList();
                 var vals = values.OrderBy(kv => kv.Key).Select(kv => kv.Value).ToArray();
@@ -968,6 +1192,14 @@ namespace CodeOnlyTests.RowFactory
             public FooBar? FooBar { get; set; }
         }
 
+        private class MultipleChecker
+        {
+            [ConvertNumeric]
+            public double Value { get; set; }
+            [ConvertNumeric]
+            public FooBar FooBar { get; set; }
+        }
+
         private interface Interface
         {
             string Id { get; set; }
@@ -1019,10 +1251,16 @@ namespace CodeOnlyTests.RowFactory
             public bool? IsEnabled { get; set; }
         }
 
-        private class ConvertFromBool
+        private class ConvertToInt
         {
             [ConvertNumeric]
-            public int IsEnabled { get; set; }
+            public int Value { get; set; }
+        }
+
+        private class ConvertToDouble
+        {
+            [ConvertNumeric]
+            public double Value { get; set; }
         }
 
         private class StaticValueAttribute : DataTransformerAttributeBase
@@ -1113,12 +1351,41 @@ namespace CodeOnlyTests.RowFactory
 
             public override object Transform(object value, Type targetType, bool isNullable)
             {
+                Assert.Fail("Boxed Transform method should never be called.");
                 return Transform((uint)value);
             }
         }
 
+        private class Transformer<T> : IDataTransformer<T>
+        {
+            private readonly Dictionary<T, T> transforms;
 
-        private enum FooBar
+            public Transformer(params Tuple<T, T>[] transforms)
+            {
+                this.transforms = transforms.ToDictionary(t => t.Item1, t => t.Item2);
+            }
+
+            public T Transform(T value, IEnumerable<Attribute> propertyAttributes)
+            {
+                T result;
+                if (transforms.TryGetValue(value, out result))
+                    return result;
+
+                return value;
+            }
+
+            public bool CanTransform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes)
+            {
+                throw new NotSupportedException();
+            }
+
+            public object Transform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes)
+            {
+                throw new NotSupportedException();
+            }
+        }
+
+        public enum FooBar
         {
             Foo = 4,
             Bar = 6

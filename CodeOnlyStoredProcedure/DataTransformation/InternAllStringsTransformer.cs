@@ -6,7 +6,7 @@ namespace CodeOnlyStoredProcedure.DataTransformation
     /// <summary>
     /// An <see cref="IDataTransformer"/> that will intern all strings returned.
     /// </summary>
-    public class InternAllStringsTransformer : IDataTransformer
+    public class InternAllStringsTransformer : IDataTransformer<string>
     {
         /// <summary>
         /// Returns true if the value is a non-null string, and the target type is a string.
@@ -35,6 +35,20 @@ namespace CodeOnlyStoredProcedure.DataTransformation
         public object Transform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes)
         {
             return string.Intern((string)value);
+        }
+
+        /// <summary>
+        /// Interns the input string
+        /// </summary>
+        /// <param name="value">The string to intern</param>
+        /// <param name="propertyAttributes">All attributes applied to the property</param>
+        /// <returns>The interned string</returns>
+        public string Transform(string value, IEnumerable<Attribute> propertyAttributes)
+        {
+            if (value == null)
+                return value;
+
+            return string.Intern(value);
         }
     }
 }

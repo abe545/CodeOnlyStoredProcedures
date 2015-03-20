@@ -245,10 +245,33 @@ namespace CodeOnlyStoredProcedure.RowFactory
             }
         }
 
+        protected static Expression CreateTypedRetrieval<T>(
+            ParameterExpression                       dbReader,
+            Expression                                index,
+            Expression                                unboxedExpression,
+            IEnumerable<DataTransformerAttributeBase> xFormers,
+            string                                    propertyName,
+            string                                    errorMessage,
+            Type                                      dbType,
+            Type                                      expectedDbType,
+            bool                                      convertNumeric)
+        {
+            if (dbType != expectedDbType)
+            {
+                if (convertNumeric)
+                    return CreateUnboxedRetrieval<T>(dbReader, index, xFormers, errorMessage, dbType);
+                else
+                    throw new StoredProcedureColumnException(typeof(T), dbType, propertyName);
+            }
+
+            return unboxedExpression;
+        }
+
         protected static Expression CreateUnboxedRetrieval<T>(
             ParameterExpression                       dbReader,
             Expression                                index,
             IEnumerable<DataTransformerAttributeBase> xFormers,
+            string                                    errorMessage,
             Type                                      expectedDbType = null)
         {
             Contract.Requires(dbReader != null);
@@ -292,20 +315,38 @@ namespace CodeOnlyStoredProcedure.RowFactory
             if (isEnum)
                 res = Expression.Convert(res, nonNull);
 
-            if (isNullable)
+            if (!converted.Any())
             {
-                res = Expression.Convert(res, type);
-
-                body.Add(
-                    Expression.Assign(
-                        retVal,
-                        Expression.Condition(
+                if (isNullable)
+                {
+                    return Expression.Condition(
                             Expression.Call(dbReader, IsDbNullMethod, index),
                             Expression.Constant(default(T), type),
-                            res
+                            Expression.Convert(res, type)
+                        );
+                }
+
+                return Expression.Block(type,
+                    Expression.IfThen(
+                        Expression.Call(dbReader, IsDbNullMethod, index),
+                        Expression.Throw(
+                            Expression.New(
+                                typeof(NoNullAllowedException).GetConstructor(new[] { typeof(string) }),
+                                Expression.Constant(errorMessage)
+                            )
                         )
-                    )
+                    ),
+                    res
                 );
+            }
+            else if (isNullable)
+            {
+                res = Expression.Condition(
+                            Expression.Call(dbReader, IsDbNullMethod, index),
+                            Expression.Constant(default(T), type),
+                            Expression.Convert(res, type)
+                        );
+                body.Add(Expression.Assign(retVal, res));
             }
             else
             {
@@ -315,7 +356,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
                         Expression.Throw(
                             Expression.New(
                                 typeof(NoNullAllowedException).GetConstructor(new[] { typeof(string) }),
-                                Expression.Constant("Expected result of type " + dbType + " for single column result set.")
+                                Expression.Constant(errorMessage)
                             )
                         ),
                         Expression.Assign(retVal, res)
@@ -348,6 +389,15 @@ namespace CodeOnlyStoredProcedure.RowFactory
                 return Expression.Constant(0L, isNullable ? typeof(long?) : dbType);
 
             return Expression.Constant(0, isNullable ? typeof(int?) : dbType);
+        }
+
+        protected static bool IsTypedTransformer(IDataTransformer transformer)
+        {
+            Contract.Requires(transformer != null);
+
+            return transformer.GetType()
+                              .GetInterfaces()
+                              .Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IDataTransformer<>));
         }
     }
 }

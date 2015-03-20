@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using CodeOnlyStoredProcedure.DataTransformation;
 using System.Linq;
+using FluentAssertions;
 
 #if NET40
 namespace CodeOnlyTests.Net40.DataTransformation
@@ -20,68 +21,133 @@ namespace CodeOnlyTests.DataTransformation
             toTest = new TrimAllStringsTransformer();
         }
 
+
         [TestMethod]
-        public void TestCanTransformReturnsFalseWhenValueIsNotAString()
+        public void CanTransformReturnsFalseForNonStringTargetType()
         {
-            Assert.IsFalse(toTest.CanTransform(false, typeof(string), false, Enumerable.Empty<Attribute>()));
+            toTest.Invoking(t => t.CanTransform("foo", typeof(int), false, Enumerable.Empty<Attribute>())
+                                  .Should().BeFalse("because the target type is not string"))
+                  .ShouldNotThrow();
         }
 
         [TestMethod]
-        public void TestCanTransformReturnsFalseWhenTargetTypeIsNotAString()
+        public void CanTransformReturnsFalseForNonStringInput()
         {
-            Assert.IsFalse(toTest.CanTransform("false", typeof(bool), false, Enumerable.Empty<Attribute>()));
+            toTest.Invoking(t => t.CanTransform(false, typeof(string), false, Enumerable.Empty<Attribute>())
+                                  .Should().BeFalse("because the input is not a string"))
+                  .ShouldNotThrow();
         }
 
         [TestMethod]
-        public void TestCanTransformReturnsTrueForNullValue()
+        public void CanTransformReturnsFalseForNullInput()
         {
-            Assert.IsTrue(toTest.CanTransform(null, typeof(string), false, Enumerable.Empty<Attribute>()));
+            toTest.Invoking(t => t.CanTransform(null, typeof(string), false, Enumerable.Empty<Attribute>())
+                                  .Should().BeTrue("because null will be 'trimmed' to the empty string"))
+                  .ShouldNotThrow();
         }
 
         [TestMethod]
-        public void TestCanTransformReturnsTrueForStringValue()
+        public void CanTransformReturnsTrueForString()
         {
-            Assert.IsTrue(toTest.CanTransform("foo", typeof(string), false, Enumerable.Empty<Attribute>()));
+            toTest.Invoking(t => t.CanTransform("foo", typeof(string), false, Enumerable.Empty<Attribute>())
+                                  .Should().BeTrue("because all strings can be trimmed"))
+                  .ShouldNotThrow();
         }
 
         [TestMethod]
-        public void TestTransformReturnsWhitespaceForNullInput()
+        public void TransformReturnsEmptyForEmpty()
         {
-            var res = toTest.Transform(null, typeof(string), false, Enumerable.Empty<Attribute>());
-
-            Assert.AreEqual(string.Empty, res);
+            toTest.Invoking(t => t.Transform(string.Empty, typeof(string), false, Enumerable.Empty<Attribute>())
+                                  .Should().BeSameAs(string.Empty, "because the empty string is already trimmed"))
+                  .ShouldNotThrow();
         }
 
         [TestMethod]
-        public void TestTransformReturnsEmptyForWhitespace()
+        public void TransformReturnsWhitespaceForNullInput()
         {
-            var res = toTest.Transform("     ", typeof(string), false, Enumerable.Empty<Attribute>());
-
-            Assert.AreEqual(string.Empty, res);
+            toTest.Invoking(t => t.Transform(null, typeof(string), false, Enumerable.Empty<Attribute>())
+                                  .Should().BeSameAs(string.Empty, "because null should return the empty string"))
+                  .ShouldNotThrow();
         }
 
         [TestMethod]
-        public void TestTransformReturnsValueWhenNoWhitespace()
+        public void TransformReturnsEmptyForWhitespace()
         {
-            var res = toTest.Transform("Foo", typeof(string), false, Enumerable.Empty<Attribute>());
-
-            Assert.AreEqual("Foo", res);
+            toTest.Invoking(t => t.Transform("     ", typeof(string), false, Enumerable.Empty<Attribute>())
+                                  .Should().Be(string.Empty, "because whitespace should return the empty string"))
+                  .ShouldNotThrow();
         }
 
         [TestMethod]
-        public void TestTransformReturnsValueWithoutTrailingWhitespace()
+        public void TransformReturnsValueWhenNoWhitespace()
         {
-            var res = toTest.Transform("Bar     ", typeof(string), false, Enumerable.Empty<Attribute>());
-
-            Assert.AreEqual("Bar", res);
+            toTest.Invoking(t => t.Transform("Foo", typeof(string), false, Enumerable.Empty<Attribute>())
+                                  .Should().Be("Foo", "because it had no whitespace"))
+                  .ShouldNotThrow();
         }
 
         [TestMethod]
-        public void TestTransformReturnsValueWithoutLeadingWhitespace()
+        public void TransformReturnsValueWithoutTrailingWhitespace()
         {
-            var res = toTest.Transform("     Bar", typeof(string), false, Enumerable.Empty<Attribute>());
+            toTest.Invoking(t => t.Transform("Bar     ", typeof(string), false, Enumerable.Empty<Attribute>())
+                                  .Should().Be("Bar", "because trailing whitespace should be trimmed"))
+                  .ShouldNotThrow();
+        }
 
-            Assert.AreEqual("Bar", res);
+        [TestMethod]
+        public void TransformReturnsValueWithoutLeadingWhitespace()
+        {
+            toTest.Invoking(t => t.Transform("     Bar", Enumerable.Empty<Attribute>())
+                                  .Should().Be("Bar", "because leading whitespace should be trimmed"))
+                  .ShouldNotThrow();
+        }
+
+        [TestMethod]
+        public void TypedTransformReturnsEmptyForEmpty()
+        {
+            toTest.Invoking(t => t.Transform(string.Empty, Enumerable.Empty<Attribute>())
+                                  .Should().BeSameAs(string.Empty, "because the empty string is already trimmed"))
+                  .ShouldNotThrow();
+        }
+
+        [TestMethod]
+        public void TypedTransformReturnsWhitespaceForNullInput()
+        {
+            toTest.Invoking(t => t.Transform(null, Enumerable.Empty<Attribute>())
+                                  .Should().BeSameAs(string.Empty, "because null should return the empty string"))
+                  .ShouldNotThrow();
+        }
+
+        [TestMethod]
+        public void TypedTransformReturnsEmptyForWhitespace()
+        {
+            toTest.Invoking(t => t.Transform("     ", Enumerable.Empty<Attribute>())
+                                  .Should().Be(string.Empty, "because whitespace should return the empty string"))
+                  .ShouldNotThrow();
+        }
+
+        [TestMethod]
+        public void TypedTransformReturnsValueWhenNoWhitespace()
+        {
+            toTest.Invoking(t => t.Transform("Foo", Enumerable.Empty<Attribute>())
+                                  .Should().Be("Foo", "because it had no whitespace"))
+                  .ShouldNotThrow();
+        }
+
+        [TestMethod]
+        public void TypedTransformReturnsValueWithoutTrailingWhitespace()
+        {
+            toTest.Invoking(t => t.Transform("Bar     ", Enumerable.Empty<Attribute>())
+                                  .Should().Be("Bar", "because trailing whitespace should be trimmed"))
+                  .ShouldNotThrow();
+        }
+
+        [TestMethod]
+        public void TypedTransformReturnsValueWithoutLeadingWhitespace()
+        {
+            toTest.Invoking(t => t.Transform("     Bar", Enumerable.Empty<Attribute>())
+                                  .Should().Be("Bar", "because leading whitespace should be trimmed"))
+                  .ShouldNotThrow();
         }
     }
 }
