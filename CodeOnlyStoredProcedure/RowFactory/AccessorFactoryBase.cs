@@ -399,5 +399,16 @@ namespace CodeOnlyStoredProcedure.RowFactory
                               .GetInterfaces()
                               .Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IDataTransformer<>));
         }
+
+        protected static void AddTypedTransformers<T>(IEnumerable<IDataTransformer> xFormers, Expression attributeExpression, ref Expression expr)
+        {
+            foreach (var x in xFormers.OfType<IDataTransformer<T>>())
+                expr = Expression.Call(Expression.Constant(x), DataTransformerCache<T>.transform, expr, attributeExpression);
+        }
+
+        private static class DataTransformerCache<T>
+        {
+            public  static readonly MethodInfo transform = typeof(IDataTransformer<T>).GetMethod("Transform");
+        }
     }
 }
