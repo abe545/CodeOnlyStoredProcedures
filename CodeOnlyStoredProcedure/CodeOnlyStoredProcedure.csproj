@@ -171,7 +171,6 @@
     <Compile Include="StoredProcedureExtensions.WithReturnValue.cs">
       <DependentUpon>StoredProcedureExtensions.cs</DependentUpon>
     </Compile>
-    <Compile Include="StoredProcedureParameter.cs" />
     <Compile Include="StoredProcedureParameterAttribute.cs" />
     <Compile Include="Exceptions\StoredProcedureResultsException.cs" />
     <Compile Include="StoredProcedureParameters\InputOutputParameter.cs" />

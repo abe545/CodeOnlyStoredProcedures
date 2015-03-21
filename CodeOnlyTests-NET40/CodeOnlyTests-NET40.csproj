@@ -134,10 +134,6 @@
     <Compile Include="..\CodeOnlyTests\StoredProcedureExtensionsTests.cs">
       <Link>StoredProcedureExtensionsTests.cs</Link>
     </Compile>
-    <Compile Include="..\CodeOnlyTests\StoredProcedureExtensionsTests.DoExecute.cs">
-      <Link>StoredProcedureExtensionsTests.DoExecute.cs</Link>
-      <DependentUpon>StoredProcedureExtensionsTests.cs</DependentUpon>
-    </Compile>
     <Compile Include="..\CodeOnlyTests\StoredProcedureExtensionsTests.WithDataTransformer.cs">
       <Link>StoredProcedureExtensionsTests.WithDataTransformer.cs</Link>
       <DependentUpon>StoredProcedureExtensionsTests.cs</DependentUpon>

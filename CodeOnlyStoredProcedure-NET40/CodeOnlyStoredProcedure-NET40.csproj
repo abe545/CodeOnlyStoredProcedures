@@ -197,9 +197,6 @@
     <Compile Include="..\CodeOnlyStoredProcedure\SqlServerStoredProcedureParameterAttribute.cs">
       <Link>SqlServerStoredProcedureParameterAttribute.cs</Link>
     </Compile>
-    <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedureParameter.cs">
-      <Link>StoredProcedureParameter.cs</Link>
-    </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\StoredProcedureParameters\IInputStoredProcedureParameter.cs">
       <Link>StoredProcedureParameters\IInputStoredProcedureParameter.cs</Link>
     </Compile>
