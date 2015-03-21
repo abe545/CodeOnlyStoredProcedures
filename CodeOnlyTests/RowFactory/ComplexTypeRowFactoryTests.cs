@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CodeOnlyStoredProcedure;
 using CodeOnlyStoredProcedure.DataTransformation;
+using CodeOnlyStoredProcedure.RowFactory;
 using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
@@ -31,7 +32,7 @@ namespace CodeOnlyTests.RowFactory
                 var cts = new CancellationTokenSource();
                 cts.Cancel();
 
-                var toTest = RowFactory<SingleResultSet>.Create();
+                var toTest = new ComplexTypeRowFactory<SingleResultSet>();
                 toTest.Invoking(f => f.ParseRows(reader.Object, Enumerable.Empty<IDataTransformer>(), cts.Token))
                       .ShouldThrow<OperationCanceledException>("the operation was cancelled");
 
@@ -62,7 +63,7 @@ namespace CodeOnlyTests.RowFactory
 
                 var cts = new CancellationTokenSource();
 
-                var toTest = RowFactory<RenamedColumn>.Create();
+                var toTest = new ComplexTypeRowFactory<RenamedColumn>();
                 var task = Task.Factory.StartNew(() => toTest.Invoking(f => f.ParseRows(reader, Enumerable.Empty<IDataTransformer>(), cts.Token))
                                                              .ShouldThrow<OperationCanceledException>("the operation was cancelled"),
                                                  cts.Token);
@@ -89,7 +90,7 @@ namespace CodeOnlyTests.RowFactory
 
                 var reader = CreateDataReader(values);
 
-                var toTest = RowFactory<SingleResultSet>.Create();
+                var toTest = new ComplexTypeRowFactory<SingleResultSet>();
                 var res    = toTest.ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
                 res.Should().ContainSingle().Which
@@ -123,7 +124,7 @@ namespace CodeOnlyTests.RowFactory
 
                 var reader = CreateDataReader(values);
 
-                var toTest = RowFactory<SingleResultSet>.Create();
+                var toTest = new ComplexTypeRowFactory<SingleResultSet>();
                 var res    = toTest.ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
                 res.Should().ContainSingle().Which
@@ -150,7 +151,7 @@ namespace CodeOnlyTests.RowFactory
 
                 var reader = CreateDataReader(values);
 
-                var toTest = RowFactory<RenamedColumn>.Create();
+                var toTest = new ComplexTypeRowFactory<RenamedColumn>();
                 var res    = toTest.ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
                 res.Should().ContainSingle().Which
@@ -177,7 +178,7 @@ namespace CodeOnlyTests.RowFactory
                 Mock.Get(reader).Setup(r => r.GetFieldType(2)).Returns(typeof(int));
                 Mock.Get(reader).Setup(r => r.IsDBNull(It.IsAny<int>())).Returns(true);
 
-                var toTest = RowFactory<NullableColumns>.Create();
+                var toTest = new ComplexTypeRowFactory<NullableColumns>();
                 var res    = toTest.ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
                 // all values are null by default
@@ -195,7 +196,7 @@ namespace CodeOnlyTests.RowFactory
                 var reader = CreateDataReader(values);
                 Mock.Get(reader).Setup(r => r.GetFieldType(0)).Returns(typeof(string));
 
-                var toTest = RowFactory<SingleColumn>.Create();
+                var toTest = new ComplexTypeRowFactory<SingleColumn>();
 
                 toTest.Invoking(f => f.ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None))
                       .ShouldThrow<StoredProcedureResultsException>("one of the mapped columns isn't returned")
@@ -211,7 +212,7 @@ namespace CodeOnlyTests.RowFactory
                 };
 
                 var reader = CreateDataReader(values);
-                var toTest = RowFactory<WithStaticValue>.Create();
+                var toTest = new ComplexTypeRowFactory<WithStaticValue>();
                 var res    = toTest.ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
                 res.Should().ContainSingle().Which.Name.Should().Be("Foobar", "the database value should be passed through the DataTransformerAttribute");
@@ -228,7 +229,7 @@ namespace CodeOnlyTests.RowFactory
                 var reader = CreateDataReader(values);
                 Mock.Get(reader).Setup(r => r.GetFieldType(0)).Returns(typeof(string));
 
-                var toTest = RowFactory<WithStaticValue>.Create();
+                var toTest = new ComplexTypeRowFactory<WithStaticValue>();
                 var res    = toTest.ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
                 res.Should().ContainSingle().Which.Name.Should().Be("Foobar", "the database value should be passed through the DataTransformerAttribute");
@@ -243,7 +244,7 @@ namespace CodeOnlyTests.RowFactory
                 };
 
                 var reader = CreateDataReader(values);
-                var toTest = RowFactory<RenamedColumnWithStaticValue>.Create();
+                var toTest = new ComplexTypeRowFactory<RenamedColumnWithStaticValue>();
                 var res    = toTest.ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
                 res.Should().ContainSingle().Which.Name.Should().Be("Foobar", "the database value should be passed through the DataTransformerAttribute");
@@ -258,7 +259,7 @@ namespace CodeOnlyTests.RowFactory
                 };
 
                 var reader = CreateDataReader(values);
-                var toTest = RowFactory<WithStaticValueToUpper>.Create();
+                var toTest = new ComplexTypeRowFactory<WithStaticValueToUpper>();
                 var res    = toTest.ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
                 res.Should().ContainSingle().Which.Name.Should().Be("IS UPPER?", "the database value should be passed through the DataTransformerAttributes in the order they specify");
@@ -273,7 +274,7 @@ namespace CodeOnlyTests.RowFactory
                 };
 
                 var reader = CreateDataReader(values);
-                var toTest = RowFactory<SingleColumn>.Create();
+                var toTest = new ComplexTypeRowFactory<SingleColumn>();
                 var res    = toTest.ParseRows(reader,
                                               new IDataTransformer[] { new StaticTransformer { Result = "Foobar" } },
                                               CancellationToken.None);
@@ -293,7 +294,7 @@ namespace CodeOnlyTests.RowFactory
 
                 Mock.Get(reader).Setup(r => r.GetFieldType(0)).Returns(typeof(string));
 
-                var toTest = RowFactory<SingleColumn>.Create();
+                var toTest = new ComplexTypeRowFactory<SingleColumn>();
                 var res    = toTest.ParseRows(reader,
                                               new IDataTransformer[] { new StaticTransformer { Result = "Foobar" } },
                                               CancellationToken.None);
@@ -310,7 +311,7 @@ namespace CodeOnlyTests.RowFactory
                 };
 
                 var reader = CreateDataReader(values);
-                var toTest = RowFactory<RenamedColumn>.Create();
+                var toTest = new ComplexTypeRowFactory<RenamedColumn>();
                 var res    = toTest.ParseRows(reader,
                                               new IDataTransformer[] { new StaticTransformer { Result = "Foobar" } },
                                               CancellationToken.None);
@@ -327,7 +328,7 @@ namespace CodeOnlyTests.RowFactory
                 };
 
                 var reader = CreateDataReader(values, true);
-                var toTest = RowFactory<SingleColumn>.Create();
+                var toTest = new ComplexTypeRowFactory<SingleColumn>();
                 var res    = toTest.ParseRows(reader,
                                               new IDataTransformer[] { new NeverTransformer() },
                                               CancellationToken.None);
@@ -345,7 +346,7 @@ namespace CodeOnlyTests.RowFactory
 
                 var reader = CreateDataReader(values, true);
                 Mock.Get(reader).Setup(r => r.GetFieldType(0)).Returns(typeof(string));
-                var toTest = RowFactory<SingleColumn>.Create();
+                var toTest = new ComplexTypeRowFactory<SingleColumn>();
                 var res    = toTest.ParseRows(reader,
                                               new IDataTransformer[] { new NeverTransformer() },
                                               CancellationToken.None);
@@ -362,7 +363,7 @@ namespace CodeOnlyTests.RowFactory
                 };
 
                 var reader = CreateDataReader(values, true);
-                var toTest = RowFactory<RenamedColumn>.Create();
+                var toTest = new ComplexTypeRowFactory<RenamedColumn>();
                 var res    = toTest.ParseRows(reader,
                                               new IDataTransformer[] { new NeverTransformer() },
                                               CancellationToken.None);
@@ -381,7 +382,7 @@ namespace CodeOnlyTests.RowFactory
 
                 var reader = CreateDataReader(values, true);
 
-                var toTest = RowFactory<NullableChecker>.Create();
+                var toTest = new ComplexTypeRowFactory<NullableChecker>();
                 var res    = toTest.ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
                 res.Should().ContainSingle().Which.ShouldBeEquivalentTo(new NullableChecker { Value = 1.0, FooBar = FooBar.Foo });
@@ -401,7 +402,7 @@ namespace CodeOnlyTests.RowFactory
                 Mock.Get(reader).Setup(r => r.GetFieldType(1)).Returns(typeof(double));
                 var xformer = new Mock<IDataTransformer>();
 
-                var toTest = RowFactory<NullableChecker>.Create();
+                var toTest = new ComplexTypeRowFactory<NullableChecker>();
                 var res    = toTest.ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
                 res.Should().ContainSingle().Which.ShouldBeEquivalentTo(new NullableChecker());
@@ -435,7 +436,7 @@ namespace CodeOnlyTests.RowFactory
                        })
                        .Verifiable();
 
-                var toTest = RowFactory<NullableChecker>.Create();
+                var toTest = new ComplexTypeRowFactory<NullableChecker>();
                 var res    = toTest.ParseRows(reader, new[] { xformer.Object }, CancellationToken.None);
 
                 res.Should().ContainSingle().Which.ShouldBeEquivalentTo(new NullableChecker { Value = 42, FooBar = FooBar.Bar });
@@ -470,7 +471,7 @@ namespace CodeOnlyTests.RowFactory
                        })
                        .Verifiable();
 
-                var toTest = RowFactory<NullableChecker>.Create();
+                var toTest = new ComplexTypeRowFactory<NullableChecker>();
                 var res    = toTest.ParseRows(reader, new[] { xformer.Object }, CancellationToken.None);
 
                 res.Should().ContainSingle().Which.ShouldBeEquivalentTo(new NullableChecker());
@@ -490,7 +491,7 @@ namespace CodeOnlyTests.RowFactory
                 xformer.Setup(x => x.Transform("Foo", It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
                        .Returns("Bar");
 
-                var toTest = RowFactory<SingleColumn>.Create();
+                var toTest = new ComplexTypeRowFactory<SingleColumn>();
                 var res    = toTest.ParseRows(reader, new[] { xformer.Object }, CancellationToken.None);
 
                 res.Should().ContainSingle().Which.ShouldBeEquivalentTo(new SingleColumn { Column = "Bar" });
@@ -509,7 +510,7 @@ namespace CodeOnlyTests.RowFactory
                 var reader  = CreateDataReader(values, false);
                 var xformer = new Mock<IDataTransformer<int>>();
 
-                var toTest = RowFactory<SingleColumn>.Create();
+                var toTest = new ComplexTypeRowFactory<SingleColumn>();
                 var res    = toTest.ParseRows(reader, new[] { xformer.Object }, CancellationToken.None);
 
                 res.Should().ContainSingle().Which.ShouldBeEquivalentTo(new SingleColumn { Column = "Foo" });
@@ -531,7 +532,7 @@ namespace CodeOnlyTests.RowFactory
                 xformer.Setup(x => x.Transform(13, It.IsAny<IEnumerable<Attribute>>()))
                        .Returns(42);
 
-                var toTest = RowFactory<ConvertToInt>.Create();
+                var toTest = new ComplexTypeRowFactory<ConvertToInt>();
                 var res    = toTest.ParseRows(reader, new[] { xformer.Object }, CancellationToken.None);
 
                 res.Should().ContainSingle().Which.ShouldBeEquivalentTo(new ConvertToInt { Value = 42 });
@@ -552,7 +553,7 @@ namespace CodeOnlyTests.RowFactory
                 xformer.Setup(x => x.Transform(13, It.IsAny<IEnumerable<Attribute>>()))
                        .Returns(42);
 
-                var toTest = RowFactory<ConvertToDouble>.Create();
+                var toTest = new ComplexTypeRowFactory<ConvertToDouble>();
                 var res    = toTest.ParseRows(reader, new[] { xformer.Object }, CancellationToken.None);
 
                 res.Should().ContainSingle().Which.ShouldBeEquivalentTo(new ConvertToDouble { Value = 42 });
@@ -573,7 +574,7 @@ namespace CodeOnlyTests.RowFactory
                 var xformer1 = new Transformer<string>(Tuple.Create("Not a Match", "Bar"));
                 var xformer2 = new Transformer<double>(Tuple.Create(42.0, 84.0));
 
-                var toTest = RowFactory<MultipleChecker>.Create();
+                var toTest = new ComplexTypeRowFactory<MultipleChecker>();
                 var res    = toTest.ParseRows(reader, new IDataTransformer[] { xformer1, xformer2 }, CancellationToken.None);
 
                 res.Should().ContainSingle().Which
@@ -604,7 +605,7 @@ namespace CodeOnlyTests.RowFactory
                 var xformer2 = new Transformer<int>(Tuple.Create(99, 33));
                 var xformer3 = new Transformer<double>(Tuple.Create(42.0, 45.0));
 
-                var toTest = RowFactory<SingleResultSet>.Create();
+                var toTest = new ComplexTypeRowFactory<SingleResultSet>();
                 var res    = toTest.ParseRows(reader, new IDataTransformer[] { xformer1, xformer2, xformer3 }, CancellationToken.None);
 
                 res.Should().ContainSingle().Which
@@ -632,7 +633,7 @@ namespace CodeOnlyTests.RowFactory
                 }; 
 
                 var reader = CreateDataReader(data);
-                var toTest = RowFactory<Row>.Create().ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
+                var toTest = new ComplexTypeRowFactory<Row>().ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
                 toTest.Single().Should().NotBeNull("one row should have been returned")
                       .And.BeOfType<Row>()
@@ -654,7 +655,7 @@ namespace CodeOnlyTests.RowFactory
                 }; 
 
                 var reader = CreateDataReader(data);
-                var toTest = RowFactory<Row>.Create().ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
+                var toTest = new ComplexTypeRowFactory<Row>().ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
                 toTest.Single().Should().NotBeNull("one row should have been returned")
                       .And.BeOfType<Row>()
@@ -674,7 +675,7 @@ namespace CodeOnlyTests.RowFactory
                 };
 
                 var reader = CreateDataReader(data);
-                var toTest = RowFactory<Row>.Create();
+                var toTest = new ComplexTypeRowFactory<Row>();
 
                 toTest.Invoking(t => t.ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None))
                       .ShouldThrow<StoredProcedureResultsException>("not all columns are returned")
@@ -692,7 +693,7 @@ namespace CodeOnlyTests.RowFactory
                 };
 
                 var reader = CreateDataReader(data);
-                var toTest = RowFactory<Row>.Create();
+                var toTest = new ComplexTypeRowFactory<Row>();
 
                 toTest.Invoking(t => t.ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None))
                       .ShouldThrow<StoredProcedureColumnException>("because the property result type does not match")
@@ -710,7 +711,7 @@ namespace CodeOnlyTests.RowFactory
                 };
 
                 var reader = CreateDataReader(data);
-                var toTest = RowFactory<Row>.Create();
+                var toTest = new ComplexTypeRowFactory<Row>();
 
                 toTest.Invoking(t => t.ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None))
                       .ShouldThrow<StoredProcedureColumnException>("because the property result type does not match")
@@ -729,7 +730,7 @@ namespace CodeOnlyTests.RowFactory
                 };
 
                 var reader = CreateDataReader(data);
-                var toTest = RowFactory<Row>.Create().ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
+                var toTest = new ComplexTypeRowFactory<Row>().ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
                 toTest.Single().Should().NotBeNull("one row should have been returned")
                       .And.BeOfType<Row>()
@@ -752,7 +753,7 @@ namespace CodeOnlyTests.RowFactory
                     };
 
                     var reader = CreateDataReader(data);
-                    var toTest = RowFactory<Interface>.Create().ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
+                    var toTest = new ComplexTypeRowFactory<Interface>().ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
                     toTest.Single().Should().NotBeNull("one row should have been returned")
                           .And.BeOfType<InterfaceImpl>()
@@ -768,7 +769,7 @@ namespace CodeOnlyTests.RowFactory
                         { "Value", 42 }
                     });
 
-                var toTest = RowFactory<WithStrongTypedDataTransformer>.Create().ParseRows(
+                var toTest = new ComplexTypeRowFactory<WithStrongTypedDataTransformer>().ParseRows(
                     reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
                 
                 toTest.Single().Should().NotBeNull("one row should have been returned")
@@ -783,7 +784,7 @@ namespace CodeOnlyTests.RowFactory
                         { "FooBar", 4L }
                     });
 
-                var toTest = RowFactory<EnumValue>.Create();
+                var toTest = new ComplexTypeRowFactory<EnumValue>();
                 
                 toTest.Invoking(t => t.ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None))
                       .ShouldThrow<StoredProcedureColumnException>("the stored procedure returns a different type than the underlying type of the enum.");
@@ -797,7 +798,7 @@ namespace CodeOnlyTests.RowFactory
                         { "FooBar", 4L }
                     });
 
-                var toTest = RowFactory<EnumValueTypesConverted>.Create().ParseRows(
+                var toTest = new ComplexTypeRowFactory<EnumValueTypesConverted>().ParseRows(
                     reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
                 toTest.Single().Should().NotBeNull("one row should have been returned")
@@ -816,7 +817,7 @@ namespace CodeOnlyTests.RowFactory
                 xformer.Setup(x => x.Transform(FooBar.Foo, It.IsAny<IEnumerable<Attribute>>()))
                        .Returns(FooBar.Bar);
 
-                var toTest = RowFactory<EnumValueTypesConverted>.Create().ParseRows(
+                var toTest = new ComplexTypeRowFactory<EnumValueTypesConverted>().ParseRows(
                     reader, new[] { xformer.Object }, CancellationToken.None);
 
                 toTest.Single().Should().NotBeNull("one row should have been returned")
@@ -838,7 +839,7 @@ namespace CodeOnlyTests.RowFactory
                 xformer.Setup(x => x.Transform(FooBar.Foo, It.IsAny<IEnumerable<Attribute>>()))
                        .Returns(FooBar.Bar);
 
-                var toTest = RowFactory<EnumValueTypesConverted>.Create().ParseRows(
+                var toTest = new ComplexTypeRowFactory<EnumValueTypesConverted>().ParseRows(
                     reader, new[] { xformer.Object }, CancellationToken.None);
 
                 toTest.Single().Should().NotBeNull("one row should have been returned")
@@ -856,7 +857,7 @@ namespace CodeOnlyTests.RowFactory
                         { "IsEnabled", 1 }
                     });
 
-                var toTest = RowFactory<ConvertToBool>.Create().ParseRows(
+                var toTest = new ComplexTypeRowFactory<ConvertToBool>().ParseRows(
                     reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
                 toTest.Should().ContainSingle("because one row is returned").Which
@@ -871,7 +872,7 @@ namespace CodeOnlyTests.RowFactory
                         { "IsEnabled", 0 }
                     });
 
-                var toTest = RowFactory<ConvertToBool>.Create().ParseRows(
+                var toTest = new ComplexTypeRowFactory<ConvertToBool>().ParseRows(
                     reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
                 toTest.Should().ContainSingle("because one row is returned").Which
@@ -886,7 +887,7 @@ namespace CodeOnlyTests.RowFactory
                         { "IsEnabled", 1 }
                     }, true);
 
-                var toTest = RowFactory<ConvertToBool>.Create().ParseRows(
+                var toTest = new ComplexTypeRowFactory<ConvertToBool>().ParseRows(
                     reader, new[] { Mock.Of<IDataTransformer>() }, CancellationToken.None);
 
                 toTest.Should().ContainSingle("because one row is returned").Which
@@ -901,7 +902,7 @@ namespace CodeOnlyTests.RowFactory
                         { "IsEnabled", 0L }
                     }, true);
 
-                var toTest = RowFactory<ConvertToBool>.Create().ParseRows(
+                var toTest = new ComplexTypeRowFactory<ConvertToBool>().ParseRows(
                     reader, new[] { Mock.Of<IDataTransformer>() }, CancellationToken.None);
 
                 toTest.Should().ContainSingle("because one row is returned").Which
@@ -920,7 +921,7 @@ namespace CodeOnlyTests.RowFactory
                 xformer.Setup(x => x.Transform(false, It.IsAny<IEnumerable<Attribute>>()))
                        .Returns(true);
 
-                var toTest = RowFactory<ConvertToBool>.Create().ParseRows(
+                var toTest = new ComplexTypeRowFactory<ConvertToBool>().ParseRows(
                     reader, new[] { xformer.Object }, CancellationToken.None);
 
                 toTest.Should().ContainSingle("because one row is returned").Which
@@ -935,7 +936,7 @@ namespace CodeOnlyTests.RowFactory
                         { "IsEnabled", 0L }
                     }, true);
 
-                var toTest = RowFactory<ConvertToBool>.Create().ParseRows(
+                var toTest = new ComplexTypeRowFactory<ConvertToBool>().ParseRows(
                     reader, new[] { Mock.Of<IDataTransformer<bool>>() }, CancellationToken.None);
 
                 toTest.Should().ContainSingle("because one row is returned").Which
@@ -950,7 +951,7 @@ namespace CodeOnlyTests.RowFactory
                         { "IsEnabled", 1M }
                     });
 
-                var toTest = RowFactory<ConvertToNullableBool>.Create().ParseRows(
+                var toTest = new ComplexTypeRowFactory<ConvertToNullableBool>().ParseRows(
                     reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
                 toTest.Should().ContainSingle("because one row is returned").Which
@@ -966,7 +967,7 @@ namespace CodeOnlyTests.RowFactory
                     }, true);
                 Mock.Get(reader).Setup(rdr => rdr.GetFieldType(0)).Returns(typeof(int));
 
-                var toTest = RowFactory<ConvertToNullableBool>.Create().ParseRows(
+                var toTest = new ComplexTypeRowFactory<ConvertToNullableBool>().ParseRows(
                     reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
                 toTest.Should().ContainSingle("because one row is returned").Which
@@ -981,7 +982,7 @@ namespace CodeOnlyTests.RowFactory
                         { "IsEnabled", 0 }
                     });
 
-                var toTest = RowFactory<ConvertToNullableBool>.Create().ParseRows(
+                var toTest = new ComplexTypeRowFactory<ConvertToNullableBool>().ParseRows(
                     reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
                 toTest.Should().ContainSingle("because one row is returned").Which
@@ -996,7 +997,7 @@ namespace CodeOnlyTests.RowFactory
                         { "IsEnabled", 1.0 }
                     }, true);
 
-                var toTest = RowFactory<ConvertToNullableBool>.Create().ParseRows(
+                var toTest = new ComplexTypeRowFactory<ConvertToNullableBool>().ParseRows(
                     reader, new[] { Mock.Of<IDataTransformer>() }, CancellationToken.None);
 
                 toTest.Should().ContainSingle("because one row is returned").Which
@@ -1011,7 +1012,7 @@ namespace CodeOnlyTests.RowFactory
                         { "IsEnabled", 0 }
                     }, true);
 
-                var toTest = RowFactory<ConvertToNullableBool>.Create().ParseRows(
+                var toTest = new ComplexTypeRowFactory<ConvertToNullableBool>().ParseRows(
                     reader, new[] { Mock.Of<IDataTransformer>() }, CancellationToken.None);
 
                 toTest.Should().ContainSingle("because one row is returned").Which
@@ -1027,7 +1028,7 @@ namespace CodeOnlyTests.RowFactory
                     }, true);
                 Mock.Get(reader).Setup(rdr => rdr.GetFieldType(0)).Returns(typeof(short));
 
-                var toTest = RowFactory<ConvertToNullableBool>.Create().ParseRows(
+                var toTest = new ComplexTypeRowFactory<ConvertToNullableBool>().ParseRows(
                     reader, new[] { Mock.Of<IDataTransformer>() }, CancellationToken.None);
 
                 toTest.Should().ContainSingle("because one row is returned").Which
@@ -1042,7 +1043,7 @@ namespace CodeOnlyTests.RowFactory
                         { "Value", true }
                     });
 
-                var toTest = RowFactory<ConvertToInt>.Create().ParseRows(
+                var toTest = new ComplexTypeRowFactory<ConvertToInt>().ParseRows(
                     reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
                 toTest.Should().ContainSingle("because one row is returned").Which
@@ -1057,7 +1058,7 @@ namespace CodeOnlyTests.RowFactory
                         { "Value", false }
                     });
 
-                var toTest = RowFactory<ConvertToInt>.Create().ParseRows(
+                var toTest = new ComplexTypeRowFactory<ConvertToInt>().ParseRows(
                     reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
                 toTest.Should().ContainSingle("because one row is returned").Which

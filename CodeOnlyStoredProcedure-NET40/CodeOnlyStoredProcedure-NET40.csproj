@@ -185,11 +185,26 @@
     <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\AccessorFactoryBase.cs">
       <Link>RowFactory\AccessorFactoryBase.cs</Link>
     </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\ComplexTypeRowFactory.cs">
+      <Link>RowFactory\ComplexTypeRowFactory.cs</Link>
+    </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\EnumAccessorFactory.cs">
       <Link>RowFactory\EnumAccessorFactory.cs</Link>
     </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\EnumRowFactory.cs">
+      <Link>RowFactory\EnumRowFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\ExpandoObjectRowFactory.cs">
+      <Link>RowFactory\ExpandoObjectRowFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\HierarchicalTypeRowFactory.cs">
+      <Link>RowFactory\HierarchicalTypeRowFactory.cs</Link>
+    </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\RowFactory.cs">
       <Link>RowFactory\RowFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\SimpleTypeRowFactory.cs">
+      <Link>RowFactory\SimpleTypeRowFactory.cs</Link>
     </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\ValueAccessorFactory.cs">
       <Link>RowFactory\ValueAccessorFactory.cs</Link>

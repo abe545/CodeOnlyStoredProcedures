@@ -68,7 +68,7 @@ namespace CodeOnlyTests.RowFactory
                 reader.Setup(r => r.GetName(It.IsAny<int>()))
                       .Returns((int i) => keys[i]);
 
-                var toTest = RowFactory<dynamic>.Create();
+                var toTest = new ExpandoObjectRowFactory<dynamic>();
 
                 var res = toTest.ParseRows(reader.Object, new IDataTransformer[0], CancellationToken.None).ToList();
 

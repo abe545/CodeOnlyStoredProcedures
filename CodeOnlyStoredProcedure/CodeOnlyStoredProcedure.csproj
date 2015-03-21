@@ -126,8 +126,13 @@
     <Compile Include="IDbConnectionExtensions.cs" />
     <Compile Include="OptionalResultAttribute.cs" />
     <Compile Include="RowFactory\AccessorFactoryBase.cs" />
+    <Compile Include="RowFactory\ComplexTypeRowFactory.cs" />
     <Compile Include="RowFactory\EnumAccessorFactory.cs" />
+    <Compile Include="RowFactory\EnumRowFactory.cs" />
+    <Compile Include="RowFactory\ExpandoObjectRowFactory.cs" />
+    <Compile Include="RowFactory\HierarchicalTypeRowFactory.cs" />
     <Compile Include="RowFactory\RowFactory.cs" />
+    <Compile Include="RowFactory\SimpleTypeRowFactory.cs" />
     <Compile Include="RowFactory\ValueAccessorFactory.cs" />
     <Compile Include="StoredProcedureParameters\IInputStoredProcedureParameter.cs" />
     <Compile Include="StoredProcedureParameters\IOutputStoredProcedureParameter.cs" />
