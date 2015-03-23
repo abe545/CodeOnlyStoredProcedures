@@ -22,7 +22,7 @@ namespace CodeOnlyTests.RowFactory
     public class ComplexTypeRowFactoryTests
     {
         [TestClass]
-        public class Parse
+        public class ParseRows
         {
             [TestMethod]
             public void CancelsWhenTokenCanceledBeforeExecuting()
@@ -1129,6 +1129,98 @@ namespace CodeOnlyTests.RowFactory
             }
         }
 
+        [TestClass]
+        public class MatchesColumns
+        {
+            [TestMethod]
+            public void SingleColumnMatches_SingleResultColumn()
+            {
+                int leftoverColumns;
+                var toTest = new ComplexTypeRowFactory<SingleColumn>();
+                var result = toTest.MatchesColumns(new[] { "Column" }, out leftoverColumns);
+
+                result.Should().BeTrue("because all required property columns were returned");
+                leftoverColumns.Should().Be(0, "because only one column exists, and it is used");
+            }
+
+            [TestMethod]
+            public void SingleColumnMatches_MultipleResultColumn()
+            {
+                int leftoverColumns;
+                var toTest = new ComplexTypeRowFactory<SingleColumn>();
+                var result = toTest.MatchesColumns(new[] { "Column", "Foo", "Bar" }, out leftoverColumns);
+
+                result.Should().BeTrue("because all required property columns were returned");
+                leftoverColumns.Should().Be(2, "because two of the result columns were not used");
+            }
+
+            [TestMethod]
+            public void SingleColumn_ReturnsFalse_IfDoesNotMatch()
+            {
+                int leftoverColumns;
+                var toTest = new ComplexTypeRowFactory<SingleColumn>();
+                var result = toTest.MatchesColumns(new[] { "Foo", "Bar" }, out leftoverColumns);
+
+                result.Should().BeFalse("because the required column is not in the results");
+                leftoverColumns.Should().Be(2, "because 2 of the columns do not match columns on the result");
+            }
+
+            [TestMethod]
+            public void RenamedColumn_ReturnsTrue_WhenDbColumnNameExists()
+            {
+                int leftoverColumns;
+                var toTest = new ComplexTypeRowFactory<RenamedColumn>();
+                var result = toTest.MatchesColumns(new[] { "MyRenamedColumn" }, out leftoverColumns);
+
+                result.Should().BeTrue("because the property's renamed column was returned");
+                leftoverColumns.Should().Be(0, "because only one column exists, and it is used");
+            }
+
+            [TestMethod]
+            public void OptionalColumn_ReturnsTrue_IfOptionalColumnNotPresent()
+            {
+                int leftoverColumns;
+                var toTest = new ComplexTypeRowFactory<WithOptional>();
+                var result = toTest.MatchesColumns(new[] { "Column" }, out leftoverColumns);
+
+                result.Should().BeTrue("because all required property columns were returned");
+                leftoverColumns.Should().Be(0, "because only one column exists, and it is used");
+            }
+
+            [TestMethod]
+            public void OptionalColumn_ReturnsFalse_IfRequiredColumnNotPresent()
+            {
+                int leftoverColumns;
+                var toTest = new ComplexTypeRowFactory<WithOptional>();
+                var result = toTest.MatchesColumns(new[] { "Optional" }, out leftoverColumns);
+
+                result.Should().BeFalse("because not all required property columns were returned");
+                leftoverColumns.Should().Be(0, "because only one column returned, and it is used");
+            }
+
+            [TestMethod]
+            public void OptionalColumn_ReturnsTrue_IfOptionalColumnIsPresent()
+            {
+                int leftoverColumns;
+                var toTest = new ComplexTypeRowFactory<WithOptional>();
+                var result = toTest.MatchesColumns(new[] { "Column", "Optional" }, out leftoverColumns);
+
+                result.Should().BeTrue("because all required property columns were returned");
+                leftoverColumns.Should().Be(0, "because only all columns returned are used");
+            }
+
+            [TestMethod]
+            public void ChildrenHierarchicalPropertyNames_NotRequired()
+            {
+                int leftoverColumns;
+                var toTest = new ComplexTypeRowFactory<WithChildren>();
+                var result = toTest.MatchesColumns(new[] { "Id" }, out leftoverColumns);
+
+                result.Should().BeTrue("because enumerable properties can't be set, and should be ignored");
+                leftoverColumns.Should().Be(0, "because only one column exists, and it is used");
+            }
+        }
+
         #region Test Helper Classes
         private class SingleResultSet
         {
@@ -1150,6 +1242,13 @@ namespace CodeOnlyTests.RowFactory
         {
             [Column("MyRenamedColumn")]
             public string Column { get; set; }
+        }
+
+        private class WithOptional
+        {
+            public string Column { get; set; }
+            [OptionalResult]
+            public string Optional { get; set; }
         }
 
         private class NullableColumns
@@ -1262,6 +1361,12 @@ namespace CodeOnlyTests.RowFactory
         {
             [ConvertNumeric]
             public double Value { get; set; }
+        }
+
+        private class WithChildren
+        {
+            public int Id { get; set; }
+            public IEnumerable<SingleColumn> Children { get; set; }
         }
 
         private class StaticValueAttribute : DataTransformerAttributeBase

@@ -83,5 +83,20 @@ namespace CodeOnlyTests.RowFactory
                 ((DateTime)item.Date)   .Should().Be(new DateTime(1982, 1, 31), "the Date column has this value");
             }
         }
+
+        [TestClass]
+        public class MatchesColumns
+        {
+            [TestMethod]
+            public void ReturnsTrueForAnyInput_WithZeroLeftoverColumns()
+            {
+                int leftover;
+                var toTest = new ExpandoObjectRowFactory<dynamic>();
+                var result = toTest.MatchesColumns(new[] { "String", "Double", "Decimal", "Int", "Long", "Date" }, out leftover);
+
+                result.Should().BeTrue("because any and all columns will be matched");
+                leftover.Should().Be(0, "because all columns get matched, none should be leftover");
+            }
+        }
     }
 }

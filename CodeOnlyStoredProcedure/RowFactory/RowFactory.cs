@@ -47,6 +47,10 @@ namespace CodeOnlyStoredProcedure
 
         public virtual bool MatchesColumns(IEnumerable<string> columnNames, out int leftoverColumns)
         {
+            // default behavior is that if there are any columns, this factory will work, but will only parse one of them
+            // SimpleTypeRowFactory, and EnumRowFactory follow this convention. Other RowFactory implementations will have
+            // more involved logic for determining what columns are leftover, and if these column names are enough to 
+            // satisfy all required columns of the objects they create.
             leftoverColumns = Math.Max(0, columnNames.Count() - 1);
             return columnNames.Any();
         }

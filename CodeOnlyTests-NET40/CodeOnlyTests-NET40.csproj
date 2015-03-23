@@ -128,6 +128,9 @@
     <Compile Include="..\CodeOnlyTests\RowFactory\HierarchicalTypeRowFactoryTests.cs">
       <Link>RowFactory\HierarchicalTypeRowFactoryTests.cs</Link>
     </Compile>
+    <Compile Include="..\CodeOnlyTests\RowFactory\RowFactoryTests.cs">
+      <Link>RowFactory\RowFactoryTests.cs</Link>
+    </Compile>
     <Compile Include="..\CodeOnlyTests\RowFactory\SimpleTypeRowFactoryTests.cs">
       <Link>RowFactory\SimpleTypeRowFactoryTests.cs</Link>
     </Compile>

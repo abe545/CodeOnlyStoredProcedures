@@ -13,7 +13,8 @@ namespace CodeOnlyStoredProcedure.RowFactory
         private static readonly ParameterExpression indexExpression      = Expression.Variable (typeof(int));
         private static readonly IEnumerable<Column> accessorsByColumnName;
         private static readonly Type                implType;
-        private static readonly ISet<string>        dbColumnNames;
+        private static readonly IEnumerable<string> dbColumnNames;
+        private static readonly IEnumerable<string> requiredColumnNames;
 
         static ComplexTypeRowFactory()
         {
@@ -21,7 +22,11 @@ namespace CodeOnlyStoredProcedure.RowFactory
                 implType = resultType;
 
             var props             = implType.GetResultPropertiesBySqlName();
-            dbColumnNames         = new HashSet<string>(props.Keys.ToArray());
+            dbColumnNames         = props.Keys.ToArray();
+            requiredColumnNames   = props.Where(kv => !kv.Value.GetCustomAttributes(false).OfType<OptionalResultAttribute>().Any())
+                                         .Where(kv => !kv.Value.PropertyType.IsEnumeratedType()) // child collections can't be required
+                                         .Select(kv => kv.Key)
+                                         .ToArray();
             accessorsByColumnName = props.Where(kv => !kv.Value.PropertyType.IsEnumeratedType())
                                          .Select(kv =>
                                          {
@@ -87,7 +92,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
         public override bool MatchesColumns(IEnumerable<string> columnNames, out int leftoverColumns)
         {
             leftoverColumns = columnNames.Except(dbColumnNames).Count();
-            return columnNames.All(dbColumnNames.Contains);
+            return requiredColumnNames.All(columnNames.Contains);
         }
 
         private class Column

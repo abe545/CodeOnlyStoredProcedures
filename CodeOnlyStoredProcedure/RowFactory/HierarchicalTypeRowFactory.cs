@@ -203,6 +203,12 @@ namespace CodeOnlyStoredProcedure.RowFactory
             }
         }
 
+        public override bool MatchesColumns(IEnumerable<string> columnNames, out int leftoverColumns)
+        {
+            // this code can only be executed through reflection, since the factory won't call it. 
+            throw new NotSupportedException("MatchesColumns should not be called for an HiearchicalTypeRowFactory.");
+        }
+
         protected override Func<IDataReader, T> CreateRowFactory(IDataReader reader, IEnumerable<IDataTransformer> xFormers)
         {
             // this code can only be executed through reflection, since the factory won't call it. 
