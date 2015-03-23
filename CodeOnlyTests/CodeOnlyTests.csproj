@@ -84,10 +84,8 @@
     <Compile Include="RowFactory\ExpandoObjectRowFactoryTests.cs" />
     <Compile Include="RowFactory\ComplexTypeRowFactoryTests.cs" />
     <Compile Include="RowFactory\HierarchicalTypeRowFactoryTests.cs" />
+    <Compile Include="RowFactory\RowFactoryTests.cs" />
     <Compile Include="RowFactory\SimpleTypeRowFactoryTests.cs" />
-    <Compile Include="StoredProcedureExtensionsTests.DoExecute.cs">
-      <DependentUpon>StoredProcedureExtensionsTests.cs</DependentUpon>
-    </Compile>
     <Compile Include="StoredProcedureExtensionsTests.WithDataTransformer.cs">
       <DependentUpon>StoredProcedureExtensionsTests.cs</DependentUpon>
     </Compile>

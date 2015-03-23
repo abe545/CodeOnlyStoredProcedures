@@ -1,14 +1,13 @@
-﻿using CodeOnlyStoredProcedure;
-using Microsoft.SqlServer.Server;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Moq;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using CodeOnlyStoredProcedure;
+using FluentAssertions;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 
 #if NET40
 namespace CodeOnlyTests.Net40
@@ -19,65 +18,127 @@ namespace CodeOnlyTests
     [TestClass]
     public partial class StoredProcedureExtensionsTests
     {
+        [TestMethod]
+        public void TestExecuteReturnsMultipleRowsInOneResultSet()
+        {
+            var reader = new Mock<IDataReader>();
+            var command = new Mock<IDbCommand>();
 
-        //[TestMethod]
-        //public void TestExecuteReturnsMultipleRowsInOneResultSet()
-        //{
-        //    var reader = new Mock<IDataReader>();
-        //    var command = new Mock<IDbCommand>();
+            command.Setup(d => d.ExecuteReader())
+                   .Returns(reader.Object);
 
-        //    command.Setup(d => d.ExecuteReader())
-        //           .Returns(reader.Object);
+            reader.SetupGet(r => r.FieldCount)
+                  .Returns(1);
 
-        //    reader.SetupGet(r => r.FieldCount)
-        //          .Returns(1);
+            var results = new[] { "Hello", ", ", "World!" };
 
-        //    var results = new[] { "Hello", ", ", "World!" };
+            int index = -1;
+            reader.Setup(r => r.Read())
+                  .Callback(() => ++index)
+                  .Returns(() => index < results.Length);
 
-        //    int index = -1;
-        //    reader.Setup(r => r.Read())
-        //          .Callback(() => ++index)
-        //          .Returns(() => index < results.Length);
+            reader.Setup(r => r.GetName(0))
+                  .Returns("Column");
+            reader.Setup(r => r.GetString(0)).Returns((int _) => results[index]);
+            reader.Setup(r => r.GetFieldType(0)).Returns(typeof(string));
 
-        //    reader.Setup(r => r.GetName(0))
-        //          .Returns("Column");
-        //    reader.Setup(r => r.GetValues(It.IsAny<object[]>()))
-        //          .Callback((object[] arr) => arr[0] = results[index])
-        //          .Returns(1);
+            var connection = new Mock<IDbConnection>();
+            connection.Setup(c => c.CreateCommand()).Returns(command.Object);
 
-        //    var res = command.Object.Execute(CancellationToken.None, new[] { typeof(SingleColumn) }, Enumerable.Empty<IDataTransformer>());
+            var sp = new StoredProcedure<SingleColumn>("foo");
+            var res = sp.Execute(connection.Object);
 
-        //    var toTest = (IList<SingleColumn>)res[0];
+            var idx = 0;
+            foreach (var toTest in res)
+                toTest.ShouldBeEquivalentTo(new SingleColumn { Column = results[idx++] });
+        }
 
-        //    Assert.AreEqual(3, toTest.Count);
+#if NET40
+        [TestMethod]
+        public void TestDoExecute_DoesNotExecuteMethodFromSameThreadWhenRunningInSynchronizationContext()
+        {
+            
+            var reader = new Mock<IDataReader>();
+            var command = new Mock<IDbCommand>();
+            var ctx = new TestSynchronizationContext();
 
-        //    for (int i = 0; i < results.Length; i++)
-        //    {
-        //        var item = toTest[i];
+            SynchronizationContext.SetSynchronizationContext(ctx);
 
-        //        Assert.AreEqual(results[i], item.Column);
-        //    }
-        //}
+            command.Setup(d => d.ExecuteReader())
+                   .Returns(reader.Object);
 
-        //[TestMethod]
-        //public void TestDoExecute_DoesNotExecuteMethodFromSameThreadWhenRunningInSynchronizationContext()
-        //{
-        //    var cmd = Mock.Of<IDbCommand>();
-        //    var ctx = new TestSynchronizationContext();
+            reader.SetupGet(r => r.FieldCount)
+                  .Returns(1);
 
-        //    SynchronizationContext.SetSynchronizationContext(ctx);
+            var results = new[] { "Hello", ", ", "World!" };
 
-        //    Task.Factory
-        //        .StartNew(() => "Hello, world!")
-        //        .ContinueWith(s => cmd.DoExecute(_ =>
-        //        {
-        //            Assert.AreNotEqual(ctx.Worker, Thread.CurrentThread, "Command called from the same thread as the reentrant Task.");
-        //            return 0;
-        //        }, CancellationToken.None), TaskScheduler.FromCurrentSynchronizationContext())
-        //        .Wait();
+            int index = -1;
+            reader.Setup(r => r.Read())
+                  .Callback(() => ++index)
+                  .Returns(() => index < results.Length);
 
-        //    SynchronizationContext.SetSynchronizationContext(null);
-        //}
+            reader.Setup(r => r.GetName(0))
+                  .Returns("Column");
+            reader.Setup(r => r.GetString(0)).Returns((int _) => results[index]);
+            reader.Setup(r => r.GetFieldType(0)).Returns(typeof(string));
+
+            var connection = new Mock<IDbConnection>();
+            connection.Setup(c => c.CreateCommand())
+                      .Callback(() => ctx.Worker.Should().NotBeSameAs(Thread.CurrentThread, "Command called from the same thread as the reentrant Task."))
+                      .Returns(command.Object);
+
+            var sp = new StoredProcedure<SingleColumn>("foo");
+            var res = sp.ExecuteAsync(connection.Object).Result;
+
+            var idx = 0;
+            foreach (var toTest in res)
+                toTest.ShouldBeEquivalentTo(new SingleColumn { Column = results[idx++] });
+
+            SynchronizationContext.SetSynchronizationContext(null);
+        }
+#else
+        [TestMethod]
+        public async Task TestDoExecute_DoesNotExecuteMethodFromSameThreadWhenRunningInSynchronizationContext()
+        {
+            var reader = new Mock<IDataReader>();
+            var command = new Mock<IDbCommand>();
+            var ctx = new TestSynchronizationContext();
+
+            SynchronizationContext.SetSynchronizationContext(ctx);
+
+            command.Setup(d => d.ExecuteReader())
+                   .Returns(reader.Object);
+
+            reader.SetupGet(r => r.FieldCount)
+                  .Returns(1);
+
+            var results = new[] { "Hello", ", ", "World!" };
+
+            int index = -1;
+            reader.Setup(r => r.Read())
+                  .Callback(() => ++index)
+                  .Returns(() => index < results.Length);
+
+            reader.Setup(r => r.GetName(0))
+                  .Returns("Column");
+            reader.Setup(r => r.GetString(0)).Returns((int _) => results[index]);
+            reader.Setup(r => r.GetFieldType(0)).Returns(typeof(string));
+
+            var connection = new Mock<IDbConnection>();
+            connection.Setup(c => c.CreateCommand())
+                      .Callback(() => ctx.Worker.Should().NotBeSameAs(Thread.CurrentThread, "Command called from the same thread as the reentrant Task."))
+                      .Returns(command.Object);
+
+            var sp = new StoredProcedure<SingleColumn>("foo");
+            var res = await sp.ExecuteAsync(connection.Object);
+
+            var idx = 0;
+            foreach (var toTest in res)
+                toTest.ShouldBeEquivalentTo(new SingleColumn { Column = results[idx++] });
+
+            SynchronizationContext.SetSynchronizationContext(null);
+        }
+#endif
 
         #region Test Helper Classes
         private class WithNamedParameter

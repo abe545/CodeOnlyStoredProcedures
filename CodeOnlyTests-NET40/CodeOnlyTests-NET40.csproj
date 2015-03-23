@@ -128,15 +128,14 @@
     <Compile Include="..\CodeOnlyTests\RowFactory\HierarchicalTypeRowFactoryTests.cs">
       <Link>RowFactory\HierarchicalTypeRowFactoryTests.cs</Link>
     </Compile>
+    <Compile Include="..\CodeOnlyTests\RowFactory\RowFactoryTests.cs">
+      <Link>RowFactory\RowFactoryTests.cs</Link>
+    </Compile>
     <Compile Include="..\CodeOnlyTests\RowFactory\SimpleTypeRowFactoryTests.cs">
       <Link>RowFactory\SimpleTypeRowFactoryTests.cs</Link>
     </Compile>
     <Compile Include="..\CodeOnlyTests\StoredProcedureExtensionsTests.cs">
       <Link>StoredProcedureExtensionsTests.cs</Link>
-    </Compile>
-    <Compile Include="..\CodeOnlyTests\StoredProcedureExtensionsTests.DoExecute.cs">
-      <Link>StoredProcedureExtensionsTests.DoExecute.cs</Link>
-      <DependentUpon>StoredProcedureExtensionsTests.cs</DependentUpon>
     </Compile>
     <Compile Include="..\CodeOnlyTests\StoredProcedureExtensionsTests.WithDataTransformer.cs">
       <Link>StoredProcedureExtensionsTests.WithDataTransformer.cs</Link>

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CodeOnlyStoredProcedure;
+using CodeOnlyStoredProcedure.RowFactory;
 using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
@@ -32,7 +33,7 @@ namespace CodeOnlyTests.RowFactory
                    .Returns(true)
                    .Returns(false);
 
-                var toTest = RowFactory<int>.Create();
+                var toTest = new SimpleTypeRowFactory<int>();
 
                 toTest.ParseRows(rdr.Object, Enumerable.Empty<IDataTransformer>(), CancellationToken.None)
                       .Single().Should().Be(42);
@@ -54,7 +55,7 @@ namespace CodeOnlyTests.RowFactory
                 xformer.Setup(x => x.Transform(99, typeof(int), false, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
                        .Returns(42);
 
-                var toTest = RowFactory<int>.Create();
+                var toTest = new SimpleTypeRowFactory<int>();
 
                 toTest.ParseRows(rdr.Object, new[] { xformer.Object }, CancellationToken.None)
                       .Single().Should().Be(42);
@@ -94,7 +95,7 @@ namespace CodeOnlyTests.RowFactory
                    .Returns("Foo")
                    .Returns("Bar");
 
-                var toTest = RowFactory<string>.Create();
+                var toTest = new SimpleTypeRowFactory<string>();
 
                 toTest.ParseRows(rdr.Object, Enumerable.Empty<IDataTransformer>(), CancellationToken.None)
                       .Should().ContainInOrder("Foo", null, "Bar");
@@ -115,7 +116,7 @@ namespace CodeOnlyTests.RowFactory
                 reader.Setup(r => r.GetFieldType(0)).Returns(typeof(Decimal));
                 reader.Setup(r => r.GetDecimal(0))  .Returns(42M);
 
-                var toTest = RowFactory<int>.Create();
+                var toTest = new SimpleTypeRowFactory<int>();
 
                 toTest.Invoking(f => f.ParseRows(reader.Object, new IDataTransformer[0], CancellationToken.None))
                       .ShouldThrow<StoredProcedureColumnException>()
@@ -137,7 +138,7 @@ namespace CodeOnlyTests.RowFactory
                    .ReturnsAsync(true)
                    .ReturnsAsync(false);
 
-                var toTest = RowFactory<int>.Create();
+                var toTest = new SimpleTypeRowFactory<int>();
 
                 var res = await toTest.ParseRowsAsync(rdr.Object, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
                 res.Single().Should().Be(42);
@@ -159,7 +160,7 @@ namespace CodeOnlyTests.RowFactory
                 xformer.Setup(x => x.Transform(99, typeof(int), false, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
                        .Returns(42);
 
-                var toTest = RowFactory<int>.Create();
+                var toTest = new SimpleTypeRowFactory<int>();
 
                 var res = await toTest.ParseRowsAsync(rdr.Object, new[] { xformer.Object }, CancellationToken.None);
                 res.Single().Should().Be(42);
@@ -199,7 +200,7 @@ namespace CodeOnlyTests.RowFactory
                    .Returns("Foo")
                    .Returns("Bar");
 
-                var toTest = RowFactory<string>.Create();
+                var toTest = new SimpleTypeRowFactory<string>();
 
                 var res = await toTest.ParseRowsAsync(rdr.Object, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
                 res.Should().ContainInOrder("Foo", null, "Bar");

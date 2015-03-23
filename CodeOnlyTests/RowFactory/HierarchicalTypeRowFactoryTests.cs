@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using CodeOnlyStoredProcedure;
+using CodeOnlyStoredProcedure.RowFactory;
 using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
@@ -33,7 +34,7 @@ namespace CodeOnlyTests.RowFactory
                 var cts = new CancellationTokenSource();
                 cts.Cancel();
 
-                var toTest = RowFactory<SolarSystem>.Create();
+                var toTest = new HierarchicalTypeRowFactory<SolarSystem>();
                 toTest.Invoking(f => f.ParseRows(reader.Object, Enumerable.Empty<IDataTransformer>(), cts.Token))
                       .ShouldThrow<OperationCanceledException>("the operation was cancelled");
 
@@ -66,7 +67,7 @@ namespace CodeOnlyTests.RowFactory
 
                 var cts = new CancellationTokenSource();
 
-                var toTest = RowFactory<SolarSystem>.Create();
+                var toTest = new HierarchicalTypeRowFactory<SolarSystem>();
                 var task = Task.Factory.StartNew(() => toTest.Invoking(f => f.ParseRows(reader.Object, Enumerable.Empty<IDataTransformer>(), cts.Token))
                                                              .ShouldThrow<OperationCanceledException>("the operation was cancelled"),
                                                  cts.Token);
@@ -94,7 +95,7 @@ namespace CodeOnlyTests.RowFactory
                         { "Name", "Earth" }
                     });
 
-                var toTest = RowFactory<SolarSystem>.Create();
+                var toTest = new HierarchicalTypeRowFactory<SolarSystem>();
                 var res = toTest.ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
                 res.Should().ContainSingle("because only one row was setup").Which
@@ -132,7 +133,7 @@ namespace CodeOnlyTests.RowFactory
                         { "Name", "Sol" }
                     });
 
-                var toTest = RowFactory<SolarSystem>.Create();
+                var toTest = new HierarchicalTypeRowFactory<SolarSystem>();
                 var res = toTest.ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
                 res.Should().ContainSingle("because only one row was setup").Which
@@ -175,7 +176,7 @@ namespace CodeOnlyTests.RowFactory
                         { "Name", "Earth" }
                     });
 
-                var toTest = RowFactory<Galaxy>.Create();
+                var toTest = new HierarchicalTypeRowFactory<Galaxy>();
                 var res = toTest.ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
                 res.Should().ContainSingle("because only one row was setup").Which
@@ -233,7 +234,7 @@ namespace CodeOnlyTests.RowFactory
                         { "Name", "The Known" }
                     });
 
-                var toTest = RowFactory<Universe>.Create();
+                var toTest = new HierarchicalTypeRowFactory<Universe>();
                 var res = toTest.ParseRows(reader, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
 
                 res.Should().ContainSingle("because only one row was setup").Which
@@ -300,7 +301,7 @@ namespace CodeOnlyTests.RowFactory
                         { "Name", "The Known" }
                     });
 
-                var toTest = RowFactory<Universe>.Create();
+                var toTest = new HierarchicalTypeRowFactory<Universe>();
                 var res = toTest.ParseRows(reader, new[] { Mock.Of<IDataTransformer>() }, CancellationToken.None);
 
                 res.Should().ContainSingle("because only one row was setup").Which

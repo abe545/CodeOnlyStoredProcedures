@@ -75,8 +75,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
                                                expectedType,
                                                convertNumeric);
 
-                foreach (var x in xFormers.OfType<IDataTransformer<T>>())
-                    body = Expression.Call(Expression.Constant(x, typeof(IDataTransformer<T>)), typedTransform.Value, body, attributeExpression);
+                AddTypedTransformers<T>(xFormers, attributeExpression, ref body);
             }
             else if (unboxedExpression == null || xFormers.Any())
             {

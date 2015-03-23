@@ -68,7 +68,7 @@ namespace CodeOnlyTests.RowFactory
                 reader.Setup(r => r.GetName(It.IsAny<int>()))
                       .Returns((int i) => keys[i]);
 
-                var toTest = RowFactory<dynamic>.Create();
+                var toTest = new ExpandoObjectRowFactory<dynamic>();
 
                 var res = toTest.ParseRows(reader.Object, new IDataTransformer[0], CancellationToken.None).ToList();
 
@@ -81,6 +81,21 @@ namespace CodeOnlyTests.RowFactory
                 ((int)     item.Int)    .Should().Be(99,                        "the Int column has this value");
                 ((long)    item.Long)   .Should().Be(1028130L,                  "the Long column has this value");
                 ((DateTime)item.Date)   .Should().Be(new DateTime(1982, 1, 31), "the Date column has this value");
+            }
+        }
+
+        [TestClass]
+        public class MatchesColumns
+        {
+            [TestMethod]
+            public void ReturnsTrueForAnyInput_WithZeroLeftoverColumns()
+            {
+                int leftover;
+                var toTest = new ExpandoObjectRowFactory<dynamic>();
+                var result = toTest.MatchesColumns(new[] { "String", "Double", "Decimal", "Int", "Long", "Date" }, out leftover);
+
+                result.Should().BeTrue("because any and all columns will be matched");
+                leftover.Should().Be(0, "because all columns get matched, none should be leftover");
             }
         }
     }

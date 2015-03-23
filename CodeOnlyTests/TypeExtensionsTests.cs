@@ -66,64 +66,6 @@ namespace CodeOnlyTests
         }
         #endregion
 
-        #region GetRequiredPropertyNames
-        [TestMethod]
-        public void TestGetRequiredPropertyNames_GetsAllPropertyNames()
-        {
-            typeof(Model).GetRequiredPropertyNames()
-                .Should().ContainInOrder(typeof(Model).GetProperties().Select(pi => pi.Name), "all public properties are required by default");
-        }
-
-        [TestMethod]
-        public void TestGetRequiredPropertyNames_DoesNotIncludeNotMappedProperties()
-        {
-            typeof(ModelNotMapped).GetRequiredPropertyNames()
-                .Should().ContainSingle(s => s == "Bar", "Bar is the only mapped property");
-        }
-
-        [TestMethod]
-        public void TestGetRequiredPropertyNames_DoesNotIncludeReadOnlyPropertiesWhenSpecified()
-        {
-            typeof(ModelReadOnlyProperty).GetRequiredPropertyNames()
-                .Should().ContainSingle(s => s == "Foo", "Foo is the only writeable property");
-        }
-
-        [TestMethod]
-        public void TestGetRequiredPropertyNames_DoesNotIncludePropertiesWithPrivateSettersWhenRequiresWritableSpecified()
-        {
-            typeof(ModelPrivateSetter).GetRequiredPropertyNames()
-                .Should().ContainSingle(s => s == "Foo", "Foo is the only property with a public setter");
-        }
-
-        [TestMethod]
-        public void TestGetRequiredPropertyNames_DoesNotIncludeWriteOnlyPropertiesWhenSpecified()
-        {
-            typeof(ModelWriteOnlyProperty).GetRequiredPropertyNames()
-                .Should().ContainSingle(s => s == "Foo", "Foo is the only readable property");
-        }
-
-        [TestMethod]
-        public void TestGetRequiredPropertyNames_DoesNotIncludePropertiesWithPrivateGetterWhenRequireReadableSpecified()
-        {
-            typeof(ModelPrivateGetter).GetRequiredPropertyNames()
-                .Should().ContainSingle(s => s == "Foo", "Foo is the only property with a public getter");
-        }
-
-        [TestMethod]
-        public void TestGetRequiredPropertyNames_DoesNotIncludeOptionalProperties()
-        {
-            typeof(WithOptionalProperty).GetRequiredPropertyNames()
-                .Should().ContainSingle(s => s == "Bar", "Foo is marked optional, so should not be included");
-        }
-
-        [TestMethod]
-        public void TestGetRequiredPropertyNames_GetsTheRenamedProperties()
-        {
-            typeof(RenamedProperties).GetRequiredPropertyNames()
-                .Should().Contain(new[] { "One", "Two", "Three" }, because: "the properties have been mapped to other columns in the result set");
-        }
-        #endregion
-
         #region GetResultPropertiesBySqlName
         [TestMethod]
         public void TestGetResultPropertiesBySqlName_GetsAllPublicPropertiesByName()

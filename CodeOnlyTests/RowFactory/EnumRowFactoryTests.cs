@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CodeOnlyStoredProcedure;
+using CodeOnlyStoredProcedure.RowFactory;
 using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
@@ -32,7 +33,7 @@ namespace CodeOnlyTests.RowFactory
                    .Returns(true)
                    .Returns(false);
 
-                var toTest = RowFactory<IntEnum>.Create();
+                var toTest = new EnumRowFactory<IntEnum>();
 
                 toTest.ParseRows(rdr.Object, Enumerable.Empty<IDataTransformer>(), CancellationToken.None)
                       .Single().Should().Be(IntEnum.One);
@@ -48,7 +49,7 @@ namespace CodeOnlyTests.RowFactory
                    .Returns(true)
                    .Returns(false);
 
-                var toTest = RowFactory<IntEnum>.Create();
+                var toTest = new EnumRowFactory<IntEnum>();
                 var xf = new Mock<IDataTransformer>();
                 xf.Setup(x => x.CanTransform(-1, typeof(IntEnum), false, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
                   .Returns(true);
@@ -69,7 +70,7 @@ namespace CodeOnlyTests.RowFactory
                    .Returns(true)
                    .Returns(false);
 
-                var toTest = RowFactory<UshortEnum>.Create();
+                var toTest = new EnumRowFactory<UshortEnum>();
 
                 toTest.ParseRows(rdr.Object, Enumerable.Empty<IDataTransformer>(), CancellationToken.None)
                       .Single().Should().Be(UshortEnum.Max);
@@ -85,7 +86,7 @@ namespace CodeOnlyTests.RowFactory
                    .Returns(true)
                    .Returns(false);
 
-                var toTest = RowFactory<UshortEnum>.Create();
+                var toTest = new EnumRowFactory<UshortEnum>();
                 var xf = new Mock<IDataTransformer>();
                 xf.Setup(x => x.CanTransform((short)-1, typeof(UshortEnum), false, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
                   .Returns(true);
@@ -165,7 +166,7 @@ namespace CodeOnlyTests.RowFactory
                    .Returns(true)
                    .Returns(false);
 
-                var toTest = RowFactory<IntEnum>.Create();
+                var toTest = new EnumRowFactory<IntEnum>();
 
                 toTest.ParseRows(rdr.Object, Enumerable.Empty<IDataTransformer>(), CancellationToken.None)
                       .Single().Should().Be(IntEnum.One);
@@ -181,7 +182,7 @@ namespace CodeOnlyTests.RowFactory
                    .Returns(true)
                    .Returns(false);
 
-                var toTest = RowFactory<FlagsEnum>.Create();
+                var toTest = new EnumRowFactory<FlagsEnum>();
 
                 toTest.ParseRows(rdr.Object, Enumerable.Empty<IDataTransformer>(), CancellationToken.None)
                       .Single().Should().Be(FlagsEnum.Red | FlagsEnum.Blue);
@@ -197,7 +198,7 @@ namespace CodeOnlyTests.RowFactory
                    .Returns(true)
                    .Returns(false);
 
-                var toTest = RowFactory<IntEnum>.Create();
+                var toTest = new EnumRowFactory<IntEnum>();
                 var xf = new Mock<IDataTransformer>();
                 xf.Setup(x => x.CanTransform("One", typeof(IntEnum), false, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
                   .Returns(true);
@@ -282,7 +283,7 @@ namespace CodeOnlyTests.RowFactory
                    .ReturnsAsync(true)
                    .ReturnsAsync(false);
 
-                var toTest = RowFactory<IntEnum>.Create();
+                var toTest = new EnumRowFactory<IntEnum>();
 
                 var res = await toTest.ParseRowsAsync(rdr.Object, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
                 res.Single().Should().Be(IntEnum.One);
@@ -298,7 +299,7 @@ namespace CodeOnlyTests.RowFactory
                    .ReturnsAsync(true)
                    .ReturnsAsync(false);
 
-                var toTest = RowFactory<UshortEnum>.Create();
+                var toTest = new EnumRowFactory<UshortEnum>();
 
                 var res = await toTest.ParseRowsAsync(rdr.Object, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
                 res.Single().Should().Be(UshortEnum.Max);
@@ -341,7 +342,7 @@ namespace CodeOnlyTests.RowFactory
                    .ReturnsAsync(true)
                    .ReturnsAsync(false);
 
-                var toTest = RowFactory<IntEnum>.Create();
+                var toTest = new EnumRowFactory<IntEnum>();
 
                 var res = await toTest.ParseRowsAsync(rdr.Object, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
                 res.Single().Should().Be(IntEnum.One);
