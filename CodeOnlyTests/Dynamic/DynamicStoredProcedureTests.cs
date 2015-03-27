@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using CodeOnlyStoredProcedure;
 using CodeOnlyStoredProcedure.Dynamic;
 using FluentAssertions;
+using Microsoft.CSharp.RuntimeBinder;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 
@@ -67,6 +68,54 @@ namespace CodeOnlyTests.Dynamic
                 IEnumerable<Person> people = toTest.usp_GetPeople();
 
                 Assert.AreEqual("Foo", people.Single().FirstName);
+            }
+
+            [TestMethod]
+            public void CanCastExplicitly()
+            {
+                var ctx = CreatePeople("Foo");
+
+                dynamic toTest = new DynamicStoredProcedure(ctx, transformers, CancellationToken.None);
+
+                var people = (IEnumerable<Person>)toTest.usp_GetPeople();
+
+                Assert.AreEqual("Foo", people.Single().FirstName);
+            }
+
+            [TestMethod]
+            public void CastingToWrongItemTypeThrows()
+            {
+                var ctx = CreatePeople("Foo");
+
+                dynamic toTest = new DynamicStoredProcedure(ctx, transformers, CancellationToken.None);
+
+                try
+                {
+                    var families = (IEnumerable<int>)toTest.usp_GetPeople();
+                    Assert.Fail("Casting a result set to the wrong item type should fail.");
+                }
+                catch (StoredProcedureColumnException)
+                {
+                    // expected
+                }
+            }
+
+            [TestMethod]
+            public void CastingToNonEnumeratedTypeThrows()
+            {
+                var ctx = CreatePeople("Foo");
+
+                dynamic toTest = new DynamicStoredProcedure(ctx, transformers, CancellationToken.None);
+
+                try
+                {
+                    var families = (Person)toTest.usp_GetPeople();
+                    Assert.Fail("Casting a result set to a single item type should fail.");
+                }
+                catch (RuntimeBinderException)
+                {
+                    // expected
+                }
             }
 
             [TestMethod]
@@ -457,6 +506,18 @@ namespace CodeOnlyTests.Dynamic
                 Assert.AreEqual("Foo", res.Single().FirstName);
             }
 
+            [TestMethod]
+            public async Task CanCastExplicitly()
+            {
+                var ctx = CreatePeople("Foo");
+
+                dynamic toTest = new DynamicStoredProcedure(ctx, transformers, CancellationToken.None);
+
+                var people = await (Task<IEnumerable<Person>>)toTest.usp_GetPeople();
+
+                Assert.AreEqual("Foo", people.Single().FirstName);
+            }
+
             private async Task<IEnumerable<Person>> GetPeopleInBackground(dynamic toTest)
             {
                 var entryThread = Thread.CurrentThread;
@@ -512,6 +573,18 @@ namespace CodeOnlyTests.Dynamic
         [TestClass]
         public class TaskSyntax : Asynchronous
         {
+            [TestMethod]
+            public void CanCastExplicitly()
+            {
+                var ctx = CreatePeople("Foo");
+
+                dynamic toTest = new DynamicStoredProcedure(ctx, transformers, CancellationToken.None);
+
+                var people = (Task<IEnumerable<Person>>)toTest.usp_GetPeople();
+
+                Assert.AreEqual("Foo", people.Result.Single().FirstName);
+            }
+
             protected override Task<IEnumerable<Person>> GetPeople(dynamic toTest)
             {
                 return toTest.usp_GetPeople();
