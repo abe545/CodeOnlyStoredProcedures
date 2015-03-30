@@ -156,7 +156,7 @@ namespace SmokeTests
                 wc.Headers["Accept"]       = "application/json";
                 wc.Headers["Content-type"] = "application/json";
 
-                Console.WriteLine("{0} {1} {3}", appveyor, verb, json);
+                Console.WriteLine("{0} {1} {2}", appveyor, verb, json);
                 wc.UploadData("api/tests", verb, Encoding.UTF8.GetBytes(json));
             }
         }
