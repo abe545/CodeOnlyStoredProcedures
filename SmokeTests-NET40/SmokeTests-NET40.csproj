@@ -113,6 +113,7 @@
       <HintPath>..\packages\Microsoft.Bcl.Async.1.0.168\lib\net40\Microsoft.Threading.Tasks.Extensions.Desktop.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Core" />
     <Reference Include="System.IO">
@@ -132,43 +133,20 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\SmokeTests\Program.AsyncTests.cs">
-      <Link>Program.AsyncTests.cs</Link>
-      <DependentUpon>Program.cs</DependentUpon>
+    <Compile Include="..\SmokeTests\DynamicSyntax.cs">
+      <Link>DynamicSyntax.cs</Link>
+    </Compile>
+    <Compile Include="..\SmokeTests\FluentSyntax.cs">
+      <Link>FluentSyntax.cs</Link>
     </Compile>
     <Compile Include="..\SmokeTests\Program.cs">
       <Link>Program.cs</Link>
     </Compile>
-    <Compile Include="..\SmokeTests\Program.GetExistingPeopleTests.cs">
-      <Link>Program.GetExistingPeopleTests.cs</Link>
-      <DependentUpon>Program.cs</DependentUpon>
-    </Compile>
-    <Compile Include="..\SmokeTests\Program.GetItemsTests.cs">
-      <Link>Program.GetItemsTests.cs</Link>
-      <DependentUpon>Program.cs</DependentUpon>
-    </Compile>
-    <Compile Include="..\SmokeTests\Program.GetItemTests.cs">
-      <Link>Program.GetItemTests.cs</Link>
-      <DependentUpon>Program.cs</DependentUpon>
-    </Compile>
-    <Compile Include="..\SmokeTests\Program.GetHierarchicalItemTests.cs">
-      <Link>Program.GetItemTests.cs</Link>
-      <DependentUpon>Program.cs</DependentUpon>
-    </Compile>
-    <Compile Include="..\SmokeTests\Program.GetSpokesTests.cs">
-      <Link>Program.GetSpokesTests.cs</Link>
-      <DependentUpon>Program.cs</DependentUpon>
-    </Compile>
-    <Compile Include="..\SmokeTests\Program.GetWidgetTests.cs">
-      <Link>Program.GetWidgetTests.cs</Link>
-      <DependentUpon>Program.cs</DependentUpon>
-    </Compile>
-    <Compile Include="..\SmokeTests\Program.ReturnsOneTests.cs">
-      <Link>Program.ReturnsOneTests.cs</Link>
-      <DependentUpon>Program.cs</DependentUpon>
-    </Compile>
     <Compile Include="..\SmokeTests\SmokeDb.cs">
       <Link>SmokeDb.cs</Link>
+    </Compile>
+    <Compile Include="..\SmokeTests\SmokeTestExtensions.cs">
+      <Link>SmokeTestExtensions.cs</Link>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="..\VersionInfo.cs">
