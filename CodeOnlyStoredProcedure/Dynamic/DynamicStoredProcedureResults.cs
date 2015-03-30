@@ -4,6 +4,7 @@ using System.Data;
 using System.Diagnostics.Contracts;
 using System.Dynamic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Threading;
@@ -170,106 +171,29 @@ namespace CodeOnlyStoredProcedure.Dynamic
             }
         }
 
-        public override bool TryInvokeMember(InvokeMemberBinder binder, object[] args, out object result)
+        public override DynamicMetaObject GetMetaObject(Expression parameter)
         {
-            switch (binder.Name)
-            {
-                case "ConfigureAwait":
-                    continueOnCaller = (bool)args[0];
-                    result           = this;
-                    return true;
-
-                case "GetAwaiter":
-                    if (executionMode == DynamicExecutionMode.Synchronous)
-                        throw new NotSupportedException(DynamicStoredProcedure.asyncParameterDirectionError);
-
-#if NET40
-                    result = Activator.CreateInstance(getCompletionType.Value, this, resultTask, continueOnCaller);
-#else
-                    result = new DynamicStoredProcedureResultsAwaiter(this, resultTask, continueOnCaller);
-#endif
-                    return true;
-
-                case "GetResult":
-                    // just return this object; we'll figure out the actual results 
-                    // in TryConvert
-                    result = this;
-                    return true;
-            }
-
-            return base.TryInvokeMember(binder, args, out result);
+            return new Meta(parameter, this);
         }
 
-        public override bool TryConvert(ConvertBinder binder, out object result)
+        private IEnumerable<T> GetResults<T>()
         {
-            var retType  = binder.ReturnType;
-            var taskType = typeof(Task);
-
-            if (taskType.IsAssignableFrom(retType))
-            {
-                if (executionMode == DynamicExecutionMode.Synchronous)
-                    throw new NotSupportedException(DynamicStoredProcedure.asyncParameterDirectionError);
-
-                if (retType == taskType)
-                {
-                    // this is just a Task (no results). Because of this, we can return a continuation
-                    // from our resultTask that does nothing.
-
-                    result = resultTask.ContinueWith(_ => { });
-                    return true;
-                }
-
-                // we are going to have to return a continuation from our task...
-                // first figure out what the result is.
-                retType = retType.GetGenericArguments().Single();
-                if (retType.IsEnumeratedType())
-                {
-                    // there is only one result set. Return it from a continuation.
-                    result = GetType().GetMethod("CreateSingleContinuation", BindingFlags.Instance | BindingFlags.NonPublic)
-                                      .MakeGenericMethod(retType.GetGenericArguments().Single())
-                                      .Invoke(this, new object[0]);
-                    return true;
-                }
-                else if (retType.FullName.StartsWith(tupleName) &&
-                         retType.GetGenericArguments().All(t => t.IsEnumeratedType()))
-                {
-                    // it is a tuple of enumerables
-                    result = CreateMultipleContinuation(retType.GetGenericArguments());
-                    return true;
-                }
-            }
-            else if (retType.IsEnumeratedType())
-            {
-                // there is only one result set. Return it
-                result = GetType().GetMethod("GetResults", BindingFlags.Instance | BindingFlags.NonPublic)
-                                      .MakeGenericMethod(retType.GetGenericArguments().Single())
-                                      .Invoke(this, new object[] { resultTask.Result });
-                return true;
-            }
-            else if (retType.FullName.StartsWith(tupleName) &&
-                     retType.GetGenericArguments().All(t => t.IsEnumeratedType()))
-            {
-                // it is a tuple of enumerables
-                result = GetMultipleResults(resultTask.Result, retType.GetGenericArguments());
-                return true;
-            }
-
-            return base.TryConvert(binder, out result);
-        }
-
-        private IEnumerable<T> GetResults<T>(IDataReader reader)
-        {
-            return RowFactory<T>.Create().ParseRows(reader, transformers, token);
+            var rdr = resultTask.Result;
+            return RowFactory<T>.Create().ParseRows(rdr, transformers, token);
         }
 
         private Task<IEnumerable<T>> CreateSingleContinuation<T>()
         {
-            return resultTask.ContinueWith(r => GetResults<T>(r.Result), token);
+            return resultTask.ContinueWith(_ => GetResults<T>(), token);
         }
 
-        private object GetMultipleResults(IDataReader reader, Type[] types)
+        private T GetMultipleResults<T>()
         {
-            Contract.Requires(types != null);
+            Contract.Ensures(Contract.Result<T>() != null);
+            
+            // no need to protect this index... We have already been asked to cast to a tuple type,
+            // so we know that there is a Create method with this many type parameters
+            var types = typeof(T).GetGenericArguments();
 
             // no need to protect this index... We have already been asked to cast to a tuple type,
             // so we know that there is a Create method with this many type parameters
@@ -279,30 +203,22 @@ namespace CodeOnlyStoredProcedure.Dynamic
             var res = innerTypes.Select((t, i) =>
                 {
                     if (i > 0)
-                        reader.NextResult();
+                        resultTask.Result.NextResult();
 
                     return GetType().GetMethod("GetResults", BindingFlags.Instance | BindingFlags.NonPublic)
                                     .MakeGenericMethod(t)
-                                    .Invoke(this, new object[] { reader });
+                                    .Invoke(this, new object[0]);
                 }).ToArray();
 
-            return create.MakeGenericMethod(types)
-                         .Invoke(null, res);
+            return (T)create.MakeGenericMethod(types)
+                            .Invoke(null, res);
         }
 
-        private Task CreateMultipleContinuation(Type[] types)
+        private Task<T> CreateMultipleContinuation<T>()
         {
-            Contract.Requires(types != null);
-            Contract.Ensures (Contract.Result<Task>() != null);
+            Contract.Ensures(Contract.Result<Task<T>>() != null);
 
-            // no need to protect this index... We have already been asked to cast to a tuple type,
-            // so we know that there is a Create method with this many type parameters
-            var create     = tupleCreates.Value[types.Length];
-            var parse      = create.MakeGenericMethod(types);
-            var tuple      = parse.ReturnType;
-            var innerTypes = types.Select(t => t.GetEnumeratedType()).ToArray();
-
-            var tcs = (ITaskCompleter)Activator.CreateInstance(typeof(TaskCompleter<>).MakeGenericType(tuple));
+            var tcs = new TaskCompletionSource<T>();
 
             resultTask.ContinueWith(r =>
                 {
@@ -311,44 +227,132 @@ namespace CodeOnlyStoredProcedure.Dynamic
                     else if (r.IsCanceled)
                         tcs.SetCanceled();
                     else
-                        tcs.SetResult(GetMultipleResults(r.Result, types));
+                        tcs.SetResult(GetMultipleResults<T>());
                 }, token);
 
             return tcs.Task;
         }
-
-        // this interface and generic implementation are annoyingly necessary. If TaskCompletionSource,
-        // is used directly, we get runtime exceptions about how object doesn't have a Task property.
-        private interface ITaskCompleter
+        
+        private object InternalConfigureAwait(bool continueOnCapturedContext)
         {
-            Task Task { get; }
-            void SetException(IEnumerable<Exception> exceptions);
-            void SetCanceled();
-            void SetResult(object result);
+            continueOnCaller = continueOnCapturedContext;
+            return this;
         }
 
-        private class TaskCompleter<T> : ITaskCompleter
+        private object InternalGetAwaiter()
         {
-            private readonly TaskCompletionSource<T> tcs = new TaskCompletionSource<T>();
+            if (executionMode == DynamicExecutionMode.Synchronous)
+                throw new NotSupportedException(DynamicStoredProcedure.asyncParameterDirectionError);
+#if NET40
+            return Activator.CreateInstance(getCompletionType.Value, this, resultTask, continueOnCaller);
+#else
+            return new DynamicStoredProcedureResultsAwaiter(this, resultTask, continueOnCaller);
+#endif
+        }
 
-            public Task Task
+        private class Meta : DynamicMetaObject
+        {
+            private  DynamicStoredProcedureResults results;
+
+            public Meta(Expression expression, DynamicStoredProcedureResults value)
+                : base(expression, BindingRestrictions.Empty, value)
             {
-                get { return tcs.Task; }
+                this.results = value;
             }
 
-            public void SetException(IEnumerable<Exception> exceptions)
+            public override DynamicMetaObject BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args)
             {
-                tcs.SetException(exceptions);
+                var instance = Expression.Convert(Expression, typeof(DynamicStoredProcedureResults));
+                var restrict = BindingRestrictions.GetTypeRestriction(Expression, typeof(DynamicStoredProcedureResults));
+
+                switch (binder.Name)
+                {
+                    case "ConfigureAwait":
+                        return new DynamicMetaObject(
+                            Expression.Call(instance,
+                                            typeof(DynamicStoredProcedureResults).GetMethod("InternalConfigureAwait", BindingFlags.Instance | BindingFlags.NonPublic),
+                                            args[0].Expression),
+                            restrict);
+
+                    case "GetAwaiter":
+                        return new DynamicMetaObject(
+                            Expression.Call(instance, typeof(DynamicStoredProcedureResults).GetMethod("InternalGetAwaiter", BindingFlags.Instance | BindingFlags.NonPublic)),
+                            restrict);
+
+                    case "GetResult":
+                        return new DynamicMetaObject(instance, restrict);
+                }
+
+                return base.BindInvokeMember(binder, args);
             }
 
-            public void SetCanceled()
+            public override DynamicMetaObject BindConvert(ConvertBinder binder)
             {
-                tcs.SetCanceled();
-            }
+                var instance = Expression.Convert(Expression, typeof(DynamicStoredProcedureResults));
+                var restrict = BindingRestrictions.GetTypeRestriction(Expression, typeof(DynamicStoredProcedureResults));
+                var retType  = binder.ReturnType;
+                var taskType = typeof(Task);
+                Expression e = null;
 
-            public void SetResult(object result)
-            {
-                tcs.SetResult((T)result);
+                if (taskType.IsAssignableFrom(retType))
+                {
+                    if (results.executionMode == DynamicExecutionMode.Synchronous)
+                        throw new NotSupportedException(DynamicStoredProcedure.asyncParameterDirectionError);
+
+                    if (retType == taskType)
+                    {
+                        // this is just a Task (no results). Because of this, we can return a continuation
+                        // from our resultTask that does nothing.
+                        return new DynamicMetaObject(Expression.Constant(results.resultTask.ContinueWith(_ => { })), restrict);
+                    }
+
+                    // we are going to have to return a continuation from our task...
+                    // first figure out what the result is.
+                    retType = retType.GetGenericArguments().Single();
+                    if (retType.IsEnumeratedType())
+                    {
+                        // there is only one result set. Return it from a continuation.
+
+                        var method = typeof(DynamicStoredProcedureResults)
+                            .GetMethod("CreateSingleContinuation", BindingFlags.Instance | BindingFlags.NonPublic)
+                            .MakeGenericMethod(retType.GetGenericArguments().Single());
+
+                        e = Expression.Call(instance, method);
+                    }
+                    else if (retType.FullName.StartsWith(tupleName) &&
+                             retType.GetGenericArguments().All(t => t.IsEnumeratedType()))
+                    {
+                        var method = typeof(DynamicStoredProcedureResults)
+                            .GetMethod("CreateMultipleContinuation", BindingFlags.Instance | BindingFlags.NonPublic)
+                            .MakeGenericMethod(retType);
+
+                        e = Expression.Call(instance, method);
+                    }
+                }
+                else if (retType.IsEnumeratedType())
+                {
+                    // there is only one result set. Return it
+                    var method = typeof(DynamicStoredProcedureResults)
+                        .GetMethod("GetResults", BindingFlags.Instance | BindingFlags.NonPublic)
+                        .MakeGenericMethod(retType.GetGenericArguments().Single());
+
+                    e = Expression.Call(instance, method);
+                }
+                else if (retType.FullName.StartsWith(tupleName) &&
+                         retType.GetGenericArguments().All(t => t.IsEnumeratedType()))
+                {
+                    // it is a tuple of enumerables
+                    var method = typeof(DynamicStoredProcedureResults)
+                        .GetMethod("GetMultipleResults", BindingFlags.Instance | BindingFlags.NonPublic)
+                        .MakeGenericMethod(retType);
+
+                    e = Expression.Call(instance, method);
+                }
+
+                if (e != null)
+                    return new DynamicMetaObject(e, restrict);
+
+                return base.BindConvert(binder);
             }
         }
     }

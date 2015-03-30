@@ -9,7 +9,7 @@ namespace CodeOnlyStoredProcedure.DataTransformation
     /// <summary>
     /// Trims all strings returned by the stored procedure.
     /// </summary>
-    public class TrimAllStringsTransformer : IDataTransformer
+    public class TrimAllStringsTransformer : IDataTransformer<string>
     {
         /// <summary>
         /// Returns true if both value is a string, and targetType is typeof(string).
@@ -40,11 +40,21 @@ namespace CodeOnlyStoredProcedure.DataTransformation
         /// <returns>The trimmed string.</returns>
         public object Transform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes)
         {
-            var str = (string)value;
-            if (string.IsNullOrWhiteSpace(str))
+            return Transform((string)value, propertyAttributes);
+        }
+        
+        /// <summary>
+        /// Trims the whitespace from the input string
+        /// </summary>
+        /// <param name="value">The string to trim</param>
+        /// <param name="propertyAttributes">The attributes applied to the property.</param>
+        /// <returns>The trimmed string.</returns>
+        public string Transform(string value, IEnumerable<Attribute> propertyAttributes)
+        {
+            if (string.IsNullOrWhiteSpace(value))
                 return string.Empty;
 
-            return str.Trim();
+            return value.Trim();
         }
     }
 }

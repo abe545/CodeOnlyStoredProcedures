@@ -20,6 +20,66 @@ The easiest way is to use the dynamic syntax:
 IEnumerable<Person> people = db.Execute().usp_GetPeople();
 ```
 
+#### What if my Stored Procedure returns multiple result sets?
+They will return a tuple:
+
+```cs
+Tuple<IEnumerable<Person>, IEnumerable<Family>> results = db.Execute().usp_GetFamilies();
+```
+
+#### But, they are hierarchical...
+The library will try to build the hierarchies for you, by following these rules
+
+1. The parent model should contain an enumerable property with the child type
+  * It can be an array - `Child[]`
+  * It can be any generic enumerable type - `IEnumerable<Child>`, `IList<Child>`, `ICollection<Child>`, etc.
+1. Each model should have a property named `Id` or `{ClassName}Id`
+  * If the property isn't named Id or `{ClassName}Id`, you can decorate the property that should be used as the Id with the KeyAttribute - `[Key] MyId { get; set; }`
+1. The child model should have a property named `{ParentClass}Id`
+  * If the child's foreign key isn't `{ParentClass}Id`, you should decorate the enumerable child property with the ForeignKeyAttribute - `[ForeignKey("MyParentId")] IEnumerable<Child> Children { get; set; }`
+
+For example, these would all work:
+
+```cs
+public class Parent
+{
+    public int Id { get; set; }
+    public IEnumerable<Child> Children { get; set; }
+}
+public class Child
+{
+    public int ParentId { get; set; }
+}
+```
+
+```cs
+public class Parent
+{
+    [Key]
+    public int Property { get; set; }
+    public IEnumerable<Child> Children { get; set; }
+}
+public class Child
+{
+    public int ParentId { get; set; }
+}
+```
+
+```cs
+public class Parent
+{
+    public int Id { get; set; }
+    [ForeignKey("ParentPropertyKey")]
+    public IEnumerable<Child> Children { get; set; }
+}
+public class Child
+{
+    public int ParentPropertyKey { get; set; }
+}
+```
+
+You can then get the hierarchical items like so: `IEnumerable<Parent> res = db.Execute().usp_GetParentsAndChildren();`
+
 #### Want it asynchronous?
 Just use `ExecuteAsync` it that way.
 

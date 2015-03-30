@@ -38,12 +38,31 @@ namespace CodeOnlyStoredProcedure
         object Transform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes);
     }
 
+    /// <summary>
+    /// Interface that transformers should implement when they only operate on a single type. When this interface is implemented,
+    /// and all other transformers are also strongly typed, then only this method will be called on the transformer. 
+    /// </summary>
+    /// <typeparam name="T">The type that this transformer operates on.</typeparam>
+    [ContractClass(typeof(IDataTransformerContract<>))]
+    public interface IDataTransformer<T> : IDataTransformer
+    {
+        /// <summary>
+        /// When implemented, transforms the input value in some way
+        /// </summary>
+        /// <param name="value">The input value to transform. This can either be directly from
+        /// the database, or the output from another transformer if multiple transformers are
+        /// setup.</param>
+        /// <param name="propertyAttributes">The attributes applied to the property.</param>
+        /// <returns>The transformed value</returns>
+        T Transform(T value, IEnumerable<Attribute> propertyAttributes);
+    }
+
     [ContractClassFor(typeof(IDataTransformer))]
     abstract class IDataTransformerContract : IDataTransformer
     {
         public bool CanTransform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes)
         {
-            Contract.Requires(targetType != null);
+            Contract.Requires(targetType         != null);
             Contract.Requires(propertyAttributes != null);
 
             return false;
@@ -51,11 +70,33 @@ namespace CodeOnlyStoredProcedure
 
         public object Transform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes)
         {
-            Contract.Requires(targetType != null);
+            Contract.Requires(targetType         != null);
             Contract.Requires(propertyAttributes != null);
             Contract.Requires(CanTransform(value, targetType, isNullable, propertyAttributes));
 
             return null;
         }
     }
+
+    [ContractClassFor(typeof(IDataTransformer<>))]
+    abstract class IDataTransformerContract<T> : IDataTransformer<T>
+    {
+        public T Transform(T value, IEnumerable<Attribute> propertyAttributes)
+        {
+            Contract.Requires(propertyAttributes != null);
+
+            return default(T);
+        }
+
+        bool IDataTransformer.CanTransform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes)
+        {
+            return false;
+        }
+
+        object IDataTransformer.Transform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes)
+        {
+            return null;
+        }
+    }
+
 }

@@ -340,25 +340,7 @@ public class StoredProcedureTemplate : Template
                 IDbConnection toClose;
                 var cmd = connection.CreateCommand(Schema, Name, timeout, out toClose);
                 var asyncCapable = cmd as DbCommand;
-                if (asyncCapable != null)
-					return ExecuteAsync(asyncCapable, toClose, token);
-				else
-				{
-					return Task.Factory.StartNew(() =>
-					{
-						<#+ GetResults(); #> results;
-						<#+ WriteReadResults("\t\t\t\t\t\t"); #>
-
-						cmd.Dispose();
-						if (toClose != null)
-							toClose.Close();
-
-						return results;
-					}, 
-					token,
-					TaskCreationOptions.None,
-					TaskScheduler.Default);
-				}
+                return ExecuteAsync(asyncCapable, toClose, token);
             }
 #endif
 

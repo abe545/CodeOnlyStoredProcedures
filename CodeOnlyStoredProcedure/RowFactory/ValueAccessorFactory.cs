@@ -10,16 +10,17 @@ namespace CodeOnlyStoredProcedure.RowFactory
 {
     internal class ValueAccessorFactory<T> : AccessorFactoryBase
     {
-        readonly IEnumerable<DataTransformerAttributeBase> transformers         = Enumerable.Empty<DataTransformerAttributeBase>();
-        readonly ParameterExpression                       boxedValueExpression = Expression.Variable(typeof(object), "value");
-        readonly ParameterExpression                       dataReaderExpression;
-        readonly Expression                                indexExpression;
-        readonly Expression                                boxedExpression;
-        readonly Expression                                unboxedExpression;
-        readonly Expression                                attributeExpression;
-        readonly string                                    errorMessage;
-        readonly string                                    propertyName;
-        readonly bool                                      convertNumeric;
+        static readonly Lazy<MethodInfo>                          typedTransform       = new Lazy<MethodInfo>(() => typeof(IDataTransformer<T>).GetMethod("Transform"));
+               readonly IEnumerable<DataTransformerAttributeBase> transformers         = Enumerable.Empty<DataTransformerAttributeBase>();
+               readonly ParameterExpression                       boxedValueExpression = Expression.Variable(typeof(object), "value");
+               readonly ParameterExpression                       dataReaderExpression;
+               readonly Expression                                indexExpression;
+               readonly Expression                                boxedExpression;
+               readonly Expression                                unboxedExpression;
+               readonly Expression                                attributeExpression;
+               readonly string                                    errorMessage;
+               readonly string                                    propertyName;
+               readonly bool                                      convertNumeric;
 
         public ValueAccessorFactory(ParameterExpression dataReaderExpression, Expression index, PropertyInfo propertyInfo, string columnName)
         {
@@ -51,7 +52,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
                 convertNumeric = attrs.OfType<ConvertNumericAttribute>().Any();
             }
 
-            unboxedExpression = CreateUnboxedRetrieval<T>(dataReaderExpression, index, transformers);
+            unboxedExpression = CreateUnboxedRetrieval<T>(dataReaderExpression, index, transformers, errorMessage);
         }
 
         public override Expression CreateExpressionToGetValueFromReader(IDataReader reader, IEnumerable<IDataTransformer> xFormers, Type dbColumnType)
@@ -62,7 +63,21 @@ namespace CodeOnlyStoredProcedure.RowFactory
             var        isNullable   = GetUnderlyingNullableType(ref expectedType);
             StripSignForDatabase(ref expectedType);
 
-            if (xFormers.Any() || unboxedExpression == null)
+            if (unboxedExpression != null && xFormers.All(IsTypedTransformer))
+            {
+                body = CreateTypedRetrieval<T>(dataReaderExpression,
+                                               indexExpression,
+                                               unboxedExpression,
+                                               transformers,
+                                               propertyName,
+                                               errorMessage,
+                                               dbColumnType,
+                                               expectedType,
+                                               convertNumeric);
+
+                AddTypedTransformers<T>(xFormers, attributeExpression, ref body);
+            }
+            else if (unboxedExpression == null || xFormers.Any())
             {
                 var exprs = new List<Expression>();
 
@@ -105,15 +120,15 @@ namespace CodeOnlyStoredProcedure.RowFactory
             }
             else
             {
-                if (dbColumnType != expectedType)
-                {
-                    if (convertNumeric)
-                        body = CreateUnboxedRetrieval<T>(dataReaderExpression, indexExpression, transformers, dbColumnType);
-                    else
-                        throw new StoredProcedureColumnException(type, dbColumnType, propertyName);
-                }
-                else
-                    body = unboxedExpression;
+                body = CreateTypedRetrieval<T>(dataReaderExpression,
+                                               indexExpression,
+                                               unboxedExpression,
+                                               transformers,
+                                               propertyName,
+                                               errorMessage,
+                                               dbColumnType,
+                                               expectedType,
+                                               convertNumeric);
             }
 
             return body;

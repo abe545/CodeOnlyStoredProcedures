@@ -23,6 +23,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmokeTests-NET40", "SmokeTe
 EndProject
 Project("{7CF6DF6D-3B04-46F8-A40B-537D21BCA0B4}") = "Documentation", "Documentation\Documentation.shfbproj", "{CFFB3E02-288C-4971-B373-3B7C812D35C1}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentation", "{83B3F35F-3954-4900-A1C8-97914D030C51}"
+	ProjectSection(SolutionItems) = preProject
+		readme.md = readme.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
