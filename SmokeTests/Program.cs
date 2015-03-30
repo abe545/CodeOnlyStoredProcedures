@@ -131,19 +131,19 @@ namespace SmokeTests
             var message = new StringBuilder();
             message.AppendLine("{");
 
-            message.AppendFormat("\t\"testName\": \"{0}\"", testName);
+            message.AppendFormat("\t\"testName\": \"{0}\",", testName);
             message.AppendLine();
-            message.AppendFormat("\t\"testFramework\": \"{0}\"", assemblyName);
+            message.AppendFormat("\t\"testFramework\": \"{0}\",", assemblyName);
             message.AppendLine();
             message.AppendFormat("\t\"outcome\": \"{0}\"", status);
-            message.AppendLine();
 
             foreach (var t in options)
             {
+                message.AppendLine(",");
                 message.AppendFormat("\t\"{0}\": \"{1}\"", t.Item1, t.Item2);
-                message.AppendLine();
             }
 
+            message.AppendLine();
             message.AppendLine("}");
 
             return message.ToString();
@@ -156,7 +156,6 @@ namespace SmokeTests
                 wc.Headers["Accept"]       = "application/json";
                 wc.Headers["Content-type"] = "application/json";
 
-                Console.WriteLine("{0} {1} {2}", appveyor, verb, json);
                 wc.UploadData("api/tests", verb, Encoding.UTF8.GetBytes(json));
             }
         }
