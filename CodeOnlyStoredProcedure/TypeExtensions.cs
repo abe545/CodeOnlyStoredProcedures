@@ -332,6 +332,9 @@ namespace CodeOnlyStoredProcedure
 
         private static void UnwrapNullable(ref Type type)
         {
+            Contract.Requires(type                             != null);
+            Contract.Ensures (Contract.ValueAtReturn(out type) != null);
+
             if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
                 type = type.GetGenericArguments()[0];
         }

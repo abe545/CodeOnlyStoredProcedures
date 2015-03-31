@@ -9,6 +9,7 @@ using CodeOnlyStoredProcedure.DataTransformation;
 
 namespace CodeOnlyStoredProcedure.RowFactory
 {
+    [ContractClass(typeof(AccessorFactoryBaseContract))]
     internal abstract class AccessorFactoryBase
     {
         private static Lazy<MethodInfo> isDbNull     = new Lazy<MethodInfo>(() => typeof(IDataRecord)     .GetMethod("IsDBNull"));
@@ -256,6 +257,15 @@ namespace CodeOnlyStoredProcedure.RowFactory
             Type                                      expectedDbType,
             bool                                      convertNumeric)
         {
+            Contract.Requires(dbReader          != null);
+            Contract.Requires(index             != null);
+            Contract.Requires(unboxedExpression != null);
+            Contract.Requires(xFormers          != null && Contract.ForAll(xFormers, x => x != null));
+            Contract.Requires(!string.IsNullOrWhiteSpace(propertyName));
+            Contract.Requires(!string.IsNullOrWhiteSpace(errorMessage));
+            Contract.Requires(dbType            != null);
+            Contract.Requires(expectedDbType    != null);
+
             if (dbType != expectedDbType)
             {
                 if (convertNumeric)
@@ -402,6 +412,11 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
         protected static void AddTypedTransformers<T>(IEnumerable<IDataTransformer> xFormers, Expression attributeExpression, ref Expression expr)
         {
+            Contract.Requires(xFormers                         != null);
+            Contract.Requires(attributeExpression              != null);
+            Contract.Requires(expr                             != null);
+            Contract.Ensures (Contract.ValueAtReturn(out expr) != null);
+
             foreach (var x in xFormers.OfType<IDataTransformer<T>>())
                 expr = Expression.Call(Expression.Constant(x), DataTransformerCache<T>.transform, expr, attributeExpression);
         }
@@ -409,6 +424,19 @@ namespace CodeOnlyStoredProcedure.RowFactory
         private static class DataTransformerCache<T>
         {
             public  static readonly MethodInfo transform = typeof(IDataTransformer<T>).GetMethod("Transform");
+        }
+    }
+
+    [ContractClassFor(typeof(AccessorFactoryBase))]
+    abstract class AccessorFactoryBaseContract : AccessorFactoryBase
+    {
+        public override Expression CreateExpressionToGetValueFromReader(IDataReader reader, IEnumerable<IDataTransformer> xFormers, Type dbColumnType)
+        {
+            Contract.Requires(reader                        != null);
+            Contract.Requires(xFormers                      != null && Contract.ForAll(xFormers, x => x != null));
+            Contract.Requires(dbColumnType                  != null);
+            Contract.Ensures (Contract.Result<Expression>() != null);
+            return null;
         }
     }
 }

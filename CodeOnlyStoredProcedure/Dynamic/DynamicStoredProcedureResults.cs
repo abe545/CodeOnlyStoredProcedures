@@ -252,11 +252,14 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
         private class Meta : DynamicMetaObject
         {
-            private  DynamicStoredProcedureResults results;
+            private readonly DynamicStoredProcedureResults results;
 
             public Meta(Expression expression, DynamicStoredProcedureResults value)
                 : base(expression, BindingRestrictions.Empty, value)
             {
+                Contract.Requires(expression != null);
+                Contract.Requires(value      != null);
+
                 this.results = value;
             }
 

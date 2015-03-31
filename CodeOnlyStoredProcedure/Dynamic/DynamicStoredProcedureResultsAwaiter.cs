@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.Contracts;
 using System.Dynamic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,6 +20,9 @@ namespace CodeOnlyStoredProcedure.Dynamic
             Task toWait,
             bool continueOnCaller)
         {
+            Contract.Requires(results != null);
+            Contract.Requires(toWait  != null);
+
             this.results          = results;
             this.toWait           = toWait;
             this.continueOnCaller = continueOnCaller;
@@ -48,9 +52,6 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
         public virtual void OnCompleted(Action continuation)
         {
-            if (continuation == null)
-                throw new ArgumentNullException("continuation");
-
             var sc            = continueOnCaller ? SynchronizationContext.Current : null;
             var taskScheduler = continueOnCaller ? TaskScheduler         .Current : TaskScheduler.Default;
 

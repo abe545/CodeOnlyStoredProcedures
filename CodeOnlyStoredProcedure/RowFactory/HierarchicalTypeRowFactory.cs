@@ -6,6 +6,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Data.Common;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -98,6 +99,9 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
         private static PropertyInfo GetKeyProperty(string className, IEnumerable<PropertyInfo> props)
         {
+            Contract.Requires(!string.IsNullOrWhiteSpace(className));
+            Contract.Requires(props != null && Contract.ForAll(props, p => p != null));
+
             var explicitKey = props.Where(p => Attribute.GetCustomAttribute(p, typeof(KeyAttribute)) != null).SingleOrDefault();
             if (explicitKey != null)
                 return explicitKey;
@@ -162,6 +166,9 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
         private static IRowFactory GetNextBestFactory(IDataReader reader, List<IRowFactory> toRead, CancellationToken token, ref bool isFirst)
         {
+            Contract.Requires(reader != null);
+            Contract.Requires(toRead != null && Contract.ForAll(toRead, f => f != null));
+
             token.ThrowIfCancellationRequested();
 
             if (isFirst)

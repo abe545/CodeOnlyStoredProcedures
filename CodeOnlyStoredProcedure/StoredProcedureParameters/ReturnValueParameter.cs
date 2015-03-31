@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Data;
+using System.Diagnostics.Contracts;
 
 namespace CodeOnlyStoredProcedure
 {
@@ -14,6 +15,8 @@ namespace CodeOnlyStoredProcedure
 
         public ReturnValueParameter(Action<int> action)
         {
+            Contract.Requires(action != null);
+
             this.action = action;
         }
 
