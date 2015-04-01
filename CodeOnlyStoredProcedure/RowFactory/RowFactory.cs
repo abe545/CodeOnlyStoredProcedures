@@ -35,7 +35,7 @@ namespace CodeOnlyStoredProcedure
                 return new ExpandoObjectRowFactory<T>();
 
             if (itemType.IsGenericType && itemType.GetGenericTypeDefinition() == typeof(Nullable<>))
-                itemType = itemType.GetGenericArguments()[0];
+                itemType = itemType.GetGenericArguments().Single();
 
             if (itemType.IsEnum)
                 return new EnumRowFactory<T>();
