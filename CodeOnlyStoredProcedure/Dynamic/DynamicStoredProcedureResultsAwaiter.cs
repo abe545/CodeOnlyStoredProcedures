@@ -52,14 +52,13 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
         // this has to be a virtual method for the .NET 4.0 async await implementation to work. Since the 
         // INotifyCompletion interface can be patched in with the Async Targeting Pack, this method needs
-        // to be declared virtual in .NET 4.0, so the method can be associated with the interface.
+        // to be declared virtual in .NET 4.0, so the method can be associated with the interface in the 
+        // dynamically created class (found in DynamicStoredProcedureResults).
 #if NET40
         virtual
 #endif
         public void OnCompleted(Action continuation)
         {
-            Contract.Requires(continuation != null);
-
             var sc            = continueOnCaller ? SynchronizationContext.Current : null;
             var taskScheduler = continueOnCaller ? TaskScheduler         .Current : TaskScheduler.Default;
 
