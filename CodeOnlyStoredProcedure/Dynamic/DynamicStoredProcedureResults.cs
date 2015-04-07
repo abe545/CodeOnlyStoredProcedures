@@ -54,16 +54,11 @@ namespace CodeOnlyStoredProcedure.Dynamic
                 var mod  = ab.DefineDynamicModule("CodeOnlyStoredProcedures.Net40Async");
                 var type = mod.DefineType("DynamicStoredProcedureResultsAwaiterImpl", 
                                           TypeAttributes.Class | TypeAttributes.NotPublic,
-                                          baseType,
-                                          new[] { ifaceType });
+                                          baseType);
 
-                var comp = type.DefineMethod("OnCompleted", MethodAttributes.Public, typeof(void), new[] { typeof(Action) });
-                var il   = comp.GetILGenerator();
-
-                il.Emit(OpCodes.Ldarg_0); // push "this"
-                il.Emit(OpCodes.Ldarg_1); // push continuation Action
-                il.Emit(OpCodes.Call, baseType.GetMethod("OnCompleted"));
-                il.Emit(OpCodes.Ret);
+                // we add this interface here instead of in the DefineType method, because this will automatically 
+                // associate the base type's OnCompleted method as the implementing method; DefineType doesn't do so.
+                type.AddInterfaceImplementation(ifaceType);
 
                 var ctorArgs = new[] 
                                {
@@ -73,13 +68,13 @@ namespace CodeOnlyStoredProcedure.Dynamic
                                };
 
                 var ctor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, ctorArgs);
-                il       = ctor.GetILGenerator();
+                var il   = ctor.GetILGenerator();
                 
                 il.Emit(OpCodes.Ldarg_0); // push "this"
                 il.Emit(OpCodes.Ldarg_1); // push the rest of the parameters
                 il.Emit(OpCodes.Ldarg_2);
                 il.Emit(OpCodes.Ldarg_3);
-                il.Emit(OpCodes.Call, baseType.GetConstructor(ctorArgs));
+                il.Emit(OpCodes.Call, baseType.GetConstructor(ctorArgs)); // call the base ctor
                 il.Emit(OpCodes.Ret);
 
                 return type.CreateType();
