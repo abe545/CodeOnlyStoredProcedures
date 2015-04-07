@@ -6,21 +6,24 @@ namespace CodeOnlyStoredProcedure.Dynamic
 {
     internal static class Extensions
     {
-        public static void RunNoException(this Action action)
+        public static void RunNoException(this Action action, SynchronizationContext targetContext = null)
         {
             Contract.Requires(action != null);
 
             try
             {
-                action();
+                if (targetContext == null)
+                    action();
+                else
+                    targetContext.Post(o => ((Action)o)(), action);
             }
             catch (Exception ex)
             {
-                ThrowAsync(ex, null);
+                ThrowAsync(ex, targetContext);
             }
         }
 
-        public static void ThrowAsync(this Exception exception, SynchronizationContext targetContext)
+        private static void ThrowAsync(this Exception exception, SynchronizationContext targetContext)
         {
             Contract.Requires(exception != null);
 

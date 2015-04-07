@@ -82,7 +82,7 @@ namespace CodeOnlyStoredProcedure
         {
             get
             {
-                if (parameters == null || parameters.Length == 0)
+                if (parameters.Length == 0)
                     return string.Empty;
 
                 return Parameters.Aggregate("", (s, p) => s == "" ? p.ToString() : s + ", " + p.ToString());
@@ -379,7 +379,7 @@ namespace CodeOnlyStoredProcedure
         /// <returns>The string representation of this StoredProcedure.</returns>
         public override string ToString()
         {
-            if (parameters == null || parameters.Length == 0)
+            if (parameters.Length == 0)
                 return FullName;
 
             return string.Format("{0}({1})", FullName, Arguments);
@@ -402,6 +402,9 @@ namespace CodeOnlyStoredProcedure
         /// <returns>The <see cref="IDbDataParameter"/>s that were created.</returns>
         protected IDbDataParameter[] AddParameters(IDbCommand cmd)
         {
+            Contract.Requires(cmd != null);
+            Contract.Ensures (Contract.Result<IDbDataParameter[]>() != null);
+
             var dbParameters = new List<IDbDataParameter>();
             for (int i = 0; i < parameters.Length; i++)
             {
@@ -420,6 +423,8 @@ namespace CodeOnlyStoredProcedure
         /// <param name="dbParameters">The <see cref="IDbDataParameter"/>s that were passed to the stored procedure.</param>
         protected void TransferOutputParameters(CancellationToken token, IDbDataParameter[] dbParameters)
         {
+            Contract.Requires(dbParameters != null);
+
             foreach (var parm in dbParameters.Where(p => p.Direction != ParameterDirection.Input))
             {
                 token.ThrowIfCancellationRequested();

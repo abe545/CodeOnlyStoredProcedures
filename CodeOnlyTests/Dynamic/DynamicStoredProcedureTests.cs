@@ -503,7 +503,9 @@ namespace CodeOnlyTests.Dynamic
 
                 var res = GetPeopleInBackground(toTest).Result;
 
-                Assert.AreEqual("Foo", res.Single().FirstName);
+                res.Should()
+                   .ContainSingle("only one row should be returned")
+                   .Which.FirstName.Should().Be("Foo", "that is the FirstName of the item returned");
             }
 
             [TestMethod]
@@ -515,7 +517,38 @@ namespace CodeOnlyTests.Dynamic
 
                 var people = await (Task<IEnumerable<Person>>)toTest.usp_GetPeople();
 
-                Assert.AreEqual("Foo", people.Single().FirstName);
+                people.Should()
+                      .ContainSingle("only one row should be returned")
+                      .Which.FirstName.Should().Be("Foo", "that is the FirstName of the item returned");
+            }
+
+            [TestMethod]
+            public async Task CanConfigureAwait()
+            {
+                var lockr = new SemaphoreSlim(0);
+                int count = 0;
+                var sync  = new Mock<SynchronizationContext>();
+
+                sync.Setup(sc => sc.Post(It.IsAny<SendOrPostCallback>(), It.IsAny<object>()))
+                    .Callback<SendOrPostCallback, object>((c, o) =>
+                    {
+                        ++count;
+                        c(o);
+                    });
+
+                var oldContext = SynchronizationContext.Current;
+                SynchronizationContext.SetSynchronizationContext(sync.Object);
+
+                var ctx = CreatePeople(_ => lockr.Wait(TimeSpan.FromMilliseconds(100)), "Foo");
+                dynamic toTest = new DynamicStoredProcedure(ctx, transformers, CancellationToken.None);
+                IEnumerable<Person> res = await toTest.usp_GetPeople().ConfigureAwait(true);
+
+                SynchronizationContext.SetSynchronizationContext(oldContext);
+
+                res.Should()
+                   .ContainSingle("only one row should be returned")
+                   .Which.FirstName.Should().Be("Foo", "that is the FirstName of the item returned");
+                count.Should().Be(1, "the callback should be posted to the SynchronizationContext");
             }
 
             private async Task<IEnumerable<Person>> GetPeopleInBackground(dynamic toTest)

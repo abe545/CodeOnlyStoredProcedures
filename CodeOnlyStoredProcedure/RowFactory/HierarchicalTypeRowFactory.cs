@@ -6,6 +6,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Data.Common;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -31,10 +32,10 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
             var whereMethod = typeof(Enumerable).GetMethods()
                                                 .Where(mi => mi.Name == "Where" && 
-                                                                mi.GetParameters()[1].ParameterType.GetGenericTypeDefinition() == typeof(Func<,>))
+                                                             mi.GetParameters()[1].ParameterType.GetGenericTypeDefinition() == typeof(Func<,>))
                                                 .Single();
             var toArray = typeof(Enumerable).GetMethod("ToArray");
-            var toList = typeof(Enumerable).GetMethod("ToList");
+            var toList  = typeof(Enumerable).GetMethod("ToList");
 
             while (types.Count > 0)
             {
@@ -88,8 +89,9 @@ namespace CodeOnlyStoredProcedure.RowFactory
                 }
 
                 factories.Add(typeof(RowFactory<>).MakeGenericType(t)
-                                                    .GetMethod("Create", BindingFlags.NonPublic | BindingFlags.Static)
-                                                    .Invoke(null, new [] { falseObj }) as IRowFactory);
+                                                  .GetMethod("Create", BindingFlags.NonPublic | BindingFlags.Static)
+                                                  .Invoke(null, new [] { falseObj })
+                              as IRowFactory);
             }
 
             rowFactories   = new ReadOnlyCollection<IRowFactory>(factories);
@@ -98,6 +100,9 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
         private static PropertyInfo GetKeyProperty(string className, IEnumerable<PropertyInfo> props)
         {
+            Contract.Requires(!string.IsNullOrWhiteSpace(className));
+            Contract.Requires(props != null && Contract.ForAll(props, p => p != null));
+
             var explicitKey = props.Where(p => Attribute.GetCustomAttribute(p, typeof(KeyAttribute)) != null).SingleOrDefault();
             if (explicitKey != null)
                 return explicitKey;
@@ -162,6 +167,9 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
         private static IRowFactory GetNextBestFactory(IDataReader reader, List<IRowFactory> toRead, CancellationToken token, ref bool isFirst)
         {
+            Contract.Requires(reader != null);
+            Contract.Requires(toRead != null && Contract.ForAll(toRead, f => f != null));
+
             token.ThrowIfCancellationRequested();
 
             if (isFirst)

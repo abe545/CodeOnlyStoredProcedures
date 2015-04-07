@@ -15,6 +15,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
     internal class DynamicStoredProcedureResults : DynamicObject
     {
         private const string tupleName = "System.Tuple`";
+        private static readonly Lazy<MethodInfo> getResultsMethod = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod("GetResults", BindingFlags.Instance | BindingFlags.NonPublic));
         private static readonly Lazy<Dictionary<int, MethodInfo>> tupleCreates = new Lazy<Dictionary<int, MethodInfo>>(() =>
             {
                 return typeof(Tuple).GetMethods(BindingFlags.Static | BindingFlags.Public)
@@ -54,16 +55,11 @@ namespace CodeOnlyStoredProcedure.Dynamic
                 var mod  = ab.DefineDynamicModule("CodeOnlyStoredProcedures.Net40Async");
                 var type = mod.DefineType("DynamicStoredProcedureResultsAwaiterImpl", 
                                           TypeAttributes.Class | TypeAttributes.NotPublic,
-                                          baseType,
-                                          new[] { ifaceType });
+                                          baseType);
 
-                var comp = type.DefineMethod("OnCompleted", MethodAttributes.Public, typeof(void), new[] { typeof(Action) });
-                var il   = comp.GetILGenerator();
-
-                il.Emit(OpCodes.Ldarg_0); // push "this"
-                il.Emit(OpCodes.Ldarg_1); // push continuation Action
-                il.Emit(OpCodes.Call, baseType.GetMethod("OnCompleted"));
-                il.Emit(OpCodes.Ret);
+                // we add this interface here instead of in the DefineType method, because this will automatically 
+                // associate the base type's OnCompleted method as the implementing method; DefineType doesn't do so.
+                type.AddInterfaceImplementation(ifaceType);
 
                 var ctorArgs = new[] 
                                {
@@ -73,13 +69,13 @@ namespace CodeOnlyStoredProcedure.Dynamic
                                };
 
                 var ctor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, ctorArgs);
-                il       = ctor.GetILGenerator();
+                var il   = ctor.GetILGenerator();
                 
                 il.Emit(OpCodes.Ldarg_0); // push "this"
                 il.Emit(OpCodes.Ldarg_1); // push the rest of the parameters
                 il.Emit(OpCodes.Ldarg_2);
                 il.Emit(OpCodes.Ldarg_3);
-                il.Emit(OpCodes.Call, baseType.GetConstructor(ctorArgs));
+                il.Emit(OpCodes.Call, baseType.GetConstructor(ctorArgs)); // call the base ctor
                 il.Emit(OpCodes.Ret);
 
                 return type.CreateType();
@@ -205,9 +201,9 @@ namespace CodeOnlyStoredProcedure.Dynamic
                     if (i > 0)
                         resultTask.Result.NextResult();
 
-                    return GetType().GetMethod("GetResults", BindingFlags.Instance | BindingFlags.NonPublic)
-                                    .MakeGenericMethod(t)
-                                    .Invoke(this, new object[0]);
+                    return getResultsMethod.Value
+                                           .MakeGenericMethod(t)
+                                           .Invoke(this, new object[0]);
                 }).ToArray();
 
             return (T)create.MakeGenericMethod(types)
@@ -252,11 +248,20 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
         private class Meta : DynamicMetaObject
         {
-            private  DynamicStoredProcedureResults results;
+            private static readonly Lazy<MethodInfo> configureAwait  = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod("InternalConfigureAwait", BindingFlags.Instance | BindingFlags.NonPublic));
+            private static readonly Lazy<MethodInfo> getAwaiter      = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod("InternalGetAwaiter", BindingFlags.Instance | BindingFlags.NonPublic));
+            private static readonly Lazy<MethodInfo> continueSingle  = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod("CreateSingleContinuation", BindingFlags.Instance | BindingFlags.NonPublic));
+            private static readonly Lazy<MethodInfo> continueMulti   = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod("CreateMultipleContinuation", BindingFlags.Instance | BindingFlags.NonPublic));
+            private static readonly Lazy<MethodInfo> getMultiResults = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod("GetMultipleResults", BindingFlags.Instance | BindingFlags.NonPublic));
+
+            private readonly DynamicStoredProcedureResults results;
 
             public Meta(Expression expression, DynamicStoredProcedureResults value)
                 : base(expression, BindingRestrictions.Empty, value)
             {
+                Contract.Requires(expression != null);
+                Contract.Requires(value      != null);
+
                 this.results = value;
             }
 
@@ -268,16 +273,10 @@ namespace CodeOnlyStoredProcedure.Dynamic
                 switch (binder.Name)
                 {
                     case "ConfigureAwait":
-                        return new DynamicMetaObject(
-                            Expression.Call(instance,
-                                            typeof(DynamicStoredProcedureResults).GetMethod("InternalConfigureAwait", BindingFlags.Instance | BindingFlags.NonPublic),
-                                            args[0].Expression),
-                            restrict);
+                        return new DynamicMetaObject(Expression.Call(instance, configureAwait.Value, args[0].Expression), restrict);
 
                     case "GetAwaiter":
-                        return new DynamicMetaObject(
-                            Expression.Call(instance, typeof(DynamicStoredProcedureResults).GetMethod("InternalGetAwaiter", BindingFlags.Instance | BindingFlags.NonPublic)),
-                            restrict);
+                        return new DynamicMetaObject(Expression.Call(instance, getAwaiter.Value), restrict);
 
                     case "GetResult":
                         return new DynamicMetaObject(instance, restrict);
@@ -312,41 +311,25 @@ namespace CodeOnlyStoredProcedure.Dynamic
                     if (retType.IsEnumeratedType())
                     {
                         // there is only one result set. Return it from a continuation.
-
-                        var method = typeof(DynamicStoredProcedureResults)
-                            .GetMethod("CreateSingleContinuation", BindingFlags.Instance | BindingFlags.NonPublic)
-                            .MakeGenericMethod(retType.GetGenericArguments().Single());
-
-                        e = Expression.Call(instance, method);
+                        e = Expression.Call(instance, 
+                            continueSingle.Value.MakeGenericMethod(retType.GetGenericArguments().Single()));
                     }
                     else if (retType.FullName.StartsWith(tupleName) &&
                              retType.GetGenericArguments().All(t => t.IsEnumeratedType()))
                     {
-                        var method = typeof(DynamicStoredProcedureResults)
-                            .GetMethod("CreateMultipleContinuation", BindingFlags.Instance | BindingFlags.NonPublic)
-                            .MakeGenericMethod(retType);
-
-                        e = Expression.Call(instance, method);
+                        e = Expression.Call(instance, continueMulti.Value.MakeGenericMethod(retType));
                     }
                 }
                 else if (retType.IsEnumeratedType())
                 {
                     // there is only one result set. Return it
-                    var method = typeof(DynamicStoredProcedureResults)
-                        .GetMethod("GetResults", BindingFlags.Instance | BindingFlags.NonPublic)
-                        .MakeGenericMethod(retType.GetGenericArguments().Single());
-
-                    e = Expression.Call(instance, method);
+                    e = Expression.Call(instance, getResultsMethod.Value.MakeGenericMethod(retType.GetGenericArguments().Single()));
                 }
                 else if (retType.FullName.StartsWith(tupleName) &&
                          retType.GetGenericArguments().All(t => t.IsEnumeratedType()))
                 {
                     // it is a tuple of enumerables
-                    var method = typeof(DynamicStoredProcedureResults)
-                        .GetMethod("GetMultipleResults", BindingFlags.Instance | BindingFlags.NonPublic)
-                        .MakeGenericMethod(retType);
-
-                    e = Expression.Call(instance, method);
+                    e = Expression.Call(instance, getMultiResults.Value.MakeGenericMethod(retType));
                 }
 
                 if (e != null)

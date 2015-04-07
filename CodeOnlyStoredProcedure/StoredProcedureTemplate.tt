@@ -198,6 +198,8 @@ public class StoredProcedureTemplate : Template
 		{
 			get
 			{
+				Contract.Ensures(Contract.Result<IRowFactory<T<#+ Write(TypeCount.ToString()); #>>>() != null);
+				
 				if (factory == null)
 					factory = RowFactory<T<#+ Write(TypeCount.ToString()); #>>.Create();
 
@@ -354,6 +356,9 @@ public class StoredProcedureTemplate : Template
 #if !NET40
 		async Task<<#+ GetResults(); #>> ExecuteAsync(DbCommand cmd, IDbConnection toClose, CancellationToken token)
 		{
+			Contract.Requires(cmd != null);
+			Contract.Ensures(Contract.Result<Task<<#+ GetResults(); #>>>() != null);
+
 			<#+ GetResults(); #> results;
             var dbParameters = AddParameters(cmd);
 			

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.Contracts;
 using System.Dynamic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,6 +20,9 @@ namespace CodeOnlyStoredProcedure.Dynamic
             Task toWait,
             bool continueOnCaller)
         {
+            Contract.Requires(results != null);
+            Contract.Requires(toWait  != null);
+
             this.results          = results;
             this.toWait           = toWait;
             this.continueOnCaller = continueOnCaller;
@@ -46,44 +50,29 @@ namespace CodeOnlyStoredProcedure.Dynamic
             return base.TryInvokeMember(binder, args, out result);
         }
 
-        public virtual void OnCompleted(Action continuation)
+        // this has to be a virtual method for the .NET 4.0 async await implementation to work. Since the 
+        // INotifyCompletion interface can be patched in with the Async Targeting Pack, this method needs
+        // to be declared virtual in .NET 4.0, so the method can be associated with the interface in the 
+        // dynamically created class (found in DynamicStoredProcedureResults).
+#if NET40
+        virtual
+#endif
+        public void OnCompleted(Action continuation)
         {
-            if (continuation == null)
-                throw new ArgumentNullException("continuation");
-
             var sc            = continueOnCaller ? SynchronizationContext.Current : null;
             var taskScheduler = continueOnCaller ? TaskScheduler         .Current : TaskScheduler.Default;
 
             if (sc != null && sc.GetType() != typeof(SynchronizationContext))
             {
-                toWait.ContinueWith(_ =>
-                {
-                    try
-                    {
-                        sc.Post(delegate(object state)
-                        {
-                            ((Action)state).Invoke();
-                        }, continuation);
-                    }
-                    catch (Exception exception)
-                    {
-                        exception.ThrowAsync(null);
-                    }
-                }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                toWait.ContinueWith(_ => continuation.RunNoException(sc), 
+                    CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             }
             else if (toWait.IsCompleted)
-            {
-                Task.Factory.StartNew(s =>
-                {
-                    ((Action)s).Invoke();
-                }, continuation, CancellationToken.None, TaskCreationOptions.None, taskScheduler);
-            }
+                Task.Factory.StartNew(continuation, CancellationToken.None, TaskCreationOptions.None, taskScheduler);
             else if (taskScheduler != TaskScheduler.Default)
             {
-                toWait.ContinueWith(_ =>
-                {
-                    continuation.RunNoException();
-                }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, taskScheduler);
+                toWait.ContinueWith(_ => continuation.RunNoException(),
+                    CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, taskScheduler);
             }
             else
             {
@@ -97,10 +86,8 @@ namespace CodeOnlyStoredProcedure.Dynamic
                     }
                     else
                     {
-                        Task.Factory.StartNew(s =>
-                        {
-                            ((Action)s).RunNoException();
-                        }, continuation, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default);
+                        Task.Factory.StartNew(() => continuation.RunNoException(),
+                            CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default);
                     }
                 }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             }
