@@ -32,10 +32,10 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
             var whereMethod = typeof(Enumerable).GetMethods()
                                                 .Where(mi => mi.Name == "Where" && 
-                                                                mi.GetParameters()[1].ParameterType.GetGenericTypeDefinition() == typeof(Func<,>))
+                                                             mi.GetParameters()[1].ParameterType.GetGenericTypeDefinition() == typeof(Func<,>))
                                                 .Single();
             var toArray = typeof(Enumerable).GetMethod("ToArray");
-            var toList = typeof(Enumerable).GetMethod("ToList");
+            var toList  = typeof(Enumerable).GetMethod("ToList");
 
             while (types.Count > 0)
             {
@@ -89,8 +89,9 @@ namespace CodeOnlyStoredProcedure.RowFactory
                 }
 
                 factories.Add(typeof(RowFactory<>).MakeGenericType(t)
-                                                    .GetMethod("Create", BindingFlags.NonPublic | BindingFlags.Static)
-                                                    .Invoke(null, new [] { falseObj }) as IRowFactory);
+                                                  .GetMethod("Create", BindingFlags.NonPublic | BindingFlags.Static)
+                                                  .Invoke(null, new [] { falseObj })
+                              as IRowFactory);
             }
 
             rowFactories   = new ReadOnlyCollection<IRowFactory>(factories);

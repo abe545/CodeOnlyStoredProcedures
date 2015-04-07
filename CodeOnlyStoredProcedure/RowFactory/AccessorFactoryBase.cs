@@ -12,10 +12,11 @@ namespace CodeOnlyStoredProcedure.RowFactory
     [ContractClass(typeof(AccessorFactoryBaseContract))]
     internal abstract class AccessorFactoryBase
     {
-        private static Lazy<MethodInfo> isDbNull     = new Lazy<MethodInfo>(() => typeof(IDataRecord)     .GetMethod("IsDBNull"));
-        private static Lazy<MethodInfo> getValue     = new Lazy<MethodInfo>(() => typeof(IDataRecord)     .GetMethod("GetValue"));
-        private static Lazy<MethodInfo> canTransform = new Lazy<MethodInfo>(() => typeof(IDataTransformer).GetMethod("CanTransform"));
-        private static Lazy<MethodInfo> transform    = new Lazy<MethodInfo>(() => typeof(IDataTransformer).GetMethod("Transform"));
+        private static Lazy<MethodInfo> isDbNull      = new Lazy<MethodInfo>(() => typeof(IDataRecord)                 .GetMethod("IsDBNull"));
+        private static Lazy<MethodInfo> getValue      = new Lazy<MethodInfo>(() => typeof(IDataRecord)                 .GetMethod("GetValue"));
+        private static Lazy<MethodInfo> canTransform  = new Lazy<MethodInfo>(() => typeof(IDataTransformer)            .GetMethod("CanTransform"));
+        private static Lazy<MethodInfo> transform     = new Lazy<MethodInfo>(() => typeof(IDataTransformer)            .GetMethod("Transform"));
+        private static Lazy<MethodInfo> attrTransform = new Lazy<MethodInfo>(() => typeof(DataTransformerAttributeBase).GetMethod("Transform"));
 
         protected static MethodInfo IsDbNullMethod { get { return isDbNull    .Value; } }
         protected static MethodInfo GetValueMethod { get { return getValue    .Value; } }
@@ -100,7 +101,6 @@ namespace CodeOnlyStoredProcedure.RowFactory
             Contract.Requires(xfAttrs    != null && xfAttrs.Length > 0);
             Contract.Requires(targetType != null);
 
-            var meth  = typeof(DataTransformerAttributeBase).GetMethod("Transform");
             var exprs = new List<Expression>();
             var arg1  = Expression.Constant(targetType);
             var arg2  = Expression.Constant(isNullable);
@@ -108,7 +108,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
             for (int i = 0; i < xfAttrs.Length; i++)
             {
                 // val = xfAttrs[i].Transform(val, targetType, isNullable);
-                exprs.Add(Expression.Assign(val, Expression.Call(Expression.Constant(xfAttrs[i]), meth, val, arg1, arg2)));
+                exprs.Add(Expression.Assign(val, Expression.Call(Expression.Constant(xfAttrs[i]), attrTransform.Value, val, arg1, arg2)));
             }
 
             if (exprs.Count == 1)
@@ -374,7 +374,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
                 );
             }
 
-            var method = typeof(IDataTransformerAttribute<T>).GetMethod("Transform");
+            var method = DataTransformerCache<T>.attrTransform;
             foreach (var xf in converted)
                 body.Add(Expression.Assign(retVal, Expression.Call(Expression.Constant(xf), method, retVal)));
 
@@ -423,7 +423,8 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
         private static class DataTransformerCache<T>
         {
-            public  static readonly MethodInfo transform = typeof(IDataTransformer<T>).GetMethod("Transform");
+            public static readonly MethodInfo transform     = typeof(IDataTransformer<T>)         .GetMethod("Transform");
+            public static readonly MethodInfo attrTransform = typeof(IDataTransformerAttribute<T>).GetMethod("Transform");
         }
     }
 
