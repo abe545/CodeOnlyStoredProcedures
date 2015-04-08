@@ -112,6 +112,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
                 try
                 {
+                    token.ThrowIfCancellationRequested();
                     var res = command.ExecuteReader();
                     token.ThrowIfCancellationRequested();
 
@@ -126,19 +127,12 @@ namespace CodeOnlyStoredProcedure.Dynamic
                         }
                     }
 
+                    token.ThrowIfCancellationRequested();
                     tcs.SetResult(res);
                 }
                 catch (AggregateException ag)
                 {
                     tcs.SetException(ag.Flatten().InnerExceptions);
-                }
-                catch (TaskCanceledException)
-                {
-                    tcs.SetCanceled();
-                }
-                catch (OperationCanceledException)
-                {
-                    tcs.SetCanceled();
                 }
 
                 this.resultTask = tcs.Task;

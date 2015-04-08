@@ -2,7 +2,6 @@
 {
     internal enum DynamicExecutionMode : byte
     {
-        Any,
         Synchronous,
         Asynchronous
     }

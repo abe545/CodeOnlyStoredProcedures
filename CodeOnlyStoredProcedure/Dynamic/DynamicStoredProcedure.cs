@@ -35,8 +35,8 @@ namespace CodeOnlyStoredProcedure.Dynamic
         public DynamicStoredProcedure(IDbConnection                 connection,
                                       IEnumerable<IDataTransformer> transformers,
                                       CancellationToken             token,
-                                      int                           timeout       = StoredProcedure.defaultTimeout,
-                                      DynamicExecutionMode          executionMode = DynamicExecutionMode.Any)
+                                      int                           timeout,
+                                      DynamicExecutionMode          executionMode)
         {
             Contract.Requires(connection   != null);
             Contract.Requires(transformers != null);
