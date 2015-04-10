@@ -31,57 +31,6 @@ namespace CodeOnlyStoredProcedure.Dynamic
         private readonly CancellationToken             token;
         private          bool                          continueOnCaller = true;
 
-#if NET40
-        /// <summary>
-        /// The type to use as an awaiter. Because the INotifyCompletion interface is available
-        /// to .NET 4.0 with the Microsoft Async package, we can support awaiting a dynamic
-        /// stored procedure if we implement that interface. I don't want to require async
-        /// for CodeOnlyStoerdProcedure in .NET 4.0, so this is a decent compromise. All the 
-        /// functionality is in the DynamicStoredProcedureResultsAwaiter, so all this dynamic
-        /// type is doing is calling the implementation.
-        /// </summary>
-        private static Lazy<Type> getCompletionType = new Lazy<Type>(() =>
-            {
-                var baseType  = typeof(DynamicStoredProcedureResultsAwaiter);
-                var ifaceType = Type.GetType("System.Runtime.CompilerServices.INotifyCompletion, System.Threading.Tasks");
-
-                if (ifaceType == null)
-                    throw new NotSupportedException("Could not find the interface required for using await in .NET 4. Please make sure that System.Threading.Tasks is loaded in your process before trying to await a dynamic stored procedure.");
-
-                var ab = AppDomain.CurrentDomain.DefineDynamicAssembly(
-                    new AssemblyName("CodeOnlyStoredProcedures.Net40Async"),
-                    AssemblyBuilderAccess.Run);
-
-                var mod  = ab.DefineDynamicModule("CodeOnlyStoredProcedures.Net40Async");
-                var type = mod.DefineType("DynamicStoredProcedureResultsAwaiterImpl", 
-                                          TypeAttributes.Class | TypeAttributes.NotPublic,
-                                          baseType);
-
-                // we add this interface here instead of in the DefineType method, because this will automatically 
-                // associate the base type's OnCompleted method as the implementing method; DefineType doesn't do so.
-                type.AddInterfaceImplementation(ifaceType);
-
-                var ctorArgs = new[] 
-                               {
-                                   typeof(DynamicStoredProcedureResults),
-                                   typeof(Task),
-                                   typeof(bool)
-                               };
-
-                var ctor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, ctorArgs);
-                var il   = ctor.GetILGenerator();
-                
-                il.Emit(OpCodes.Ldarg_0); // push "this"
-                il.Emit(OpCodes.Ldarg_1); // push the rest of the parameters
-                il.Emit(OpCodes.Ldarg_2);
-                il.Emit(OpCodes.Ldarg_3);
-                il.Emit(OpCodes.Call, baseType.GetConstructor(ctorArgs)); // call the base ctor
-                il.Emit(OpCodes.Ret);
-
-                return type.CreateType();
-            });
-#endif
-
         public DynamicStoredProcedureResults(
             IDbConnection                   connection,
             string                          schema,
@@ -110,30 +59,23 @@ namespace CodeOnlyStoredProcedure.Dynamic
             {
                 var tcs = new TaskCompletionSource<IDataReader>();
 
-                try
-                {
-                    token.ThrowIfCancellationRequested();
-                    var res = command.ExecuteReader();
-                    token.ThrowIfCancellationRequested();
+                token.ThrowIfCancellationRequested();
+                var res = command.ExecuteReader();
+                token.ThrowIfCancellationRequested();
 
-                    foreach (IDbDataParameter p in command.Parameters)
+                foreach (IDbDataParameter p in command.Parameters)
+                {
+                    if (p.Direction != ParameterDirection.Input)
                     {
-                        if (p.Direction != ParameterDirection.Input)
-                        {
-                            var x = parameters.OfType<IOutputStoredProcedureParameter>()
-                                              .FirstOrDefault(sp => sp.ParameterName == p.ParameterName);
-                            if (x != null)
-                                x.TransferOutputValue(p.Value);
-                        }
+                        var x = parameters.OfType<IOutputStoredProcedureParameter>()
+                                          .FirstOrDefault(sp => sp.ParameterName == p.ParameterName);
+                        if (x != null)
+                            x.TransferOutputValue(p.Value);
                     }
+                }
 
-                    token.ThrowIfCancellationRequested();
-                    tcs.SetResult(res);
-                }
-                catch (AggregateException ag)
-                {
-                    tcs.SetException(ag.Flatten().InnerExceptions);
-                }
+                token.ThrowIfCancellationRequested();
+                tcs.SetResult(res);
 
                 this.resultTask = tcs.Task;
             }
@@ -168,8 +110,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
         private IEnumerable<T> GetResults<T>()
         {
-            var rdr = resultTask.Result;
-            return RowFactory<T>.Create().ParseRows(rdr, transformers, token);
+            return RowFactory<T>.Create().ParseRows(resultTask.Result, transformers, token);
         }
 
         private Task<IEnumerable<T>> CreateSingleContinuation<T>()
@@ -181,46 +122,29 @@ namespace CodeOnlyStoredProcedure.Dynamic
         {
             Contract.Ensures(Contract.Result<T>() != null);
             
-            // no need to protect this index... We have already been asked to cast to a tuple type,
-            // so we know that there is a Create method with this many type parameters
             var types = typeof(T).GetGenericArguments();
+            var res   = types.Select((t, i) =>
+            {
+                if (i > 0)
+                    resultTask.Result.NextResult();
 
-            // no need to protect this index... We have already been asked to cast to a tuple type,
-            // so we know that there is a Create method with this many type parameters
-            var create     = tupleCreates.Value[types.Length];
-            var innerTypes = types.Select(t => t.GetEnumeratedType());
+                token.ThrowIfCancellationRequested();
 
-            var res = innerTypes.Select((t, i) =>
-                {
-                    if (i > 0)
-                        resultTask.Result.NextResult();
+                return getResultsMethod.Value
+                                       .MakeGenericMethod(t.GetEnumeratedType())
+                                       .Invoke(this, new object[0]);
+            }).ToArray();
 
-                    return getResultsMethod.Value
-                                           .MakeGenericMethod(t)
-                                           .Invoke(this, new object[0]);
-                }).ToArray();
-
-            return (T)create.MakeGenericMethod(types)
-                            .Invoke(null, res);
+            return (T)tupleCreates.Value[types.Length]
+                                  .MakeGenericMethod(types)
+                                  .Invoke(null, res);
         }
 
         private Task<T> CreateMultipleContinuation<T>()
         {
             Contract.Ensures(Contract.Result<Task<T>>() != null);
 
-            var tcs = new TaskCompletionSource<T>();
-
-            resultTask.ContinueWith(r =>
-                {
-                    if (r.Exception != null)
-                        tcs.SetException(r.Exception.InnerExceptions);
-                    else if (r.IsCanceled)
-                        tcs.SetCanceled();
-                    else
-                        tcs.SetResult(GetMultipleResults<T>());
-                }, token);
-
-            return tcs.Task;
+            return resultTask.ContinueWith(r => GetMultipleResults<T>(), token);
         }
         
         private object InternalConfigureAwait(bool continueOnCapturedContext)
@@ -233,11 +157,8 @@ namespace CodeOnlyStoredProcedure.Dynamic
         {
             if (executionMode == DynamicExecutionMode.Synchronous)
                 throw new NotSupportedException(DynamicStoredProcedure.asyncParameterDirectionError);
-#if NET40
-            return Activator.CreateInstance(getCompletionType.Value, this, resultTask, continueOnCaller);
-#else
-            return new DynamicStoredProcedureResultsAwaiter(this, resultTask, continueOnCaller);
-#endif
+
+            return DynamicStoredProcedureResultsAwaiter.Create(this, resultTask, continueOnCaller);
         }
 
         private class Meta : DynamicMetaObject

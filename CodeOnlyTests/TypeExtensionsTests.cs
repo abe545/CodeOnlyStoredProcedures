@@ -5,6 +5,7 @@ using System.Reflection;
 using CodeOnlyStoredProcedure;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using FluentAssertions;
+using System.Collections.Generic;
 
 #if NET40
 namespace CodeOnlyTests.Net40
@@ -261,6 +262,96 @@ namespace CodeOnlyTests
                 CodeOnlyStoredProcedure.TypeExtensions.interfaceMap.TryAdd(typeof(IModel), typeof(Model));
 
                 typeof(IModel).IsValidResultType().Should().BeTrue("because mapped interfaces can be constructed");
+            }
+        }
+        #endregion
+
+        #region IsEnumeratedType
+        [TestClass]
+        public class IsEnumeratedType
+        {
+            [TestMethod]
+            public void ReturnsTrueForValueArray()
+            {
+                typeof(int[]).IsEnumeratedType().Should().BeTrue("because arrays are enumerated types");
+            }
+
+            [TestMethod]
+            public void ReturnsTrueForStringArray()
+            {
+                typeof(string[]).IsEnumeratedType().Should().BeTrue("because arrays are enumerated types");
+            }
+
+            [TestMethod]
+            public void ReturnsTrueForInterfaceArray()
+            {
+                typeof(IModel[]).IsEnumeratedType().Should().BeTrue("because arrays are enumerated types");
+            }
+
+            [TestMethod]
+            public void ReturnsTrueForClassArray()
+            {
+                typeof(Model[]).IsEnumeratedType().Should().BeTrue("because arrays are enumerated types");
+            }
+
+            [TestMethod]
+            public void ReturnsTrueForValueEnumerable()
+            {
+                typeof(IEnumerable<int>).IsEnumeratedType().Should().BeTrue("because IEnumerable<T> is an enumerated type");
+            }
+
+            [TestMethod]
+            public void ReturnsTrueForStringEnumerable()
+            {
+                typeof(IEnumerable<string>).IsEnumeratedType().Should().BeTrue("because IEnumerable<T> is an enumerated type");
+            }
+
+            [TestMethod]
+            public void ReturnsTrueForInterfaceEnumerable()
+            {
+                typeof(IEnumerable<IModel>).IsEnumeratedType().Should().BeTrue("because IEnumerable<T> is an enumerated type");
+            }
+
+            [TestMethod]
+            public void ReturnsTrueForClassEnumerable()
+            {
+                typeof(IEnumerable<Model>).IsEnumeratedType().Should().BeTrue("because IEnumerable<T> is an enumerated type");
+            }
+
+            [TestMethod]
+            public void ReturnsTrueForValueList()
+            {
+                typeof(List<int>).IsEnumeratedType().Should().BeTrue("because List<T> is an enumerated type");
+            }
+
+            [TestMethod]
+            public void ReturnsTrueForStringList()
+            {
+                typeof(List<string>).IsEnumeratedType().Should().BeTrue("because List<T> is an enumerated type");
+            }
+
+            [TestMethod]
+            public void ReturnsTrueForInterfaceList()
+            {
+                typeof(List<IModel>).IsEnumeratedType().Should().BeTrue("because List<T> is an enumerated type");
+            }
+
+            [TestMethod]
+            public void ReturnsTrueForClassList()
+            {
+                typeof(List<Model>).IsEnumeratedType().Should().BeTrue("because List<T> is an enumerated type");
+            }
+
+            [TestMethod]
+            public void ReturnsFalseForString()
+            {
+                typeof(string).IsEnumeratedType().Should().BeFalse("because a string should not be considered an enumerated type");
+            }
+
+            [TestMethod]
+            public void ReturnsFalseForValueType()
+            {
+                typeof(int).IsEnumeratedType().Should().BeFalse("because an int should not be considered an enumerated type");
             }
         }
         #endregion

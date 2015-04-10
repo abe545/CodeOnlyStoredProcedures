@@ -14,10 +14,9 @@ namespace CodeOnlyStoredProcedure.Dynamic
     internal class DynamicStoredProcedure : DynamicObject
     {
         internal const string asyncParameterDirectionError = "Can not execute a stored procedure asynchronously if called with a ref or out parameter. You can retrieve output or return values from the stored procedure if you pass in an input class, which the library can parse into the correct properties.";
-        private static readonly Func<CSharpArgumentInfo, string>                  getParameterName      = null;
-        private static readonly Func<CSharpArgumentInfo, ParameterDirection>      getParameterDirection = null;
-        private static readonly Func<InvokeMemberBinder, int, CSharpArgumentInfo> getArgumentInfo       = null;
-        private static readonly Action<IDbDataParameter>                          none                  = _ => { };
+        private static readonly Func<CSharpArgumentInfo, string>                  getParameterName;
+        private static readonly Func<CSharpArgumentInfo, ParameterDirection>      getParameterDirection;
+        private static readonly Func<InvokeMemberBinder, int, CSharpArgumentInfo> getArgumentInfo;
         private        readonly IDbConnection                                     connection;
         private        readonly IEnumerable<IDataTransformer>                     transformers;
         private        readonly string                                            schema;
@@ -79,7 +78,6 @@ namespace CodeOnlyStoredProcedure.Dynamic
         public override bool TryInvokeMember(InvokeMemberBinder binder, object[] args, out object result)
         {
             var parameters = new List<IStoredProcedureParameter>();
-            var callingMode = executionMode;
             
             for (int i = 0; i < binder.CallInfo.ArgumentCount; ++i)
             {
@@ -87,13 +85,13 @@ namespace CodeOnlyStoredProcedure.Dynamic
                 var argument  = getArgumentInfo(binder, i + 1);
                 var direction = getParameterDirection(argument);
                 var parmName  = getParameterName(argument);
-                var idx       = i;
+                var idx       = i;  // store the value, otherwise when it is lifted to lambdas, i will be the binder.CallInfo.ArgumentCount
+                var argType   = args[idx].GetType();
 
-                var argType = args[idx].GetType();
-                if (argType.IsEnumeratedType() && argType != typeof(string))
+                if (argType.IsEnumeratedType())
                 {
                     // it is a TableValuedParameter, so we need to get the SQL Server type name
-                    var itemType = argType.GetEnumeratedType();
+                    var itemType = argType .GetEnumeratedType();
                     var attr     = itemType.GetCustomAttributes(false)
                                            .OfType<TableValuedParameterAttribute>()
                                            .FirstOrDefault();
@@ -110,21 +108,18 @@ namespace CodeOnlyStoredProcedure.Dynamic
                 }
                 else if (argType.IsClass && argType != typeof(string))
                     parameters.AddRange(argType.GetParameters(args[idx]));
-                else if ("returnvalue".Equals(parmName, StringComparison.InvariantCultureIgnoreCase) && direction != ParameterDirection.Input)
-                {
-                    CoerceSynchronousExecutionMode(ref callingMode);
-
-                    parameters.Add(new ReturnValueParameter(r => args[idx] = r));
-                }
                 else if (direction == ParameterDirection.Output)
                 {
-                    CoerceSynchronousExecutionMode(ref callingMode);
+                    VerifySynchronousExecutionMode(executionMode);
 
-                    parameters.Add(new OutputParameter(parmName, o => args[idx] = o, argType.InferDbType()));
+                    if ("returnvalue".Equals(parmName, StringComparison.InvariantCultureIgnoreCase))
+                        parameters.Add(new ReturnValueParameter(r => args[idx] = r));
+                    else
+                        parameters.Add(new OutputParameter(parmName, o => args[idx] = o, argType.InferDbType()));
                 }
                 else if (direction == ParameterDirection.InputOutput)
                 {
-                    CoerceSynchronousExecutionMode(ref callingMode);
+                    VerifySynchronousExecutionMode(executionMode);
 
                     parameters.Add(new InputOutputParameter(parmName, o => args[idx] = o, args[idx], argType.InferDbType()));
                 }
@@ -139,22 +134,21 @@ namespace CodeOnlyStoredProcedure.Dynamic
                 timeout,
                 parameters,
                 transformers,
-                callingMode,
+                executionMode,
                 token);
 
             return true;
         }
 
-        private static void CoerceSynchronousExecutionMode(ref DynamicExecutionMode executionMode)
+        private static void VerifySynchronousExecutionMode(DynamicExecutionMode executionMode)
         {
             if (executionMode == DynamicExecutionMode.Asynchronous)
                 throw new NotSupportedException(asyncParameterDirectionError);
-            
-            executionMode = DynamicExecutionMode.Synchronous;
         }
 
         private static Func<InvokeMemberBinder, int, CSharpArgumentInfo> CreateArgumentInfoGetter()
         {
+            // this has to be done through reflection, because all the properties are internal to .NET :(
             var csBinder = typeof(RuntimeBinderException).Assembly
                                                          .GetType("Microsoft.CSharp.RuntimeBinder.ICSharpInvokeOrInvokeMemberBinder");
 
@@ -182,32 +176,26 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
         private static Func<CSharpArgumentInfo, ParameterDirection> CreateParameterDirectionGetter()
         {
+            // this has to be done through reflection, because all the properties are internal to .NET :(
             var argument = Expression.Parameter(typeof(CSharpArgumentInfo), "argument");
-            var retLoc   = Expression.Label(typeof(ParameterDirection), "returnValue");
 
             return Expression.Lambda<Func<CSharpArgumentInfo, ParameterDirection>>(
-                Expression.Block(
-                    typeof(ParameterDirection),
-                    new ParameterExpression[0],
-                    Expression.IfThenElse(Expression.IsTrue(Expression.Property(argument, "IsOut")),
-                        Expression.Return(retLoc, Expression.Constant(ParameterDirection.Output)),
-                        Expression.IfThen(Expression.IsTrue(Expression.Property(argument, "IsByRef")),
-                            Expression.Return(retLoc, Expression.Constant(ParameterDirection.InputOutput))
-                        )
-                    ),
-                    Expression.Label(retLoc, Expression.Constant(ParameterDirection.Input))),
-                    argument).Compile();
+                Expression.Condition(Expression.IsTrue(Expression.Property(argument, "IsOut")),
+                    Expression.Constant(ParameterDirection.Output),
+                    Expression.Condition(Expression.IsTrue(Expression.Property(argument, "IsByRef")),
+                        Expression.Constant(ParameterDirection.InputOutput),
+                        Expression.Constant(ParameterDirection.Input)
+                    )
+                ), argument).Compile();
         }
 
         private static Func<CSharpArgumentInfo, string> CreateParameterNameGetter()
         {
+            // this has to be done through reflection, because all the properties are internal to .NET :(
             var argument = Expression.Parameter(typeof(CSharpArgumentInfo), "argument");
-            var retLoc   = Expression.Label(typeof(string), "returnValue");
 
-            return Expression.Lambda<Func<CSharpArgumentInfo, string>>(
-                Expression.TypeAs(
-                    Expression.Property(argument, "Name"),
-                    typeof(string)), argument).Compile();
+            return Expression.Lambda<Func<CSharpArgumentInfo, string>>(Expression.Property(argument, "Name"), argument)
+                             .Compile();
         }
     }
 }
