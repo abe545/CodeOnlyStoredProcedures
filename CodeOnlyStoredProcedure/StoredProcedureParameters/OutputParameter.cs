@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Data;
+using System.Diagnostics.Contracts;
 
 namespace CodeOnlyStoredProcedure
 {
@@ -15,12 +16,15 @@ namespace CodeOnlyStoredProcedure
 
         public OutputParameter(string name, Action<object> setter, DbType? dbType = null, int? size = null, byte? scale = null, byte? precision = null)
         {
-            this.ParameterName  = name;
-            this.setter         = setter;
-            this.DbType         = dbType;
-            this.Size           = size;
-            this.Scale          = scale;
-            this.Precision      = precision;
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Requires(setter != null);
+
+            this.ParameterName = name;
+            this.setter        = setter;
+            this.DbType        = dbType;
+            this.Size          = size;
+            this.Scale         = scale;
+            this.Precision     = precision;
         }
 
         public IDbDataParameter CreateDbDataParameter(IDbCommand command)

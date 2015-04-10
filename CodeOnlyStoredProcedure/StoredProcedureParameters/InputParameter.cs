@@ -20,7 +20,7 @@ namespace CodeOnlyStoredProcedure
         {
             var parm           = command.CreateParameter();
             parm.ParameterName = ParameterName;
-            parm.Value         = Value;
+            parm.Value         = Value ?? DBNull.Value;
             parm.DbType        = GetDbType();
             parm.Direction     = ParameterDirection.Input;
 

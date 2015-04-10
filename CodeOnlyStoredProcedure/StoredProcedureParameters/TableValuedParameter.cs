@@ -20,6 +20,12 @@ namespace CodeOnlyStoredProcedure
 
         public TableValuedParameter(string name, IEnumerable values, Type valueType, string tableTypeName, string tableTypeSchema = "dbo")
         {
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Requires(values    != null);
+            Contract.Requires(valueType != null);
+            Contract.Requires(!string.IsNullOrWhiteSpace(tableTypeName));
+            Contract.Requires(!string.IsNullOrWhiteSpace(tableTypeSchema));
+
             ParameterName  = name;
             this.values    = values;
             this.valueType = valueType;

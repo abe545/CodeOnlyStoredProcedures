@@ -2,7 +2,7 @@ version: 2.0.0.{build}
 
 environment:
   releaseVersion: 2.0.0
-  packageVersion: 2.0.0-pre4
+  packageVersion: 2.0.0-pre5
 
 assembly_info:
   patch: true
@@ -34,7 +34,7 @@ after_test:
   - .\SmokeTests\bin\Release\SmokeTests.exe
   - .\SmokeTests-NET40\bin\Release\SmokeTests-NET40.exe
   - ps: nuget pack CodeOnlyStoredProcedures.nuspec -Symbols -NonInteractive -Verbosity detailed -Exclude "**\Contracts\*" -Version $env:packageVersion
-  - ps: nuget pack CodeOnlyStoredProcedures.nuspec -NonInteractive -Verbosity detailed -Version $env:packageVersion
+  - ps: nuget pack CodeOnlyStoredProcedures.nuspec -NonInteractive -Verbosity detailed -Exclude "**\*.cs;**\*.pdb" -Version $env:packageVersion
 
 artifacts:
   - path: '*.nupkg'

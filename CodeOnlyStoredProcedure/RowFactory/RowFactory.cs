@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
@@ -11,6 +12,7 @@ using CodeOnlyStoredProcedure.RowFactory;
 
 namespace CodeOnlyStoredProcedure
 {
+    [ContractClass(typeof(RowFactoryContract<>))]
     internal abstract class RowFactory<T> : IRowFactory<T>
     {
         protected static readonly ParameterExpression dataReaderExpression = Expression.Parameter(typeof(IDataReader));
@@ -18,18 +20,22 @@ namespace CodeOnlyStoredProcedure
 
         public static IRowFactory<T> Create()
         {
+            Contract.Ensures(Contract.Result<IRowFactory<T>>() != null);
+
             return Create(true);
         }
 
         private static IRowFactory<T> Create(bool generateHierarchicals)
         {
+            Contract.Ensures(Contract.Result<IRowFactory<T>>() != null);
+
             var itemType = typeof(T);
             
             if (itemType == typeof(object))
                 return new ExpandoObjectRowFactory<T>();
 
             if (itemType.IsGenericType && itemType.GetGenericTypeDefinition() == typeof(Nullable<>))
-                itemType = itemType.GetGenericArguments()[0];
+                itemType = itemType.GetGenericArguments().Single();
 
             if (itemType.IsEnum)
                 return new EnumRowFactory<T>();
@@ -99,4 +105,18 @@ namespace CodeOnlyStoredProcedure
         }
 #endif
     }
+
+    [ContractClassFor(typeof(RowFactory<>))]
+    abstract class RowFactoryContract<T> : RowFactory<T>
+    {
+        protected override Func<IDataReader, T> CreateRowFactory(IDataReader reader, IEnumerable<IDataTransformer> xFormers)
+        {
+            Contract.Requires(reader   != null);
+            Contract.Requires(xFormers != null && Contract.ForAll(xFormers, x => x != null));
+            Contract.Ensures (Contract.Result<Func<IDataReader, T>>() != null);
+
+            return null;
+        }
+    }
+
 }

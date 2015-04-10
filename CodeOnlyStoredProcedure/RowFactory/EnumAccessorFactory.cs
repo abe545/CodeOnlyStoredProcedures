@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -39,6 +40,9 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
         public EnumAccessorFactory(ParameterExpression dataReaderExpression, Expression index, PropertyInfo propertyInfo, string columnName)
         {
+            Contract.Requires(dataReaderExpression != null);
+            Contract.Requires(index                != null);
+
             this.indexExpression      = index;
             this.dataReaderExpression = dataReaderExpression;
             this.getStringExpression  = new Lazy<Expression>(() => Expression.Call(this.dataReaderExpression, typeof(IDataRecord).GetMethod("GetString"), this.indexExpression));

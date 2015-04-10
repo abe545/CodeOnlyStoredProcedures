@@ -18,6 +18,8 @@ namespace CodeOnlyStoredProcedure
 		{
 			get
 			{
+				Contract.Ensures(Contract.Result<IRowFactory<T1>>() != null);
+				
 				if (factory == null)
 					factory = RowFactory<T1>.Create();
 
@@ -179,6 +181,9 @@ namespace CodeOnlyStoredProcedure
 #if !NET40
 		async Task<IEnumerable<T1>> ExecuteAsync(DbCommand cmd, IDbConnection toClose, CancellationToken token)
 		{
+			Contract.Requires(cmd != null);
+			Contract.Ensures(Contract.Result<Task<IEnumerable<T1>>>() != null);
+
 			IEnumerable<T1> results;
             var dbParameters = AddParameters(cmd);
 			
@@ -225,6 +230,8 @@ namespace CodeOnlyStoredProcedure
 		{
 			get
 			{
+				Contract.Ensures(Contract.Result<IRowFactory<T2>>() != null);
+				
 				if (factory == null)
 					factory = RowFactory<T2>.Create();
 
@@ -398,6 +405,9 @@ namespace CodeOnlyStoredProcedure
 #if !NET40
 		async Task<Tuple<IEnumerable<T1>, IEnumerable<T2>>> ExecuteAsync(DbCommand cmd, IDbConnection toClose, CancellationToken token)
 		{
+			Contract.Requires(cmd != null);
+			Contract.Ensures(Contract.Result<Task<Tuple<IEnumerable<T1>, IEnumerable<T2>>>>() != null);
+
 			Tuple<IEnumerable<T1>, IEnumerable<T2>> results;
             var dbParameters = AddParameters(cmd);
 			
@@ -448,6 +458,8 @@ namespace CodeOnlyStoredProcedure
 		{
 			get
 			{
+				Contract.Ensures(Contract.Result<IRowFactory<T3>>() != null);
+				
 				if (factory == null)
 					factory = RowFactory<T3>.Create();
 
@@ -628,6 +640,9 @@ namespace CodeOnlyStoredProcedure
 #if !NET40
 		async Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>>> ExecuteAsync(DbCommand cmd, IDbConnection toClose, CancellationToken token)
 		{
+			Contract.Requires(cmd != null);
+			Contract.Ensures(Contract.Result<Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>>>>() != null);
+
 			Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>> results;
             var dbParameters = AddParameters(cmd);
 			
@@ -681,6 +696,8 @@ namespace CodeOnlyStoredProcedure
 		{
 			get
 			{
+				Contract.Ensures(Contract.Result<IRowFactory<T4>>() != null);
+				
 				if (factory == null)
 					factory = RowFactory<T4>.Create();
 
@@ -868,6 +885,9 @@ namespace CodeOnlyStoredProcedure
 #if !NET40
 		async Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>>> ExecuteAsync(DbCommand cmd, IDbConnection toClose, CancellationToken token)
 		{
+			Contract.Requires(cmd != null);
+			Contract.Ensures(Contract.Result<Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>>>>() != null);
+
 			Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>> results;
             var dbParameters = AddParameters(cmd);
 			
@@ -924,6 +944,8 @@ namespace CodeOnlyStoredProcedure
 		{
 			get
 			{
+				Contract.Ensures(Contract.Result<IRowFactory<T5>>() != null);
+				
 				if (factory == null)
 					factory = RowFactory<T5>.Create();
 
@@ -1118,6 +1140,9 @@ namespace CodeOnlyStoredProcedure
 #if !NET40
 		async Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>>> ExecuteAsync(DbCommand cmd, IDbConnection toClose, CancellationToken token)
 		{
+			Contract.Requires(cmd != null);
+			Contract.Ensures(Contract.Result<Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>>>>() != null);
+
 			Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>> results;
             var dbParameters = AddParameters(cmd);
 			
@@ -1177,6 +1202,8 @@ namespace CodeOnlyStoredProcedure
 		{
 			get
 			{
+				Contract.Ensures(Contract.Result<IRowFactory<T6>>() != null);
+				
 				if (factory == null)
 					factory = RowFactory<T6>.Create();
 
@@ -1378,6 +1405,9 @@ namespace CodeOnlyStoredProcedure
 #if !NET40
 		async Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>>> ExecuteAsync(DbCommand cmd, IDbConnection toClose, CancellationToken token)
 		{
+			Contract.Requires(cmd != null);
+			Contract.Ensures(Contract.Result<Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>>>>() != null);
+
 			Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>> results;
             var dbParameters = AddParameters(cmd);
 			
@@ -1440,6 +1470,8 @@ namespace CodeOnlyStoredProcedure
 		{
 			get
 			{
+				Contract.Ensures(Contract.Result<IRowFactory<T7>>() != null);
+				
 				if (factory == null)
 					factory = RowFactory<T7>.Create();
 
@@ -1648,6 +1680,9 @@ namespace CodeOnlyStoredProcedure
 #if !NET40
 		async Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>, IEnumerable<T7>>> ExecuteAsync(DbCommand cmd, IDbConnection toClose, CancellationToken token)
 		{
+			Contract.Requires(cmd != null);
+			Contract.Ensures(Contract.Result<Task<Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>, IEnumerable<T7>>>>() != null);
+
 			Tuple<IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>, IEnumerable<T6>, IEnumerable<T7>> results;
             var dbParameters = AddParameters(cmd);
 			

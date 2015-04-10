@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Data;
+using System.Diagnostics.Contracts;
 
 namespace CodeOnlyStoredProcedure
 {   
@@ -16,6 +17,9 @@ namespace CodeOnlyStoredProcedure
 
         public InputOutputParameter(string name, Action<object> setter, object value, DbType? dbType = null, int? size = null, byte? scale = null, byte? precision = null)
         {
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Requires(setter != null);
+
             ParameterName  = name;
             this.Value     = value;
             this.DbType    = dbType;
@@ -30,7 +34,7 @@ namespace CodeOnlyStoredProcedure
             var parm           = command.CreateParameter();
             parm.ParameterName = ParameterName;
             parm.Direction     = ParameterDirection.InputOutput;
-            parm.Value         = Value;
+            parm.Value         = Value ?? DBNull.Value;
 
             if (DbType.HasValue)
                 parm.DbType = DbType.Value;
