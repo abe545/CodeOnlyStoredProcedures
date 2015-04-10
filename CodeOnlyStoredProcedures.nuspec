@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
     <metadata>
         <id>CodeOnlyStoredProcedures</id>
-        <version>2.0.0-pre4</version>
+        <version>0.0.0</version> <!-- Will be set during package creation in appveyor -->
         <title>Code Only Stored Proecedures</title>
         <authors>Abraham Heidebrecht</authors>
         <projectUrl>https://github.com/abe545/CodeOnlyStoredProcedures</projectUrl>
