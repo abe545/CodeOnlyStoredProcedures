@@ -33,8 +33,7 @@ test:
 after_test:
   - .\SmokeTests\bin\Release\SmokeTests.exe
   - .\SmokeTests-NET40\bin\Release\SmokeTests-NET40.exe
-  - ps: nuget pack CodeOnlyStoredProcedures.nuspec -Symbols -NonInteractive -Verbosity detailed -Exclude "**\Contracts\*" -Version $env:packageVersion
-  - ps: nuget pack CodeOnlyStoredProcedures.nuspec -NonInteractive -Verbosity detailed -Exclude "**\*.cs;**\*.pdb" -Version $env:packageVersion
+  - ps: nuget pack CodeOnlyStoredProcedures.nuspec -Symbols -NonInteractive -Verbosity detailed -Version $env:packageVersion
 
 artifacts:
   - path: '*.nupkg'

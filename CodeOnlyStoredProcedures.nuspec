@@ -51,7 +51,8 @@ Added xml comments to all public methods. While not complete documentation, they
         </references>
     </metadata>
     <files>
-      <file src="Bin\Release\**\CodeOnlyStoredProcedure.*" exclude="**\*.old" target="lib" />
+      <file src="CodeOnlyStoredProcedure\Bin\Release\**\CodeOnlyStoredProcedure*" exclude="**\*.old" target="lib\net45" />
+      <file src="CodeOnlyStoredProcedure-NET40\Bin\Release\**\CodeOnlyStoredProcedure*" exclude="**\*.old" target="lib\net40" />
       <file src="**\*.cs" exclude="*Test*\**\*;CodeOnlyStoredProcedure\obj\**\*" target="src" />
     </files>
 </package>
