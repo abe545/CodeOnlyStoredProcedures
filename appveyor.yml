@@ -1,4 +1,5 @@
 version: 2.0.0.{build}
+skip_tags: true
 
 environment:
   releaseVersion: 2.0.0
