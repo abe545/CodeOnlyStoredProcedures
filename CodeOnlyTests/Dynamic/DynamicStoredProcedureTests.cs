@@ -513,7 +513,12 @@ namespace CodeOnlyTests.Dynamic
             }
 
             [TestMethod]
+#if NET40
+            public void CanCastExplicitly() { CanCastExplicitlyWrapper().Wait(); }
+            public async Task CanCastExplicitlyWrapper()
+#else
             public async Task CanCastExplicitly()
+#endif
             {
                 var ctx = CreatePeople("Foo");
 
@@ -527,7 +532,12 @@ namespace CodeOnlyTests.Dynamic
             }
 
             [TestMethod]
+#if NET40
+            public void CanConfigureAwait() { CanConfigureAwaitWrapper().Wait(); }
+            public async Task CanConfigureAwaitWrapper()
+#else
             public async Task CanConfigureAwait()
+#endif
             {
                 var lockr = new SemaphoreSlim(0);
                 int count = 0;

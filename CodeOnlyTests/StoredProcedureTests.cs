@@ -10,6 +10,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using FluentAssertions;
 
 #if NET40
 namespace CodeOnlyTests.Net40
@@ -71,7 +72,7 @@ namespace CodeOnlyTests
 
             foreach (var t in _generics)
             {
-                foreach (var tt in TypeExtensions.integralTypes)
+                foreach (var tt in CodeOnlyStoredProcedure.TypeExtensions.integralTypes)
                 {
                     type = t.MakeGenericType(Enumerable.Range(0, parameterCount)
                                                         .Select(_ => tt)
@@ -102,7 +103,7 @@ namespace CodeOnlyTests
 
             foreach (var t in _generics)
             {
-                foreach (var tt in TypeExtensions.integralTypes)
+                foreach (var tt in CodeOnlyStoredProcedure.TypeExtensions.integralTypes)
                 {
                     try
                     {
@@ -319,34 +320,127 @@ namespace CodeOnlyTests
         }
 
         [TestMethod]
-        public void TestExecuteAsyncDoesNotExecuteOnSameThreadWhenCalledFromATaskRunningOnSynchronizationContextScheduler()
+        public void TestExecuteReturnsMultipleRowsInOneResultSet()
         {
+            var reader = new Mock<IDataReader>();
+            var command = new Mock<IDbCommand>();
+
+            command.Setup(d => d.ExecuteReader())
+                   .Returns(reader.Object);
+
+            reader.SetupGet(r => r.FieldCount)
+                  .Returns(1);
+
+            var results = new[] { "Hello", ", ", "World!" };
+
+            int index = -1;
+            reader.Setup(r => r.Read())
+                  .Callback(() => ++index)
+                  .Returns(() => index < results.Length);
+
+            reader.Setup(r => r.GetName(0))
+                  .Returns("Id");
+            reader.Setup(r => r.GetString(0)).Returns((int _) => results[index]);
+            reader.Setup(r => r.GetFieldType(0)).Returns(typeof(string));
+
+            var connection = new Mock<IDbConnection>();
+            connection.Setup(c => c.CreateCommand()).Returns(command.Object);
+
+            var sp = new StoredProcedure<InterfaceImpl>("foo");
+            var res = sp.Execute(connection.Object);
+
+            var idx = 0;
+            foreach (var toTest in res)
+                toTest.ShouldBeEquivalentTo(new InterfaceImpl { Id = results[idx++] });
+        }
+        #endregion
+
+        #region ExecuteAsync Tests
+#if NET40
+        [TestMethod]
+        public void TestExecuteAsync_DoesNotExecuteMethodFromSameThreadWhenRunningInSynchronizationContext()
+        {            
+            var reader = new Mock<IDataReader>();
+            var command = new Mock<IDbCommand>();
             var ctx = new TestSynchronizationContext();
+
             SynchronizationContext.SetSynchronizationContext(ctx);
 
-            var cmd = new Mock<IDbCommand>();
-            cmd.SetupAllProperties();
-            cmd.Setup(c => c.ExecuteNonQuery())
-               .Callback(() => Assert.AreNotEqual(ctx.Worker, Thread.CurrentThread, "Command called from the same thread as the reentrant Task."));
+            command.Setup(d => d.ExecuteReader())
+                   .Returns(reader.Object);
 
-            var conn = new Mock<IDbConnection>();
-            conn.Setup(c => c.CreateCommand())
-                .Callback(() => Assert.AreNotEqual(ctx.Worker, Thread.CurrentThread, "Command called from the same thread as the reentrant Task."))
-                .Returns(cmd.Object);
+            reader.SetupGet(r => r.FieldCount)
+                  .Returns(1);
 
-            var toTest = new StoredProcedure("foo", "bar");
+            var results = new[] { "Hello", ", ", "World!" };
 
-            Task.Factory
-                .StartNew(() => "Hello, world!")
-                .ContinueWith(_ =>
-                             {
-                                 return toTest.ExecuteAsync(conn.Object, CancellationToken.None, 100); 
-                             }, TaskScheduler.FromCurrentSynchronizationContext())
-                .Unwrap()
-                .Wait();
+            int index = -1;
+            reader.Setup(r => r.Read())
+                  .Callback(() => ++index)
+                  .Returns(() => index < results.Length);
+
+            reader.Setup(r => r.GetName(0))
+                  .Returns("Id");
+            reader.Setup(r => r.GetString(0)).Returns((int _) => results[index]);
+            reader.Setup(r => r.GetFieldType(0)).Returns(typeof(string));
+
+            var connection = new Mock<IDbConnection>();
+            connection.Setup(c => c.CreateCommand())
+                      .Callback(() => ctx.Worker.Should().NotBeSameAs(Thread.CurrentThread, "Command called from the same thread as the reentrant Task."))
+                      .Returns(command.Object);
+
+            var sp = new StoredProcedure<InterfaceImpl>("foo");
+            var res = sp.ExecuteAsync(connection.Object).Result;
+
+            var idx = 0;
+            foreach (var toTest in res)
+                toTest.ShouldBeEquivalentTo(new InterfaceImpl { Id = results[idx++] });
 
             SynchronizationContext.SetSynchronizationContext(null);
         }
+#else
+        [TestMethod]
+        public async Task TestExecuteAsync_DoesNotExecuteMethodFromSameThreadWhenRunningInSynchronizationContext()
+        {
+            var reader = new Mock<IDataReader>();
+            var command = new Mock<IDbCommand>();
+            var ctx = new TestSynchronizationContext();
+
+            SynchronizationContext.SetSynchronizationContext(ctx);
+
+            command.Setup(d => d.ExecuteReader())
+                   .Returns(reader.Object);
+
+            reader.SetupGet(r => r.FieldCount)
+                  .Returns(1);
+
+            var results = new[] { "Hello", ", ", "World!" };
+
+            int index = -1;
+            reader.Setup(r => r.Read())
+                  .Callback(() => ++index)
+                  .Returns(() => index < results.Length);
+
+            reader.Setup(r => r.GetName(0))
+                  .Returns("Id");
+            reader.Setup(r => r.GetString(0)).Returns((int _) => results[index]);
+            reader.Setup(r => r.GetFieldType(0)).Returns(typeof(string));
+
+            var connection = new Mock<IDbConnection>();
+            connection.Setup(c => c.CreateCommand())
+                      .Callback(() => ctx.Worker.Should().NotBeSameAs(Thread.CurrentThread, "Command called from the same thread as the reentrant Task."))
+                      .Returns(command.Object);
+
+            var sp = new StoredProcedure<InterfaceImpl>("foo");
+            var res = await sp.ExecuteAsync(connection.Object);
+
+            var idx = 0;
+            foreach (var toTest in res)
+                toTest.ShouldBeEquivalentTo(new InterfaceImpl { Id = results[idx++] });
+
+            SynchronizationContext.SetSynchronizationContext(null);
+        }
+#endif
         #endregion
 
         #region PrettyPrint Tests
@@ -403,10 +497,10 @@ namespace CodeOnlyTests
         [TestMethod]
         public void UnMappedInterface_ThrowsWhenConstructingStoredProcedure()
         {
-            lock (TypeExtensions.interfaceMap)
+            lock (CodeOnlyStoredProcedure.TypeExtensions.interfaceMap)
             {
                 // clear any mapped interfaces
-                TypeExtensions.interfaceMap.Clear();
+                CodeOnlyStoredProcedure.TypeExtensions.interfaceMap.Clear();
                 try
                 {
                     var sp = new StoredProcedure<Interface>("foo");
