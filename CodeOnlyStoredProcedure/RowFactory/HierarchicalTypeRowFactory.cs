@@ -89,7 +89,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
                 }
 
                 factories.Add(typeof(RowFactory<>).MakeGenericType(t)
-                                                  .GetMethod("Create", BindingFlags.NonPublic | BindingFlags.Static)
+                                                  .GetMethod("Create", BindingFlags.Public | BindingFlags.Static)
                                                   .Invoke(null, new [] { falseObj })
                               as IRowFactory);
             }
