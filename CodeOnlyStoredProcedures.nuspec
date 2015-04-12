@@ -11,9 +11,11 @@
 Code Only Stored Procedures will not create any Stored Procedures on your database. Instead, its aim is to make it easy to call your existing stored procedures by writing simple code.</description>
         <releaseNotes>2.0.0
 Removed dependency on SQL Server for all stored procedures (except those that accept Table Valued Parameters)
-Performance improvements
 Results from the dynamic syntax can now be cast explicitly
+Result columns can be marked as optional, so if no value is returned, the execution will not fail.
+Stored Procedures can return dynamic (which will be an ExpandoObject, with all colums returned by the stored procedure as properties).
 Stored Procedures that return hierarchical objects as multiple result sets can now have their relationships automatically discovered
+Performance improvements
 
 1.3.1
 Fixed bug where none of the named properties of StoredProcedureParameterAttribute could be set on an object, because they were nullable.
