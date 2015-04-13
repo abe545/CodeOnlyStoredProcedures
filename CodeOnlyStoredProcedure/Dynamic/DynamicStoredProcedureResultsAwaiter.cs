@@ -117,6 +117,9 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
         public static object Create(DynamicStoredProcedureResults results, Task task, bool continueOnCaller)
         {
+            Contract.Requires(results != null);
+            Contract.Requires(task    != null);
+            Contract.Ensures (Contract.Result<object>() != null);
 #if NET40
             return Activator.CreateInstance(dynamicAwaiterType.Value, results, task, continueOnCaller);
 #else
