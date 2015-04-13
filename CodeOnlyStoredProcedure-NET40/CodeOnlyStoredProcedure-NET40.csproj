@@ -176,6 +176,9 @@
     <Compile Include="..\CodeOnlyStoredProcedure\Exceptions\StoredProcedureResultsException.cs">
       <Link>Exceptions\StoredProcedureResultsException.cs</Link>
     </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\HierarchicalStoredProcedure.cs">
+      <Link>HierarchicalStoredProcedure.cs</Link>
+    </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\IDataTransformer.cs">
       <Link>IDataTransformer.cs</Link>
     </Compile>

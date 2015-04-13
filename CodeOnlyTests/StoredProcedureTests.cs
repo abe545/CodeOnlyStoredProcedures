@@ -117,8 +117,7 @@ namespace CodeOnlyTests
                     {
                         // This exception is a ContractException but, since it isn't a public 
                         // class, we can't catch it directly.
-                        Assert.AreEqual("Precondition failed: typeof(T1).IsValidResultType()",
-                                        ex.InnerException.Message);
+                        ex.InnerException.Message.Should().Be("Precondition failed: typeof(T1).IsValidResultType()", "because the type is not a valid result type");
                     }
                 }
 
@@ -130,14 +129,14 @@ namespace CodeOnlyTests
         {
             // this will actually call the SP's ctor
             var sp = (StoredProcedure)Activator.CreateInstance(type, name);
-            AssertProcValues(sp, type, "dbo", name, 0, 0);
+            AssertProcValues(sp, type, "dbo", name);
         }
 
         private static void TestConstructorWithSchema(Type type, string schema, string name)
         {
             // this will actually call the SP's ctor
             var sp = (StoredProcedure)Activator.CreateInstance(type, schema, name);
-            AssertProcValues(sp, type, schema, name, 0, 0);
+            AssertProcValues(sp, type, schema, name);
         }
         #endregion
 
@@ -147,10 +146,11 @@ namespace CodeOnlyTests
         {
             var sp = StoredProcedure.Create("procMe");
 
-            Assert.AreEqual("procMe", sp.Name);
-            Assert.AreEqual("dbo", sp.Schema);
-            Assert.AreEqual("[dbo].[procMe]", sp.FullName);
-            Assert.AreEqual(0, sp.Parameters.Count());
+            sp.Name.Should().Be("procMe", "because it was passed to Create");
+            sp.Schema.Should().Be("dbo", "because it is the default schema");
+            sp.FullName.Should().Be("[dbo].[procMe]", "because that is the full name of the stored proc");
+            sp.Parameters.Should().BeEmpty("because none should be set after creation");
+            sp.DataTransformers.Should().BeEmpty("because none should be set after creation");
         }
 
         [TestMethod]
@@ -158,10 +158,11 @@ namespace CodeOnlyTests
         {
             var sp = StoredProcedure.Create("dummy", "usp_test");
 
-            Assert.AreEqual("dummy", sp.Schema);
-            Assert.AreEqual("usp_test", sp.Name);
-            Assert.AreEqual("[dummy].[usp_test]", sp.FullName);
-            Assert.AreEqual(0, sp.Parameters.Count());
+            sp.Name.Should().Be("usp_test", "because it was passed to Create");
+            sp.Schema.Should().Be("dummy", "because it was passed to create");
+            sp.FullName.Should().Be("[dummy].[usp_test]", "because that is the full name of the stored proc");
+            sp.Parameters.Should().BeEmpty("because none should be set after creation");
+            sp.DataTransformers.Should().BeEmpty("because none should be set after creation");
         } 
         #endregion
 
@@ -171,23 +172,19 @@ namespace CodeOnlyTests
         {
             var p1 = Mock.Of<IStoredProcedureParameter>(p => p.ParameterName == "Foo");
             var p2 = Mock.Of<IStoredProcedureParameter>(p => p.ParameterName == "Bar");
+            var t1 = Mock.Of<IDataTransformer>();
+            var t2 = Mock.Of<IDataTransformer>();
 
             var parms = new[] { p1, p2 };
-            var transformers = new IDataTransformer[0];
+            var transformers = new[] { t1, t2 };
 
             var sp = new StoredProcedure("schema", "Test");
             var toTest = sp.CloneCore(parms, transformers);
 
-            Assert.AreEqual("schema", toTest.Schema, "Schema not cloned");
-            Assert.AreEqual("Test", toTest.Name, "Name not cloned");
-            CollectionAssert.AreEquivalent(
-                new[] { p1, p2 }, 
-                toTest.Parameters.ToArray(), 
-                "Parameters are not equal");
-            CollectionAssert.AreEquivalent(
-                new IDataParameter[0],
-                toTest.DataTransformers.ToArray(),
-                "DataTransformers are not equal");
+            toTest.Name.Should().Be("Test", "because it should have been cloned");
+            toTest.Schema.Should().Be("schema", "because it should have been cloned");
+            toTest.Parameters.Should().ContainInOrder(new[] { p1, p2 }, "because they should be copied when cloned");
+            toTest.DataTransformers.Should().ContainInOrder(new[] { t1, t2 }, "because they should be copied when cloned");
         }
         #endregion
 
@@ -199,11 +196,7 @@ namespace CodeOnlyTests
 
             var toTest = sp.CloneWith(Mock.Of<IStoredProcedureParameter>());
 
-            Assert.AreEqual("test", sp.Schema);
-            Assert.AreEqual("proc", sp.Name);
-            Assert.AreEqual("[test].[proc]", sp.FullName);
-            Assert.AreEqual(0, sp.Parameters.Count());
-            Assert.AreEqual(0, sp.DataTransformers.Count());
+            AssertProcValues(sp, typeof(StoredProcedure), "test", "proc");
         }
 
         [TestMethod]
@@ -213,11 +206,7 @@ namespace CodeOnlyTests
 
             var toTest = sp.CloneWith(Mock.Of<IDataTransformer>());
 
-            Assert.AreEqual("test", sp.Schema);
-            Assert.AreEqual("proc", sp.Name);
-            Assert.AreEqual("[test].[proc]", sp.FullName);
-            Assert.AreEqual(0, sp.Parameters.Count());
-            Assert.AreEqual(0, sp.DataTransformers.Count());
+            AssertProcValues(sp, typeof(StoredProcedure), "test", "proc");
         }
 
         [TestMethod]
@@ -227,11 +216,7 @@ namespace CodeOnlyTests
 
             var toTest = sp.CloneWith(Mock.Of<IStoredProcedureParameter>());
 
-            Assert.AreEqual("dbo", toTest.Schema);
-            Assert.AreEqual("test_proc", toTest.Name);
-            Assert.AreEqual("[dbo].[test_proc]", toTest.FullName);
-            Assert.AreEqual(1, toTest.Parameters.Count());
-            Assert.AreEqual(0, toTest.DataTransformers.Count());
+            AssertProcValues(toTest, typeof(StoredProcedure), "dbo", "test_proc");
         }
 
         [TestMethod]
@@ -241,11 +226,7 @@ namespace CodeOnlyTests
 
             var toTest = sp.CloneWith(Mock.Of<IStoredProcedureParameter>());
 
-            Assert.AreEqual("test", toTest.Schema);
-            Assert.AreEqual("proc", toTest.Name);
-            Assert.AreEqual("[test].[proc]", toTest.FullName);
-            Assert.AreEqual(1, toTest.Parameters.Count());
-            Assert.AreEqual(0, toTest.DataTransformers.Count());
+            AssertProcValues(toTest, typeof(StoredProcedure), "test", "proc");
         }
 
         [TestMethod]
@@ -255,11 +236,7 @@ namespace CodeOnlyTests
 
             var toTest = sp.CloneWith(new Mock<IDataTransformer>().Object);
 
-            Assert.AreEqual("dbo", toTest.Schema);
-            Assert.AreEqual("test_proc", toTest.Name);
-            Assert.AreEqual("[dbo].[test_proc]", toTest.FullName);
-            Assert.AreEqual(0, toTest.Parameters.Count());
-            Assert.AreEqual(1, toTest.DataTransformers.Count());
+            AssertProcValues(toTest, typeof(StoredProcedure), "dbo", "test_proc");
         }
 
         [TestMethod]
@@ -269,11 +246,7 @@ namespace CodeOnlyTests
 
             var toTest = sp.CloneWith(new Mock<IDataTransformer>().Object);
 
-            Assert.AreEqual("test", toTest.Schema);
-            Assert.AreEqual("proc", toTest.Name);
-            Assert.AreEqual("[test].[proc]", toTest.FullName);
-            Assert.AreEqual(0, toTest.Parameters.Count());
-            Assert.AreEqual(1, toTest.DataTransformers.Count());
+            AssertProcValues(toTest, typeof(StoredProcedure), "test", "proc");
         }
 
         [TestMethod]
@@ -283,7 +256,7 @@ namespace CodeOnlyTests
 
             var toTest = new StoredProcedure("test").CloneWith(p1);
 
-            Assert.AreEqual(p1, toTest.Parameters.Single());
+            toTest.Parameters.Should().ContainSingle(p => p == p1, "because it should be copied to the clone.");
         }
         
         [TestMethod]
@@ -293,7 +266,7 @@ namespace CodeOnlyTests
 
             var toTest = new StoredProcedure("Test").CloneWith(x);
 
-            Assert.AreEqual(x, toTest.DataTransformers.Single());
+            toTest.DataTransformers.Should().ContainSingle(d => d == x, "because it should be copied to the clone.");
         }
         #endregion
 
@@ -521,15 +494,12 @@ namespace CodeOnlyTests
             StoredProcedure proc,
             Type procType,
             string schema,
-            string name,
-            int parmCount, 
-            int outputCount)
+            string name)
         {
-            Assert.AreEqual(procType, proc.GetType());
-            Assert.AreEqual(schema, proc.Schema);
-            Assert.AreEqual(name, proc.Name);
-            Assert.AreEqual(String.Format("[{0}].[{1}]", schema, name), proc.FullName);
-            Assert.AreEqual(parmCount, proc.Parameters.Count());
+            proc.Name.Should().Be(name);
+            proc.Schema.Should().Be(schema);
+            proc.FullName.Should().Be(String.Format("[{0}].[{1}]", schema, name));
+            proc.Should().BeOfType(procType);
         }
 
         private class NoDefaultCtor
