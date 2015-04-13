@@ -19,6 +19,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
     {
         private static readonly IEnumerable<IRowFactory> rowFactories;
         private static readonly IEnumerable<Tuple<Type, Type, Delegate>> childAssigners;
+        private        readonly ReadOnlyCollection<Type> resultTypesInOrder;
 
         static HierarchicalTypeRowFactory()
         {
@@ -98,6 +99,15 @@ namespace CodeOnlyStoredProcedure.RowFactory
             childAssigners = new ReadOnlyCollection<Tuple<Type, Type, Delegate>>(assigners);
         }
 
+        public HierarchicalTypeRowFactory() { }
+
+        public HierarchicalTypeRowFactory(IEnumerable<Type> resultTypesInOrder)
+        {
+            Contract.Requires(resultTypesInOrder != null);
+
+            this.resultTypesInOrder = new ReadOnlyCollection<Type>(resultTypesInOrder.ToArray());
+        }
+
         private static PropertyInfo GetKeyProperty(string className, IEnumerable<PropertyInfo> props)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(className));
@@ -115,11 +125,12 @@ namespace CodeOnlyStoredProcedure.RowFactory
         {
             var toRead  = rowFactories.ToList();
             var results = new Dictionary<Type, IEnumerable>();
-            var first   = true;
+            int index   = -1;
 
             while (toRead.Count > 0)
             {
-                var factory = GetNextBestFactory(reader, toRead, token, ref first);
+                index++;
+                var factory = GetNextBestFactory(reader, toRead, token, index);
 
                 // should this throw? I'm leaning toward no, because as long as the hierarchy is built, who cares if there
                 // are extra result sets
@@ -142,11 +153,12 @@ namespace CodeOnlyStoredProcedure.RowFactory
         {
             var toRead  = rowFactories.ToList();
             var results = new Dictionary<Type, IEnumerable>();
-            var first   = true;
+            int index   = -1;
 
             while (toRead.Count > 0)
             {
-                var factory = GetNextBestFactory(reader, toRead, token, ref first);
+                index++;
+                var factory = GetNextBestFactory(reader, toRead, token, index);
 
                 // should this throw? I'm leaning toward no, because as long as the hierarchy is built, who cares if there
                 // are extra result sets
@@ -165,23 +177,30 @@ namespace CodeOnlyStoredProcedure.RowFactory
         }
 #endif
 
-        private static IRowFactory GetNextBestFactory(IDataReader reader, List<IRowFactory> toRead, CancellationToken token, ref bool isFirst)
+        private IRowFactory GetNextBestFactory(IDataReader reader, List<IRowFactory> toRead, CancellationToken token, int index)
         {
             Contract.Requires(reader != null);
             Contract.Requires(toRead != null && Contract.ForAll(toRead, f => f != null));
 
             token.ThrowIfCancellationRequested();
 
-            if (isFirst)
-                isFirst = false;
-            else if (!reader.NextResult())
+            if (index > 0 && !reader.NextResult())
                 throw new StoredProcedureResultsException(typeof(T), toRead.Select(f => f.RowType).ToArray());
 
             token.ThrowIfCancellationRequested();
+            
+            if (resultTypesInOrder != null)
+            {
+                if (index >= resultTypesInOrder.Count)
+                    return null;
+
+                var type = resultTypesInOrder[index];
+                return toRead.First(f => f.RowType == type);
+            }
 
             IRowFactory factory         = null;
             var         colNames        = Enumerable.Range(0, reader.FieldCount).Select(i => reader.GetName(i)).ToArray();
-            int         fewestRemaining = Int32.MaxValue;
+            var         fewestRemaining = Int32.MaxValue;
 
             foreach (var f in toRead)
             {

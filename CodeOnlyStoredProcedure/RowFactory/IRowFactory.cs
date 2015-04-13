@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace CodeOnlyStoredProcedure
 {
     [ContractClass(typeof(IRowFactoryContract))]
-    internal interface IRowFactory
+    public interface IRowFactory
     {
         Type RowType { get; }
         bool MatchesColumns(IEnumerable<string> columnNames, out int leftoverColumns);
@@ -21,7 +21,7 @@ namespace CodeOnlyStoredProcedure
     }
 
     [ContractClass(typeof(IRowFactoryContract<>))]
-    internal interface IRowFactory<T> : IRowFactory
+    public interface IRowFactory<T> : IRowFactory
     {
         new IEnumerable<T> ParseRows(IDataReader reader, IEnumerable<IDataTransformer> dataTransformers, CancellationToken token);
 #if !NET40

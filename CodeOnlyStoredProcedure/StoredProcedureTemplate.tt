@@ -108,6 +108,9 @@ public class StoredProcedureTemplate : Template
 			Write("Contract.Requires(typeof(T" + i + ").IsValidResultType());");
         }
 
+		WriteLine("");
+		WriteLine("this.t" + TypeCount + "factory = new Lazy<IRowFactory<T" + TypeCount + ">>(CreateFactory<T" + TypeCount + ">);");
+
 		PopIndent();
     }
 
@@ -192,19 +195,14 @@ public class StoredProcedureTemplate : Template
 	<#+ WriteTypeParams(); #>
 	public class StoredProcedure<#+ GetTypes(TypeCount); #> : StoredProcedure<#+ GetTypes(TypeCount - 1); #>
 	{
-		<#+ if (TypeCount == 1) WriteLine("protected bool isSingleResult = true;"); #>
-		private IRowFactory<T<#+ Write(TypeCount.ToString()); #>> factory;
+		private Lazy<IRowFactory<T<#+ Write(TypeCount.ToString()); #>>> t<#+ Write(TypeCount.ToString()); #>factory;
 
-		internal IRowFactory<T<#+ Write(TypeCount.ToString()); #>> T<#+ Write(TypeCount.ToString()); #>Factory 
+		protected internal virtual IRowFactory<T<#+ Write(TypeCount.ToString()); #>> T<#+ Write(TypeCount.ToString()); #>Factory 
 		{
 			get
 			{
 				Contract.Ensures(Contract.Result<IRowFactory<T<#+ Write(TypeCount.ToString()); #>>>() != null);
-				
-				if (factory == null)
-					factory = RowFactory<T<#+ Write(TypeCount.ToString()); #>>.Create(isSingleResult);
-
-				return factory;
+				return t<#+ Write(TypeCount.ToString()); #>factory.Value;
 			}
 		}
 
@@ -217,7 +215,6 @@ public class StoredProcedureTemplate : Template
 		{ 
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
 			<#+ WriteTypeChecks(); #>
-			<#+ if (TypeCount > 1) WriteLine("isSingleResult = false;"); #>	
 		}
 		
         /// <summary>
@@ -230,15 +227,14 @@ public class StoredProcedureTemplate : Template
 		{ 
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
-			<#+ WriteTypeChecks(); #>	
-			<#+ if (TypeCount > 1) WriteLine("isSingleResult = false;"); #>
+			<#+ WriteTypeChecks(); #>
 		}
 		
 		internal StoredProcedure(StoredProcedure toClone)
 			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.DataTransformers) 
 		{ 
 			Contract.Requires(toClone != null);
-			<#+ if (TypeCount > 1) WriteLine("isSingleResult = false;"); #>
+			<#+ WriteTypeChecks(); #>
 		}
 				
         /// <summary>
@@ -261,6 +257,7 @@ public class StoredProcedureTemplate : Template
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
 			Contract.Requires(parameters       != null);
 			Contract.Requires(dataTransformers != null);
+			<#+ WriteTypeChecks(); #>
 		}
 	
         /// <summary>
@@ -395,7 +392,13 @@ public class StoredProcedureTemplate : Template
 		{
 			return new StoredProcedure<#+ GetTypes(TypeCount); #>(Schema, Name, parameters, dataTransformers);
 		}	
+
+		protected <#+ if (TypeCount == 1) Write("virtual"); else Write("override"); #> IRowFactory<TFactory> CreateFactory<TFactory>()
+		{
+			return RowFactory<TFactory>.Create(<#+ Write((TypeCount == 1).ToString().ToLower()); #>);
+		}
 	}
+
 	#endregion
 
 
