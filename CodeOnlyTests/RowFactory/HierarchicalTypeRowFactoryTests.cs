@@ -339,6 +339,71 @@ namespace CodeOnlyTests.RowFactory
                         }
                     });
             }
+
+            [TestMethod]
+            public void OrderSpecifiedInCtor_IsUsedToParse()
+            {
+                var reader = SetupDataReader(
+                    new Dictionary<string, object>
+                    {
+                        { "Key", 0 },
+                        { "OtherKey", 1 }
+                    },
+                    new Dictionary<string, object>
+                    {
+                        { "Key", 1 },
+                        { "OtherKey", 0 }
+                    });
+
+                var toTest = new HierarchicalTypeRowFactory<Foo>(new Type[] { typeof(Foo), typeof(Bar) });
+                var res    = toTest.ParseRows(reader, new IDataTransformer[0], CancellationToken.None);
+
+                res.Should().ContainSingle("because only one row was setup").Which
+                    .ShouldBeEquivalentTo(
+                        new Foo
+                        {
+                            Key = 0,
+                            OtherKey = 1,
+                            Bars = new Bar[]
+                            {
+                                new Bar
+                                {
+                                    Key = 1,
+                                    OtherKey = 0
+                                }
+                            }
+                        });
+
+                reader = SetupDataReader(
+                    new Dictionary<string, object>
+                    {
+                        { "Key", 2 },
+                        { "OtherKey", 3 }
+                    },
+                    new Dictionary<string, object>
+                    {
+                        { "Key", 3 },
+                        { "OtherKey", 2 }
+                    });
+                toTest = new HierarchicalTypeRowFactory<Foo>(new Type[] { typeof(Bar), typeof(Foo) });
+                res    = toTest.ParseRows(reader, new IDataTransformer[0], CancellationToken.None);
+
+                res.Should().ContainSingle("because only one row was setup").Which
+                    .ShouldBeEquivalentTo(
+                        new Foo
+                        {
+                            Key = 3,
+                            OtherKey = 2,
+                            Bars = new Bar[]
+                            {
+                                new Bar
+                                {
+                                    Key = 2,
+                                    OtherKey = 3
+                                }
+                            }
+                        });
+            }
         }
 
         private static IDataReader SetupDataReader(params Dictionary<string, object>[] values)
@@ -452,6 +517,22 @@ namespace CodeOnlyTests.RowFactory
             public int Id { get; set; }
             public int SolarSystemId { get; set; }
             public string Name { get; set; }
+        }
+
+        private class Foo
+        {
+            [Key]
+            public int Key { get; set; }
+            public int OtherKey { get; set; }
+            [ForeignKey("OtherKey")]
+            public IEnumerable<Bar> Bars { get; set; }
+        }
+
+        private class Bar
+        {
+            [Key]
+            public int Key { get; set; }
+            public int OtherKey { get; set; }
         }
     }
 }

@@ -108,6 +108,9 @@ public class StoredProcedureTemplate : Template
 			Write("Contract.Requires(typeof(T" + i + ").IsValidResultType());");
         }
 
+		WriteLine("");
+		WriteLine("this.factory = new Lazy<IRowFactory<T" + TypeCount + ">>(CreateFactory<T" + TypeCount + ">);");
+
 		PopIndent();
     }
 
@@ -183,6 +186,50 @@ public class StoredProcedureTemplate : Template
 		PopIndent();
     }
 
+	public void WriteAsHierarchical()
+	{
+		if (TypeCount < 2) return;
+
+		PushIndent("\t\t");
+
+		WriteLine("/// <summary>");
+		WriteLine("/// Creates a <see cref=\"HierarchicalStoredProcedure{T}\"/> with the results expected in the order declared for this stored procedure.");
+		WriteLine("/// </summary>");
+        WriteLine("/// <returns>A hierarchical stored procedure.</returns>");
+
+		Write("public ");
+		if (TypeCount == 2) 
+			Write("virtual"); 
+		else 
+			Write("override");
+		
+		WriteLine(" HierarchicalStoredProcedure<TFactory> AsHierarchical<TFactory>()");
+		WriteLine("{");
+
+		Write("\tif (");
+		for (int i = 1; i <= TypeCount; ++i)
+		{
+			if (i > 1)
+				Write(" && ");
+			Write("typeof(TFactory) != typeof(T" + i + ")");
+		}
+		WriteLine(")");
+		WriteLine("\t\tthrow new ArgumentException(\"The type of TFactory must be one of the types the Stored Procedure has already been declared to return.\");");
+		Write("\treturn new HierarchicalStoredProcedure<TFactory>(Schema, Name, Parameters, DataTransformers, ");
+		
+		Write("new [] { ");
+		for (int i = 1; i <= TypeCount; ++i)
+		{
+			if (i > 1)
+				Write(", ");
+			Write("typeof(T" + i + ")");
+		}
+
+		WriteLine(" });");
+		WriteLine("}");
+		PopIndent();
+	}
+
     public override string TransformText()
     {
 #>
@@ -192,18 +239,14 @@ public class StoredProcedureTemplate : Template
 	<#+ WriteTypeParams(); #>
 	public class StoredProcedure<#+ GetTypes(TypeCount); #> : StoredProcedure<#+ GetTypes(TypeCount - 1); #>
 	{
-		private IRowFactory<T<#+ Write(TypeCount.ToString()); #>> factory;
+		private Lazy<IRowFactory<T<#+ Write(TypeCount.ToString()); #>>> factory;
 
 		internal IRowFactory<T<#+ Write(TypeCount.ToString()); #>> T<#+ Write(TypeCount.ToString()); #>Factory 
 		{
 			get
 			{
 				Contract.Ensures(Contract.Result<IRowFactory<T<#+ Write(TypeCount.ToString()); #>>>() != null);
-				
-				if (factory == null)
-					factory = RowFactory<T<#+ Write(TypeCount.ToString()); #>>.Create();
-
-				return factory;
+				return factory.Value;
 			}
 		}
 
@@ -215,7 +258,7 @@ public class StoredProcedureTemplate : Template
 		public StoredProcedure(string name) : base(name)
 		{ 
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
-			<#+ WriteTypeChecks(); #>	
+			<#+ WriteTypeChecks(); #>
 		}
 		
         /// <summary>
@@ -228,13 +271,14 @@ public class StoredProcedureTemplate : Template
 		{ 
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
-			<#+ WriteTypeChecks(); #>	
+			<#+ WriteTypeChecks(); #>
 		}
 		
 		internal StoredProcedure(StoredProcedure toClone)
 			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.DataTransformers) 
 		{ 
 			Contract.Requires(toClone != null);
+			<#+ WriteTypeChecks(); #>
 		}
 				
         /// <summary>
@@ -257,6 +301,7 @@ public class StoredProcedureTemplate : Template
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
 			Contract.Requires(parameters       != null);
 			Contract.Requires(dataTransformers != null);
+			<#+ WriteTypeChecks(); #>
 		}
 	
         /// <summary>
@@ -377,8 +422,8 @@ public class StoredProcedureTemplate : Template
 			return results;
 		}
 #endif
+		<#+ WriteAsHierarchical(); #>
 
-		
         /// <summary>
         /// Clones the StoredProcedure, and gives it the passed parameters.
         /// </summary>
@@ -391,7 +436,16 @@ public class StoredProcedureTemplate : Template
 		{
 			return new StoredProcedure<#+ GetTypes(TypeCount); #>(Schema, Name, parameters, dataTransformers);
 		}	
+
+		/// <summary>Creates an <see cref="IRowFactory{T}"/> to use to generate results for this StoredProcedure.</summary>
+		/// <returns>A new <see cref="IRowFactory{T}"/> that will be used to generate rows for this StoredProcedure.</returns>
+		/// <typeparam name="TFactory">The type of model that the row factory should generate.</typeparam>
+		protected <#+ if (TypeCount == 1) Write("virtual"); else Write("override"); #> IRowFactory<TFactory> CreateFactory<TFactory>()
+		{
+			return RowFactory<TFactory>.Create(<#+ Write((TypeCount == 1).ToString().ToLower()); #>);
+		}
 	}
+
 	#endregion
 
 
