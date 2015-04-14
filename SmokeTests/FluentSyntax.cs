@@ -543,6 +543,16 @@ namespace SmokeTests
                                   .TestGetStatesResults();
         }
 
+        [Export, ExportMetadata("Name", "Fluent Syntax Hierarchical ResultSet model order specified")]
+        Tuple<bool, string> HierarchicalResultSet_ModelOrderSpecified(IDbConnection db)
+        {
+            return StoredProcedure.Create("usp_GetCitiesAndStates")
+                                  .WithResults<City, State>()
+                                  .AsHierarchical<State>()
+                                  .Execute(db, Program.timeout)
+                                  .TestGetStatesResults();
+        }
+
         [Export, ExportMetadata("Name", "Fluent Syntax async Hierarchical ResultSet when children returned first")]
         async Task<Tuple<bool, string>> AsyncHierarchicalResultSet_ChildrenReturnedFirst(IDbConnection db)
         {
@@ -560,6 +570,17 @@ namespace SmokeTests
                                            .WithResults<State>()
                                            .ExecuteAsync(db, Program.timeout);
 
+            return res.TestGetStatesResults();
+        }
+
+        [Export, ExportMetadata("Name", "Fluent Syntax Hierarchical ResultSet model order specified")]
+        async Task<Tuple<bool, string>> AsyncHierarchicalResultSet_ModelOrderSpecified(IDbConnection db)
+        {
+            var res = await StoredProcedure.Create("usp_GetStatesAndCities")
+                                           .WithResults<State, City>()
+                                           .AsHierarchical<State>()
+                                           .ExecuteAsync(db, Program.timeout);
+                                  
             return res.TestGetStatesResults();
         }
         #endregion
