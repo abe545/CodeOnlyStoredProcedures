@@ -37,9 +37,6 @@ namespace CodeOnlyStoredProcedure
                 typeof(Guid)
             };
 
-        internal static readonly ConcurrentDictionary<Type, Type> interfaceMap =
-            new ConcurrentDictionary<Type, Type>();
-
         internal static IEnumerable<PropertyInfo> GetMappedProperties(
             this Type t, 
                  bool requireWritable = false,
@@ -287,7 +284,7 @@ namespace CodeOnlyStoredProcedure
         {
             Contract.Requires(type != null);
 
-            if (type.IsSimpleType() || interfaceMap.ContainsKey(type))
+            if (type.IsSimpleType() || GlobalSettings.Instance.InterfaceMap.ContainsKey(type))
                 return true;
 
             return type.GetConstructor(new Type[0]) != null;

@@ -361,14 +361,14 @@ namespace CodeOnlyStoredProcedure
         /// Adds a mapping for a given interface to an implementation. After doing so,
         /// any StoredProcedure that returns TInterface will return instances of TImpl
         /// </summary>
-        /// <typeparam name="TInterface"></typeparam>
-        /// <typeparam name="TImpl"></typeparam>
+        /// <typeparam name="TInterface">The interface to map to a concrete type.</typeparam>
+        /// <typeparam name="TImpl">The implementation that implements the interface.</typeparam>
         public static void MapResultType<TInterface, TImpl>()
             where TImpl : TInterface, new()
         {
-            TypeExtensions.interfaceMap.AddOrUpdate(typeof(TInterface),
-                                                    typeof(TImpl),
-                                                    (_, __) => typeof(TImpl));
+            GlobalSettings.Instance.InterfaceMap.AddOrUpdate(typeof(TInterface),
+                                                             typeof(TImpl),
+                                                             (_, __) => typeof(TImpl));
         }
         #endregion
 

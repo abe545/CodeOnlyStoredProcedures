@@ -744,7 +744,7 @@ namespace CodeOnlyTests.RowFactory
             [TestMethod]
             public void MappedInterface_ReturnsImplementation()
             {
-                lock (CodeOnlyStoredProcedure.TypeExtensions.interfaceMap)
+                using (GlobalSettings.UseTestInstance())
                 {
                     StoredProcedure.MapResultType<Interface, InterfaceImpl>();
                     var data = new Dictionary<string, object>
