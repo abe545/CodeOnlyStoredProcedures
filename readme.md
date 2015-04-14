@@ -80,6 +80,16 @@ public class Child
 
 You can then get the hierarchical items like so: `IEnumerable<Parent> res = db.Execute().usp_GetParentsAndChildren();`
 
+#### But, I like control (or it can't figure out how to parse my hierarchical results)
+You can declare the order of the result sets using the fluent syntax:
+
+```cs
+IEnumerable<Second> res = StoredProcedure.Create("usp_GetHierarchy")
+                                         .WithResults<First, Second, Third>()
+                                         .AsHierarchical<Second>()
+                                         .Execute(connection);
+```
+
 #### Want it asynchronous?
 Just use `ExecuteAsync` it that way.
 
