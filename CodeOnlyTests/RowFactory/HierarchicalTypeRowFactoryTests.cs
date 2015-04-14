@@ -404,6 +404,45 @@ namespace CodeOnlyTests.RowFactory
                             }
                         });
             }
+
+            [TestMethod]
+            public void CompoundKeys_CanStillBeUsedToGenerateHierarchy()
+            {
+                var reader = SetupDataReader(
+                    new Dictionary<string, object>
+                    {
+                        { "Age", 42 },
+                        { "Name", "The Answer" }
+                    },
+                    new Dictionary<string, object>
+                    {
+                        { "Age", 16 },
+                        { "Name", "Candles" },
+                        { "ParentAge", 42 },
+                        { "ParentName", "The Answer" }
+                    });
+
+                var toTest = new HierarchicalTypeRowFactory<UnmappedKeyParent>();
+                var res    = toTest.ParseRows(reader, new IDataTransformer[0], CancellationToken.None);
+
+                res.Should().ContainSingle("because only one row was setup").Which
+                    .ShouldBeEquivalentTo(
+                        new UnmappedKeyParent
+                        {
+                            Name = "The Answer",
+                            Age  = 42,
+                            Children = new[]
+                            {
+                                new UnmappedKeyChild
+                                {
+                                    Name       = "Candles",
+                                    Age        = 16,
+                                    ParentName = "The Answer",
+                                    ParentAge  = 42
+                                }
+                            }
+                        });
+            }
         }
 
         private static IDataReader SetupDataReader(params Dictionary<string, object>[] values)
@@ -533,6 +572,23 @@ namespace CodeOnlyTests.RowFactory
             [Key]
             public int Key { get; set; }
             public int OtherKey { get; set; }
+        }
+
+        public class UnmappedKeyParent
+        {
+            public string Id { get { return Name + Age; } }
+            public string Name { get; set; }
+            public int Age { get; set; }
+            public IEnumerable<UnmappedKeyChild> Children { get; set; }
+        }
+
+        public class UnmappedKeyChild
+        {
+            public string UnmappedKeyParentId { get { return ParentName + ParentAge; } }
+            public string ParentName { get; set; }
+            public int ParentAge { get; set; }
+            public string Name { get; set; }
+            public int Age { get; set; }
         }
     }
 }
