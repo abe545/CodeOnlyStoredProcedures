@@ -307,7 +307,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
             if (expectedDbType != null)
             {
-                res = Expression.Call(dbReader, typeof(IDataRecord).GetMethod("Get" + Type.GetTypeCode(expectedDbType)), index);
+                res = Expression.Call(dbReader, GetGetMethod(expectedDbType), index);
                 if (type == typeof(bool) || type == typeof(bool?))
                 {
                     res = Expression.NotEqual(res, Zero(expectedDbType));
@@ -318,7 +318,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
                     res = Expression.Convert(res, dbType);
             }
             else
-                res = Expression.Call(dbReader, typeof(IDataRecord).GetMethod("Get" + Type.GetTypeCode(dbType)), index);
+                res = Expression.Call(dbReader, GetGetMethod(dbType), index);
 
             if (switchSign)
                 res = Expression.Convert(res, unswitched);
@@ -419,6 +419,31 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
             foreach (var x in xFormers.OfType<IDataTransformer<T>>())
                 expr = Expression.Call(Expression.Constant(x), DataTransformerCache<T>.transform, expr, attributeExpression);
+        }
+
+        protected static MethodInfo GetGetMethod(Type type)
+        {
+            Contract.Requires(type != null);
+
+            var typeCode = Type.GetTypeCode(type);
+            switch (typeCode)
+            {
+                case TypeCode.Boolean:
+                case TypeCode.Byte:
+                case TypeCode.Char:
+                case TypeCode.DateTime:
+                case TypeCode.Decimal:
+                case TypeCode.Double:
+                case TypeCode.Int16:
+                case TypeCode.Int32:
+                case TypeCode.Int64:
+                case TypeCode.String: 
+                    return typeof(IDataRecord).GetMethod("Get" + typeCode);
+                case TypeCode.Single:
+                    return typeof(IDataRecord).GetMethod("GetFloat");
+                default:
+                    throw new NotSupportedException("Can not determine the method to call on the IDataRecord for column of type " + type);
+            }
         }
 
         private static class DataTransformerCache<T>
