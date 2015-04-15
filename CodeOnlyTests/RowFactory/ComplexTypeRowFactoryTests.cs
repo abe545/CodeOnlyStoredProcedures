@@ -1065,6 +1065,65 @@ namespace CodeOnlyTests.RowFactory
                     .Should().Match<ConvertToInt>(i => i.Value == 0, "the property should be converted from bool");
             }
 
+            [TestMethod]
+            public void GlobalTransformer_UsedToTransformData()
+            {
+                using (GlobalSettings.UseTestInstance())
+                {
+                    StoredProcedure.AddGlobalTransformer(new StaticTransformer { Result = "Foobar" });
+
+                    var values = new Dictionary<string, object>
+                    {
+                        { "Column", "Hello, world!" }
+                    };
+
+                    var reader = CreateDataReader(values);
+                    var toTest = new ComplexTypeRowFactory<SingleColumn>();
+                    var res    = toTest.ParseRows(reader, new IDataTransformer[0], CancellationToken.None);
+
+                    res.Should().ContainSingle().Which.ShouldBeEquivalentTo(new SingleColumn { Column = "Foobar" }, "the column should be transformed");
+                }
+            }
+
+            [TestMethod]
+            public void GlobalTypedTransformer_UsedToTransformOnlyRequiredData()
+            {
+                using (GlobalSettings.UseTestInstance())
+                {
+                    StoredProcedure.AddGlobalTransformer(new Transformer<string>(Tuple.Create("Hello, World!", "Hello, World!Hello, World!")));
+                    StoredProcedure.AddGlobalTransformer(new Transformer<int>(Tuple.Create(99, 33)));
+                    StoredProcedure.AddGlobalTransformer(new Transformer<double>(Tuple.Create(42.0, 45.0)));
+
+                    var values = new Dictionary<string, object>
+                    {
+                        { "String",  "Hello, World!"           },
+                        { "Double",  42.0                      },
+                        { "Decimal", 100M                      },
+                        { "Int",     99                        },
+                        { "Long",    1028130L                  },
+                        { "Date",    new DateTime(1982, 1, 31) },
+                        { "FooBar",  "Bar"                     }
+                    };
+
+                    var reader = CreateDataReader(values);
+                    var toTest = new ComplexTypeRowFactory<SingleResultSet>();
+                    var res    = toTest.ParseRows(reader, new IDataTransformer[0], CancellationToken.None);
+
+                    res.Should().ContainSingle().Which
+                       .ShouldBeEquivalentTo(
+                       new SingleResultSet
+                       {
+                           String = "Hello, World!Hello, World!",
+                           Double = 45.0,
+                           Decimal = 100M,
+                           Int = 33,
+                           Long = 1028130L,
+                           Date = new DateTime(1982, 1, 31),
+                           FooBar = FooBar.Bar
+                       });
+                }
+            }
+
             private static IDataReader CreateDataReader(Dictionary<string, object> values, bool setupGetValue = false)
             {
                 var keys = values.Keys.OrderBy(s => s).ToList();
@@ -1395,14 +1454,7 @@ namespace CodeOnlyTests.RowFactory
 
         private class StaticTransformer : IDataTransformer
         {
-            public Type OutputType { get { return typeof(string); } }
-
             public string Result { get; set; }
-
-            public bool CanTransformInput(Type type)
-            {
-                return true;
-            }
 
             public bool CanTransform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes)
             {
@@ -1417,13 +1469,6 @@ namespace CodeOnlyTests.RowFactory
 
         private class NeverTransformer : IDataTransformer
         {
-            public Type OutputType { get { return typeof(object); } }
-
-            public bool CanTransformInput(Type type)
-            {
-                return false;
-            }
-
             public bool CanTransform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes)
             {
                 return false;

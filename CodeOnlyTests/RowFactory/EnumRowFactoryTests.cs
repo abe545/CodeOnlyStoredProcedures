@@ -210,6 +210,32 @@ namespace CodeOnlyTests.RowFactory
             }
 
             [TestMethod]
+            public void ReturnsEnumViaNameTransformsStringBeforeParsing_WithGlobalTransformer()
+            {
+                using (GlobalSettings.UseTestInstance())
+                {
+                    var rdr = new Mock<IDataReader>();
+                    rdr.Setup(r => r.GetFieldType(0)).Returns(typeof(string));
+                    rdr.Setup(r => r.GetString(0)).Returns("One");
+                    rdr.SetupSequence(r => r.Read())
+                       .Returns(true)
+                       .Returns(false);
+
+                    var toTest = new EnumRowFactory<IntEnum>();
+                    var xf = new Mock<IDataTransformer>();
+                    xf.Setup(x => x.CanTransform("One", typeof(IntEnum), false, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
+                      .Returns(true);
+                    xf.Setup(x => x.Transform("One", typeof(IntEnum), false, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
+                      .Returns("Two");
+
+                    StoredProcedure.AddGlobalTransformer(xf.Object);
+
+                    toTest.ParseRows(rdr.Object, new IDataTransformer[0], CancellationToken.None)
+                          .Single().Should().Be(IntEnum.Two);
+                }
+            }
+
+            [TestMethod]
             public void ReturnsNullableEnumValuesViaName()
             {
                 var rdr = new Mock<IDataReader>();
@@ -266,6 +292,42 @@ namespace CodeOnlyTests.RowFactory
 
                 toTest.ParseRows(rdr.Object, new[] { xf.Object }, CancellationToken.None)
                       .Should().ContainInOrder(IntEnum.One, null, IntEnum.Two, IntEnum.Zero);
+            }
+
+            [TestMethod]
+            public void ReturnsNullableEnumValuesViaNameTransformsBeforeParsing_WithGlobalTransformer()
+            {
+                using (GlobalSettings.UseTestInstance())
+                {
+                    var rdr = new Mock<IDataReader>();
+                    rdr.Setup(r => r.GetFieldType(0)).Returns(typeof(string));
+                    rdr.SetupSequence(r => r.IsDBNull(0))
+                       .Returns(false)
+                       .Returns(true)
+                       .Returns(false)
+                       .Returns(false);
+                    rdr.SetupSequence(r => r.GetString(0))
+                       .Returns("Blah")
+                       .Returns("Two")
+                       .Returns("Zero");
+                    rdr.SetupSequence(r => r.Read())
+                       .Returns(true)
+                       .Returns(true)
+                       .Returns(true)
+                       .Returns(true)
+                       .Returns(false);
+
+                    var toTest = RowFactory<IntEnum?>.Create();
+                    var xf = new Mock<IDataTransformer>();
+                    xf.Setup(x => x.CanTransform("Blah", typeof(IntEnum), true, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
+                      .Returns(true);
+                    xf.Setup(x => x.Transform("Blah", typeof(IntEnum), true, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
+                      .Returns("One");
+
+                    StoredProcedure.AddGlobalTransformer(xf.Object);
+                    toTest.ParseRows(rdr.Object, new IDataTransformer[0], CancellationToken.None)
+                          .Should().ContainInOrder(IntEnum.One, null, IntEnum.Two, IntEnum.Zero);
+                }
             }
         }
 

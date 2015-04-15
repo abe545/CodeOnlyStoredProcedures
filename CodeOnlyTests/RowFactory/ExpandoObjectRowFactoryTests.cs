@@ -81,7 +81,6 @@ namespace CodeOnlyTests.RowFactory
                 ((DateTime)item.Date)   .Should().Be(new DateTime(1982, 1, 31), "the Date column has this value");
             }
 
-
             [TestMethod]
             public void IDataTransformer_TransformsData()
             {
@@ -108,6 +107,37 @@ namespace CodeOnlyTests.RowFactory
                 
                 var item = res.Should().ContainSingle("because only 1 row should have been returned").Which;
                 ((string)item.Name).Should().Be("foobar", "because it should have been transformed");
+            }
+
+            [TestMethod]
+            public void GlobalIDataTransformer_TransformsData()
+            {
+                var rdr = new Mock<IDataReader>();
+                rdr.Setup(r => r.FieldCount).Returns(1);
+                rdr.Setup(r => r.GetFieldType(0)).Returns(typeof(string));
+                rdr.Setup(r => r.GetName(0)).Returns("Name");
+                rdr.Setup(r => r.GetValues(It.IsAny<object[]>()))
+                   .Callback<object[]>(os => os[0] = "Blah");
+                rdr.SetupSequence(r => r.Read())
+                   .Returns(true)
+                   .Returns(false);
+
+                var xf = new Mock<IDataTransformer>();
+                xf.Setup(x => x.CanTransform("Blah", typeof(string), true, It.IsAny<IEnumerable<Attribute>>()))
+                  .Returns(true);
+                xf.Setup(x => x.Transform("Blah", typeof(string), true, It.IsAny<IEnumerable<Attribute>>()))
+                  .Returns("foobar");
+
+                using (GlobalSettings.UseTestInstance())
+                {
+                    StoredProcedure.AddGlobalTransformer(xf.Object);
+
+                    var toTest = new ExpandoObjectRowFactory<dynamic>();
+                    var res    = toTest.ParseRows(rdr.Object, new IDataTransformer[0], CancellationToken.None);
+
+                    var item = res.Should().ContainSingle("because only 1 row should have been returned").Which;
+                    ((string)item.Name).Should().Be("foobar", "because it should have been transformed");
+                }
             }
 
             [TestMethod]

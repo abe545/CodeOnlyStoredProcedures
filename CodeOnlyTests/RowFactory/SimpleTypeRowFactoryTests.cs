@@ -62,6 +62,32 @@ namespace CodeOnlyTests.RowFactory
             }
 
             [TestMethod]
+            public void ParsesThroughGlobalDataTransformer()
+            {
+                var rdr = new Mock<IDataReader>();
+                rdr.Setup(r => r.GetFieldType(0)).Returns(typeof(int));
+                rdr.Setup(r => r.GetValue(0)).Returns(99);
+                rdr.SetupSequence(r => r.Read())
+                   .Returns(true)
+                   .Returns(false);
+
+                var xformer = new Mock<IDataTransformer>();
+                xformer.Setup(x => x.CanTransform(99, typeof(int), false, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
+                       .Returns(true);
+                xformer.Setup(x => x.Transform(99, typeof(int), false, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
+                       .Returns(42);
+
+                using (GlobalSettings.UseTestInstance())
+                {
+                    StoredProcedure.AddGlobalTransformer(xformer.Object);
+                    var toTest = new SimpleTypeRowFactory<int>();
+
+                    toTest.ParseRows(rdr.Object, new IDataTransformer[0], CancellationToken.None)
+                          .Single().Should().Be(42);
+                }
+            }
+
+            [TestMethod]
             public void ParsesNullableDoubleAsNull()
             {
                 var rdr = new Mock<IDataReader>();
@@ -164,6 +190,32 @@ namespace CodeOnlyTests.RowFactory
 
                 var res = await toTest.ParseRowsAsync(rdr.Object, new[] { xformer.Object }, CancellationToken.None);
                 res.Single().Should().Be(42);
+            }
+
+            [TestMethod]
+            public async Task ParsesThroughGlobalDataTransformer()
+            {
+                var rdr = new Mock<DbDataReader>();
+                rdr.Setup(r => r.GetFieldType(0)).Returns(typeof(int));
+                rdr.Setup(r => r.GetValue(0)).Returns(99);
+                rdr.SetupSequence(r => r.ReadAsync(It.IsAny<CancellationToken>()))
+                   .ReturnsAsync(true)
+                   .ReturnsAsync(false);
+
+                var xformer = new Mock<IDataTransformer>();
+                xformer.Setup(x => x.CanTransform(99, typeof(int), false, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
+                       .Returns(true);
+                xformer.Setup(x => x.Transform(99, typeof(int), false, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
+                       .Returns(42);
+
+                using (GlobalSettings.UseTestInstance())
+                {
+                    StoredProcedure.AddGlobalTransformer(xformer.Object);
+                    var toTest = new SimpleTypeRowFactory<int>();
+
+                    var res = await toTest.ParseRowsAsync(rdr.Object, new IDataTransformer[0], CancellationToken.None);
+                    res.Single().Should().Be(42);
+                }
             }
 
             [TestMethod]
