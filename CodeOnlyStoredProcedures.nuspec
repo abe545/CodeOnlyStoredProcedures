@@ -9,7 +9,14 @@
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>A library for easily calling Stored Procedures in .NET. Works great with Entity Framework Code First models. 
 Code Only Stored Procedures will not create any Stored Procedures on your database. Instead, its aim is to make it easy to call your existing stored procedures by writing simple code.</description>
-        <releaseNotes>2.0.0
+        <releaseNotes>2.1.0
+Added ability to specify the order in which multiple result sets are returned for hierarchical models.
+Added global data transformers, that will be applied for all columns in all stored procedures. These should be specified before any StoredProcedure is created.
+Added option to enable numeric conversions for all numeric properties. This should be specified before any StoredProcedure is created.
+Fixed bug where System.Single (float in C#) property types could not be returned (it would throw an exception).
+Fixed bug where StoredProcedure&lt;dynamic&gt; would not apply any IDataTransformers specified.
+          
+2.0.0
 Removed dependency on SQL Server for all stored procedures (except those that accept Table Valued Parameters)
 Results from the dynamic syntax can now be cast explicitly
 Result columns can be marked as optional, so if no value is returned, the execution will not fail.
