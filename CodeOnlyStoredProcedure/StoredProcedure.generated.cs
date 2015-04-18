@@ -12,18 +12,14 @@ namespace CodeOnlyStoredProcedure
 	/// <summary>Calls a StoredProcedure that returns 1 result set(s).</summary>
 	/// <typeparam name="T1">The type of the first result set returned by the stored procedure.</typeparam>
 	public class StoredProcedure<T1> : StoredProcedure	{
-		private IRowFactory<T1> factory;
+		private Lazy<IRowFactory<T1>> factory;
 
 		internal IRowFactory<T1> T1Factory 
 		{
 			get
 			{
 				Contract.Ensures(Contract.Result<IRowFactory<T1>>() != null);
-				
-				if (factory == null)
-					factory = RowFactory<T1>.Create();
-
-				return factory;
+				return factory.Value;
 			}
 		}
 
@@ -35,7 +31,8 @@ namespace CodeOnlyStoredProcedure
 		public StoredProcedure(string name) : base(name)
 		{ 
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
-			Contract.Requires(typeof(T1).IsValidResultType());	
+			Contract.Requires(typeof(T1).IsValidResultType());
+			this.factory = new Lazy<IRowFactory<T1>>(CreateFactory<T1>);
 		}
 		
         /// <summary>
@@ -48,13 +45,16 @@ namespace CodeOnlyStoredProcedure
 		{ 
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
-			Contract.Requires(typeof(T1).IsValidResultType());	
+			Contract.Requires(typeof(T1).IsValidResultType());
+			this.factory = new Lazy<IRowFactory<T1>>(CreateFactory<T1>);
 		}
 		
 		internal StoredProcedure(StoredProcedure toClone)
 			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.DataTransformers) 
 		{ 
 			Contract.Requires(toClone != null);
+			Contract.Requires(typeof(T1).IsValidResultType());
+			this.factory = new Lazy<IRowFactory<T1>>(CreateFactory<T1>);
 		}
 				
         /// <summary>
@@ -77,6 +77,8 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
 			Contract.Requires(parameters       != null);
 			Contract.Requires(dataTransformers != null);
+			Contract.Requires(typeof(T1).IsValidResultType());
+			this.factory = new Lazy<IRowFactory<T1>>(CreateFactory<T1>);
 		}
 	
         /// <summary>
@@ -202,7 +204,6 @@ namespace CodeOnlyStoredProcedure
 			return results;
 		}
 #endif
-
 		
         /// <summary>
         /// Clones the StoredProcedure, and gives it the passed parameters.
@@ -216,7 +217,16 @@ namespace CodeOnlyStoredProcedure
 		{
 			return new StoredProcedure<T1>(Schema, Name, parameters, dataTransformers);
 		}	
+
+		/// <summary>Creates an <see cref="IRowFactory{T}"/> to use to generate results for this StoredProcedure.</summary>
+		/// <returns>A new <see cref="IRowFactory{T}"/> that will be used to generate rows for this StoredProcedure.</returns>
+		/// <typeparam name="TFactory">The type of model that the row factory should generate.</typeparam>
+		protected virtual IRowFactory<TFactory> CreateFactory<TFactory>()
+		{
+			return RowFactory<TFactory>.Create(true);
+		}
 	}
+
 	#endregion
 
 	#region StoredProcedure<T1, T2>
@@ -224,18 +234,14 @@ namespace CodeOnlyStoredProcedure
 	/// <typeparam name="T1">The type of the first result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T2">The type of the second result set returned by the stored procedure.</typeparam>
 	public class StoredProcedure<T1, T2> : StoredProcedure<T1>	{
-		private IRowFactory<T2> factory;
+		private Lazy<IRowFactory<T2>> factory;
 
 		internal IRowFactory<T2> T2Factory 
 		{
 			get
 			{
 				Contract.Ensures(Contract.Result<IRowFactory<T2>>() != null);
-				
-				if (factory == null)
-					factory = RowFactory<T2>.Create();
-
-				return factory;
+				return factory.Value;
 			}
 		}
 
@@ -248,7 +254,8 @@ namespace CodeOnlyStoredProcedure
 		{ 
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
 			Contract.Requires(typeof(T1).IsValidResultType());
-			Contract.Requires(typeof(T2).IsValidResultType());	
+			Contract.Requires(typeof(T2).IsValidResultType());
+			this.factory = new Lazy<IRowFactory<T2>>(CreateFactory<T2>);
 		}
 		
         /// <summary>
@@ -262,13 +269,17 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(!string.IsNullOrWhiteSpace(schema));
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
 			Contract.Requires(typeof(T1).IsValidResultType());
-			Contract.Requires(typeof(T2).IsValidResultType());	
+			Contract.Requires(typeof(T2).IsValidResultType());
+			this.factory = new Lazy<IRowFactory<T2>>(CreateFactory<T2>);
 		}
 		
 		internal StoredProcedure(StoredProcedure toClone)
 			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.DataTransformers) 
 		{ 
 			Contract.Requires(toClone != null);
+			Contract.Requires(typeof(T1).IsValidResultType());
+			Contract.Requires(typeof(T2).IsValidResultType());
+			this.factory = new Lazy<IRowFactory<T2>>(CreateFactory<T2>);
 		}
 				
         /// <summary>
@@ -291,6 +302,9 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
 			Contract.Requires(parameters       != null);
 			Contract.Requires(dataTransformers != null);
+			Contract.Requires(typeof(T1).IsValidResultType());
+			Contract.Requires(typeof(T2).IsValidResultType());
+			this.factory = new Lazy<IRowFactory<T2>>(CreateFactory<T2>);
 		}
 	
         /// <summary>
@@ -429,8 +443,17 @@ namespace CodeOnlyStoredProcedure
 			return results;
 		}
 #endif
+		/// <summary>
+		/// Creates a <see cref="HierarchicalStoredProcedure{T}"/> with the results expected in the order declared for this stored procedure.
+		/// </summary>
+		/// <returns>A hierarchical stored procedure.</returns>
+		public virtual HierarchicalStoredProcedure<TFactory> AsHierarchical<TFactory>()
+		{
+			if (typeof(TFactory) != typeof(T1) && typeof(TFactory) != typeof(T2))
+				throw new ArgumentException("The type of TFactory must be one of the types the Stored Procedure has already been declared to return.");
+			return new HierarchicalStoredProcedure<TFactory>(Schema, Name, Parameters, DataTransformers, new [] { typeof(T1), typeof(T2) });
+		}
 
-		
         /// <summary>
         /// Clones the StoredProcedure, and gives it the passed parameters.
         /// </summary>
@@ -443,7 +466,16 @@ namespace CodeOnlyStoredProcedure
 		{
 			return new StoredProcedure<T1, T2>(Schema, Name, parameters, dataTransformers);
 		}	
+
+		/// <summary>Creates an <see cref="IRowFactory{T}"/> to use to generate results for this StoredProcedure.</summary>
+		/// <returns>A new <see cref="IRowFactory{T}"/> that will be used to generate rows for this StoredProcedure.</returns>
+		/// <typeparam name="TFactory">The type of model that the row factory should generate.</typeparam>
+		protected override IRowFactory<TFactory> CreateFactory<TFactory>()
+		{
+			return RowFactory<TFactory>.Create(false);
+		}
 	}
+
 	#endregion
 
 	#region StoredProcedure<T1, T2, T3>
@@ -452,18 +484,14 @@ namespace CodeOnlyStoredProcedure
 	/// <typeparam name="T2">The type of the second result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T3">The type of the third result set returned by the stored procedure.</typeparam>
 	public class StoredProcedure<T1, T2, T3> : StoredProcedure<T1, T2>	{
-		private IRowFactory<T3> factory;
+		private Lazy<IRowFactory<T3>> factory;
 
 		internal IRowFactory<T3> T3Factory 
 		{
 			get
 			{
 				Contract.Ensures(Contract.Result<IRowFactory<T3>>() != null);
-				
-				if (factory == null)
-					factory = RowFactory<T3>.Create();
-
-				return factory;
+				return factory.Value;
 			}
 		}
 
@@ -477,7 +505,8 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
 			Contract.Requires(typeof(T1).IsValidResultType());
 			Contract.Requires(typeof(T2).IsValidResultType());
-			Contract.Requires(typeof(T3).IsValidResultType());	
+			Contract.Requires(typeof(T3).IsValidResultType());
+			this.factory = new Lazy<IRowFactory<T3>>(CreateFactory<T3>);
 		}
 		
         /// <summary>
@@ -492,13 +521,18 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
 			Contract.Requires(typeof(T1).IsValidResultType());
 			Contract.Requires(typeof(T2).IsValidResultType());
-			Contract.Requires(typeof(T3).IsValidResultType());	
+			Contract.Requires(typeof(T3).IsValidResultType());
+			this.factory = new Lazy<IRowFactory<T3>>(CreateFactory<T3>);
 		}
 		
 		internal StoredProcedure(StoredProcedure toClone)
 			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.DataTransformers) 
 		{ 
 			Contract.Requires(toClone != null);
+			Contract.Requires(typeof(T1).IsValidResultType());
+			Contract.Requires(typeof(T2).IsValidResultType());
+			Contract.Requires(typeof(T3).IsValidResultType());
+			this.factory = new Lazy<IRowFactory<T3>>(CreateFactory<T3>);
 		}
 				
         /// <summary>
@@ -521,6 +555,10 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
 			Contract.Requires(parameters       != null);
 			Contract.Requires(dataTransformers != null);
+			Contract.Requires(typeof(T1).IsValidResultType());
+			Contract.Requires(typeof(T2).IsValidResultType());
+			Contract.Requires(typeof(T3).IsValidResultType());
+			this.factory = new Lazy<IRowFactory<T3>>(CreateFactory<T3>);
 		}
 	
         /// <summary>
@@ -666,8 +704,17 @@ namespace CodeOnlyStoredProcedure
 			return results;
 		}
 #endif
+		/// <summary>
+		/// Creates a <see cref="HierarchicalStoredProcedure{T}"/> with the results expected in the order declared for this stored procedure.
+		/// </summary>
+		/// <returns>A hierarchical stored procedure.</returns>
+		public override HierarchicalStoredProcedure<TFactory> AsHierarchical<TFactory>()
+		{
+			if (typeof(TFactory) != typeof(T1) && typeof(TFactory) != typeof(T2) && typeof(TFactory) != typeof(T3))
+				throw new ArgumentException("The type of TFactory must be one of the types the Stored Procedure has already been declared to return.");
+			return new HierarchicalStoredProcedure<TFactory>(Schema, Name, Parameters, DataTransformers, new [] { typeof(T1), typeof(T2), typeof(T3) });
+		}
 
-		
         /// <summary>
         /// Clones the StoredProcedure, and gives it the passed parameters.
         /// </summary>
@@ -680,7 +727,16 @@ namespace CodeOnlyStoredProcedure
 		{
 			return new StoredProcedure<T1, T2, T3>(Schema, Name, parameters, dataTransformers);
 		}	
+
+		/// <summary>Creates an <see cref="IRowFactory{T}"/> to use to generate results for this StoredProcedure.</summary>
+		/// <returns>A new <see cref="IRowFactory{T}"/> that will be used to generate rows for this StoredProcedure.</returns>
+		/// <typeparam name="TFactory">The type of model that the row factory should generate.</typeparam>
+		protected override IRowFactory<TFactory> CreateFactory<TFactory>()
+		{
+			return RowFactory<TFactory>.Create(false);
+		}
 	}
+
 	#endregion
 
 	#region StoredProcedure<T1, T2, T3, T4>
@@ -690,18 +746,14 @@ namespace CodeOnlyStoredProcedure
 	/// <typeparam name="T3">The type of the third result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T4">The type of the fourth result set returned by the stored procedure.</typeparam>
 	public class StoredProcedure<T1, T2, T3, T4> : StoredProcedure<T1, T2, T3>	{
-		private IRowFactory<T4> factory;
+		private Lazy<IRowFactory<T4>> factory;
 
 		internal IRowFactory<T4> T4Factory 
 		{
 			get
 			{
 				Contract.Ensures(Contract.Result<IRowFactory<T4>>() != null);
-				
-				if (factory == null)
-					factory = RowFactory<T4>.Create();
-
-				return factory;
+				return factory.Value;
 			}
 		}
 
@@ -716,7 +768,8 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(typeof(T1).IsValidResultType());
 			Contract.Requires(typeof(T2).IsValidResultType());
 			Contract.Requires(typeof(T3).IsValidResultType());
-			Contract.Requires(typeof(T4).IsValidResultType());	
+			Contract.Requires(typeof(T4).IsValidResultType());
+			this.factory = new Lazy<IRowFactory<T4>>(CreateFactory<T4>);
 		}
 		
         /// <summary>
@@ -732,13 +785,19 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(typeof(T1).IsValidResultType());
 			Contract.Requires(typeof(T2).IsValidResultType());
 			Contract.Requires(typeof(T3).IsValidResultType());
-			Contract.Requires(typeof(T4).IsValidResultType());	
+			Contract.Requires(typeof(T4).IsValidResultType());
+			this.factory = new Lazy<IRowFactory<T4>>(CreateFactory<T4>);
 		}
 		
 		internal StoredProcedure(StoredProcedure toClone)
 			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.DataTransformers) 
 		{ 
 			Contract.Requires(toClone != null);
+			Contract.Requires(typeof(T1).IsValidResultType());
+			Contract.Requires(typeof(T2).IsValidResultType());
+			Contract.Requires(typeof(T3).IsValidResultType());
+			Contract.Requires(typeof(T4).IsValidResultType());
+			this.factory = new Lazy<IRowFactory<T4>>(CreateFactory<T4>);
 		}
 				
         /// <summary>
@@ -761,6 +820,11 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
 			Contract.Requires(parameters       != null);
 			Contract.Requires(dataTransformers != null);
+			Contract.Requires(typeof(T1).IsValidResultType());
+			Contract.Requires(typeof(T2).IsValidResultType());
+			Contract.Requires(typeof(T3).IsValidResultType());
+			Contract.Requires(typeof(T4).IsValidResultType());
+			this.factory = new Lazy<IRowFactory<T4>>(CreateFactory<T4>);
 		}
 	
         /// <summary>
@@ -913,8 +977,17 @@ namespace CodeOnlyStoredProcedure
 			return results;
 		}
 #endif
+		/// <summary>
+		/// Creates a <see cref="HierarchicalStoredProcedure{T}"/> with the results expected in the order declared for this stored procedure.
+		/// </summary>
+		/// <returns>A hierarchical stored procedure.</returns>
+		public override HierarchicalStoredProcedure<TFactory> AsHierarchical<TFactory>()
+		{
+			if (typeof(TFactory) != typeof(T1) && typeof(TFactory) != typeof(T2) && typeof(TFactory) != typeof(T3) && typeof(TFactory) != typeof(T4))
+				throw new ArgumentException("The type of TFactory must be one of the types the Stored Procedure has already been declared to return.");
+			return new HierarchicalStoredProcedure<TFactory>(Schema, Name, Parameters, DataTransformers, new [] { typeof(T1), typeof(T2), typeof(T3), typeof(T4) });
+		}
 
-		
         /// <summary>
         /// Clones the StoredProcedure, and gives it the passed parameters.
         /// </summary>
@@ -927,7 +1000,16 @@ namespace CodeOnlyStoredProcedure
 		{
 			return new StoredProcedure<T1, T2, T3, T4>(Schema, Name, parameters, dataTransformers);
 		}	
+
+		/// <summary>Creates an <see cref="IRowFactory{T}"/> to use to generate results for this StoredProcedure.</summary>
+		/// <returns>A new <see cref="IRowFactory{T}"/> that will be used to generate rows for this StoredProcedure.</returns>
+		/// <typeparam name="TFactory">The type of model that the row factory should generate.</typeparam>
+		protected override IRowFactory<TFactory> CreateFactory<TFactory>()
+		{
+			return RowFactory<TFactory>.Create(false);
+		}
 	}
+
 	#endregion
 
 	#region StoredProcedure<T1, T2, T3, T4, T5>
@@ -938,18 +1020,14 @@ namespace CodeOnlyStoredProcedure
 	/// <typeparam name="T4">The type of the fourth result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T5">The type of the fifth result set returned by the stored procedure.</typeparam>
 	public class StoredProcedure<T1, T2, T3, T4, T5> : StoredProcedure<T1, T2, T3, T4>	{
-		private IRowFactory<T5> factory;
+		private Lazy<IRowFactory<T5>> factory;
 
 		internal IRowFactory<T5> T5Factory 
 		{
 			get
 			{
 				Contract.Ensures(Contract.Result<IRowFactory<T5>>() != null);
-				
-				if (factory == null)
-					factory = RowFactory<T5>.Create();
-
-				return factory;
+				return factory.Value;
 			}
 		}
 
@@ -965,7 +1043,8 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(typeof(T2).IsValidResultType());
 			Contract.Requires(typeof(T3).IsValidResultType());
 			Contract.Requires(typeof(T4).IsValidResultType());
-			Contract.Requires(typeof(T5).IsValidResultType());	
+			Contract.Requires(typeof(T5).IsValidResultType());
+			this.factory = new Lazy<IRowFactory<T5>>(CreateFactory<T5>);
 		}
 		
         /// <summary>
@@ -982,13 +1061,20 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(typeof(T2).IsValidResultType());
 			Contract.Requires(typeof(T3).IsValidResultType());
 			Contract.Requires(typeof(T4).IsValidResultType());
-			Contract.Requires(typeof(T5).IsValidResultType());	
+			Contract.Requires(typeof(T5).IsValidResultType());
+			this.factory = new Lazy<IRowFactory<T5>>(CreateFactory<T5>);
 		}
 		
 		internal StoredProcedure(StoredProcedure toClone)
 			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.DataTransformers) 
 		{ 
 			Contract.Requires(toClone != null);
+			Contract.Requires(typeof(T1).IsValidResultType());
+			Contract.Requires(typeof(T2).IsValidResultType());
+			Contract.Requires(typeof(T3).IsValidResultType());
+			Contract.Requires(typeof(T4).IsValidResultType());
+			Contract.Requires(typeof(T5).IsValidResultType());
+			this.factory = new Lazy<IRowFactory<T5>>(CreateFactory<T5>);
 		}
 				
         /// <summary>
@@ -1011,6 +1097,12 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
 			Contract.Requires(parameters       != null);
 			Contract.Requires(dataTransformers != null);
+			Contract.Requires(typeof(T1).IsValidResultType());
+			Contract.Requires(typeof(T2).IsValidResultType());
+			Contract.Requires(typeof(T3).IsValidResultType());
+			Contract.Requires(typeof(T4).IsValidResultType());
+			Contract.Requires(typeof(T5).IsValidResultType());
+			this.factory = new Lazy<IRowFactory<T5>>(CreateFactory<T5>);
 		}
 	
         /// <summary>
@@ -1170,8 +1262,17 @@ namespace CodeOnlyStoredProcedure
 			return results;
 		}
 #endif
+		/// <summary>
+		/// Creates a <see cref="HierarchicalStoredProcedure{T}"/> with the results expected in the order declared for this stored procedure.
+		/// </summary>
+		/// <returns>A hierarchical stored procedure.</returns>
+		public override HierarchicalStoredProcedure<TFactory> AsHierarchical<TFactory>()
+		{
+			if (typeof(TFactory) != typeof(T1) && typeof(TFactory) != typeof(T2) && typeof(TFactory) != typeof(T3) && typeof(TFactory) != typeof(T4) && typeof(TFactory) != typeof(T5))
+				throw new ArgumentException("The type of TFactory must be one of the types the Stored Procedure has already been declared to return.");
+			return new HierarchicalStoredProcedure<TFactory>(Schema, Name, Parameters, DataTransformers, new [] { typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5) });
+		}
 
-		
         /// <summary>
         /// Clones the StoredProcedure, and gives it the passed parameters.
         /// </summary>
@@ -1184,7 +1285,16 @@ namespace CodeOnlyStoredProcedure
 		{
 			return new StoredProcedure<T1, T2, T3, T4, T5>(Schema, Name, parameters, dataTransformers);
 		}	
+
+		/// <summary>Creates an <see cref="IRowFactory{T}"/> to use to generate results for this StoredProcedure.</summary>
+		/// <returns>A new <see cref="IRowFactory{T}"/> that will be used to generate rows for this StoredProcedure.</returns>
+		/// <typeparam name="TFactory">The type of model that the row factory should generate.</typeparam>
+		protected override IRowFactory<TFactory> CreateFactory<TFactory>()
+		{
+			return RowFactory<TFactory>.Create(false);
+		}
 	}
+
 	#endregion
 
 	#region StoredProcedure<T1, T2, T3, T4, T5, T6>
@@ -1196,18 +1306,14 @@ namespace CodeOnlyStoredProcedure
 	/// <typeparam name="T5">The type of the fifth result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T6">The type of the sixth result set returned by the stored procedure.</typeparam>
 	public class StoredProcedure<T1, T2, T3, T4, T5, T6> : StoredProcedure<T1, T2, T3, T4, T5>	{
-		private IRowFactory<T6> factory;
+		private Lazy<IRowFactory<T6>> factory;
 
 		internal IRowFactory<T6> T6Factory 
 		{
 			get
 			{
 				Contract.Ensures(Contract.Result<IRowFactory<T6>>() != null);
-				
-				if (factory == null)
-					factory = RowFactory<T6>.Create();
-
-				return factory;
+				return factory.Value;
 			}
 		}
 
@@ -1224,7 +1330,8 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(typeof(T3).IsValidResultType());
 			Contract.Requires(typeof(T4).IsValidResultType());
 			Contract.Requires(typeof(T5).IsValidResultType());
-			Contract.Requires(typeof(T6).IsValidResultType());	
+			Contract.Requires(typeof(T6).IsValidResultType());
+			this.factory = new Lazy<IRowFactory<T6>>(CreateFactory<T6>);
 		}
 		
         /// <summary>
@@ -1242,13 +1349,21 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(typeof(T3).IsValidResultType());
 			Contract.Requires(typeof(T4).IsValidResultType());
 			Contract.Requires(typeof(T5).IsValidResultType());
-			Contract.Requires(typeof(T6).IsValidResultType());	
+			Contract.Requires(typeof(T6).IsValidResultType());
+			this.factory = new Lazy<IRowFactory<T6>>(CreateFactory<T6>);
 		}
 		
 		internal StoredProcedure(StoredProcedure toClone)
 			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.DataTransformers) 
 		{ 
 			Contract.Requires(toClone != null);
+			Contract.Requires(typeof(T1).IsValidResultType());
+			Contract.Requires(typeof(T2).IsValidResultType());
+			Contract.Requires(typeof(T3).IsValidResultType());
+			Contract.Requires(typeof(T4).IsValidResultType());
+			Contract.Requires(typeof(T5).IsValidResultType());
+			Contract.Requires(typeof(T6).IsValidResultType());
+			this.factory = new Lazy<IRowFactory<T6>>(CreateFactory<T6>);
 		}
 				
         /// <summary>
@@ -1271,6 +1386,13 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
 			Contract.Requires(parameters       != null);
 			Contract.Requires(dataTransformers != null);
+			Contract.Requires(typeof(T1).IsValidResultType());
+			Contract.Requires(typeof(T2).IsValidResultType());
+			Contract.Requires(typeof(T3).IsValidResultType());
+			Contract.Requires(typeof(T4).IsValidResultType());
+			Contract.Requires(typeof(T5).IsValidResultType());
+			Contract.Requires(typeof(T6).IsValidResultType());
+			this.factory = new Lazy<IRowFactory<T6>>(CreateFactory<T6>);
 		}
 	
         /// <summary>
@@ -1437,8 +1559,17 @@ namespace CodeOnlyStoredProcedure
 			return results;
 		}
 #endif
+		/// <summary>
+		/// Creates a <see cref="HierarchicalStoredProcedure{T}"/> with the results expected in the order declared for this stored procedure.
+		/// </summary>
+		/// <returns>A hierarchical stored procedure.</returns>
+		public override HierarchicalStoredProcedure<TFactory> AsHierarchical<TFactory>()
+		{
+			if (typeof(TFactory) != typeof(T1) && typeof(TFactory) != typeof(T2) && typeof(TFactory) != typeof(T3) && typeof(TFactory) != typeof(T4) && typeof(TFactory) != typeof(T5) && typeof(TFactory) != typeof(T6))
+				throw new ArgumentException("The type of TFactory must be one of the types the Stored Procedure has already been declared to return.");
+			return new HierarchicalStoredProcedure<TFactory>(Schema, Name, Parameters, DataTransformers, new [] { typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5), typeof(T6) });
+		}
 
-		
         /// <summary>
         /// Clones the StoredProcedure, and gives it the passed parameters.
         /// </summary>
@@ -1451,7 +1582,16 @@ namespace CodeOnlyStoredProcedure
 		{
 			return new StoredProcedure<T1, T2, T3, T4, T5, T6>(Schema, Name, parameters, dataTransformers);
 		}	
+
+		/// <summary>Creates an <see cref="IRowFactory{T}"/> to use to generate results for this StoredProcedure.</summary>
+		/// <returns>A new <see cref="IRowFactory{T}"/> that will be used to generate rows for this StoredProcedure.</returns>
+		/// <typeparam name="TFactory">The type of model that the row factory should generate.</typeparam>
+		protected override IRowFactory<TFactory> CreateFactory<TFactory>()
+		{
+			return RowFactory<TFactory>.Create(false);
+		}
 	}
+
 	#endregion
 
 	#region StoredProcedure<T1, T2, T3, T4, T5, T6, T7>
@@ -1464,18 +1604,14 @@ namespace CodeOnlyStoredProcedure
 	/// <typeparam name="T6">The type of the sixth result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T7">The type of the seventh result set returned by the stored procedure.</typeparam>
 	public class StoredProcedure<T1, T2, T3, T4, T5, T6, T7> : StoredProcedure<T1, T2, T3, T4, T5, T6>	{
-		private IRowFactory<T7> factory;
+		private Lazy<IRowFactory<T7>> factory;
 
 		internal IRowFactory<T7> T7Factory 
 		{
 			get
 			{
 				Contract.Ensures(Contract.Result<IRowFactory<T7>>() != null);
-				
-				if (factory == null)
-					factory = RowFactory<T7>.Create();
-
-				return factory;
+				return factory.Value;
 			}
 		}
 
@@ -1493,7 +1629,8 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(typeof(T4).IsValidResultType());
 			Contract.Requires(typeof(T5).IsValidResultType());
 			Contract.Requires(typeof(T6).IsValidResultType());
-			Contract.Requires(typeof(T7).IsValidResultType());	
+			Contract.Requires(typeof(T7).IsValidResultType());
+			this.factory = new Lazy<IRowFactory<T7>>(CreateFactory<T7>);
 		}
 		
         /// <summary>
@@ -1512,13 +1649,22 @@ namespace CodeOnlyStoredProcedure
 			Contract.Requires(typeof(T4).IsValidResultType());
 			Contract.Requires(typeof(T5).IsValidResultType());
 			Contract.Requires(typeof(T6).IsValidResultType());
-			Contract.Requires(typeof(T7).IsValidResultType());	
+			Contract.Requires(typeof(T7).IsValidResultType());
+			this.factory = new Lazy<IRowFactory<T7>>(CreateFactory<T7>);
 		}
 		
 		internal StoredProcedure(StoredProcedure toClone)
 			: base(toClone.Schema, toClone.Name, toClone.Parameters, toClone.DataTransformers) 
 		{ 
 			Contract.Requires(toClone != null);
+			Contract.Requires(typeof(T1).IsValidResultType());
+			Contract.Requires(typeof(T2).IsValidResultType());
+			Contract.Requires(typeof(T3).IsValidResultType());
+			Contract.Requires(typeof(T4).IsValidResultType());
+			Contract.Requires(typeof(T5).IsValidResultType());
+			Contract.Requires(typeof(T6).IsValidResultType());
+			Contract.Requires(typeof(T7).IsValidResultType());
+			this.factory = new Lazy<IRowFactory<T7>>(CreateFactory<T7>);
 		}
 				
         /// <summary>
@@ -1541,6 +1687,14 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
 			Contract.Requires(parameters       != null);
 			Contract.Requires(dataTransformers != null);
+			Contract.Requires(typeof(T1).IsValidResultType());
+			Contract.Requires(typeof(T2).IsValidResultType());
+			Contract.Requires(typeof(T3).IsValidResultType());
+			Contract.Requires(typeof(T4).IsValidResultType());
+			Contract.Requires(typeof(T5).IsValidResultType());
+			Contract.Requires(typeof(T6).IsValidResultType());
+			Contract.Requires(typeof(T7).IsValidResultType());
+			this.factory = new Lazy<IRowFactory<T7>>(CreateFactory<T7>);
 		}
 	
         /// <summary>
@@ -1714,8 +1868,17 @@ namespace CodeOnlyStoredProcedure
 			return results;
 		}
 #endif
+		/// <summary>
+		/// Creates a <see cref="HierarchicalStoredProcedure{T}"/> with the results expected in the order declared for this stored procedure.
+		/// </summary>
+		/// <returns>A hierarchical stored procedure.</returns>
+		public override HierarchicalStoredProcedure<TFactory> AsHierarchical<TFactory>()
+		{
+			if (typeof(TFactory) != typeof(T1) && typeof(TFactory) != typeof(T2) && typeof(TFactory) != typeof(T3) && typeof(TFactory) != typeof(T4) && typeof(TFactory) != typeof(T5) && typeof(TFactory) != typeof(T6) && typeof(TFactory) != typeof(T7))
+				throw new ArgumentException("The type of TFactory must be one of the types the Stored Procedure has already been declared to return.");
+			return new HierarchicalStoredProcedure<TFactory>(Schema, Name, Parameters, DataTransformers, new [] { typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5), typeof(T6), typeof(T7) });
+		}
 
-		
         /// <summary>
         /// Clones the StoredProcedure, and gives it the passed parameters.
         /// </summary>
@@ -1728,7 +1891,16 @@ namespace CodeOnlyStoredProcedure
 		{
 			return new StoredProcedure<T1, T2, T3, T4, T5, T6, T7>(Schema, Name, parameters, dataTransformers);
 		}	
+
+		/// <summary>Creates an <see cref="IRowFactory{T}"/> to use to generate results for this StoredProcedure.</summary>
+		/// <returns>A new <see cref="IRowFactory{T}"/> that will be used to generate rows for this StoredProcedure.</returns>
+		/// <typeparam name="TFactory">The type of model that the row factory should generate.</typeparam>
+		protected override IRowFactory<TFactory> CreateFactory<TFactory>()
+		{
+			return RowFactory<TFactory>.Create(false);
+		}
 	}
+
 	#endregion
 
 }

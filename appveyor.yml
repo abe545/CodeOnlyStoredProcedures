@@ -1,9 +1,9 @@
-version: 2.0.0.{build}
+version: 2.1.0.{build}
 skip_tags: true
 
 environment:
-  releaseVersion: 2.0.0
-  packageVersion: 2.0.0
+  releaseVersion: 2.1.0
+  packageVersion: 2.1.0-pre
 
 assembly_info:
   patch: true

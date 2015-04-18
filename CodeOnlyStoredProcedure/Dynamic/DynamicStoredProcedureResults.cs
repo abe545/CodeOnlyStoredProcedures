@@ -108,14 +108,14 @@ namespace CodeOnlyStoredProcedure.Dynamic
             return new Meta(parameter, this);
         }
 
-        private IEnumerable<T> GetResults<T>()
+        private IEnumerable<T> GetResults<T>(bool isSingle)
         {
-            return RowFactory<T>.Create().ParseRows(resultTask.Result, transformers, token);
+            return RowFactory<T>.Create(isSingle).ParseRows(resultTask.Result, transformers, token);
         }
 
-        private Task<IEnumerable<T>> CreateSingleContinuation<T>()
+        private Task<IEnumerable<T>> CreateSingleContinuation<T>(bool isSingle)
         {
-            return resultTask.ContinueWith(_ => GetResults<T>(), token);
+            return resultTask.ContinueWith(_ => GetResults<T>(isSingle), token);
         }
 
         private T GetMultipleResults<T>()
@@ -132,7 +132,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
                 return getResultsMethod.Value
                                        .MakeGenericMethod(t.GetEnumeratedType())
-                                       .Invoke(this, new object[0]);
+                                       .Invoke(this, new object[] { false });
             }).ToArray();
 
             return (T)tupleCreates.Value[types.Length]
@@ -227,7 +227,8 @@ namespace CodeOnlyStoredProcedure.Dynamic
                     {
                         // there is only one result set. Return it from a continuation.
                         e = Expression.Call(instance, 
-                            continueSingle.Value.MakeGenericMethod(retType.GetGenericArguments().Single()));
+                            continueSingle.Value.MakeGenericMethod(retType.GetGenericArguments().Single()),
+                            Expression.Constant(true));
                     }
                     else if (retType.FullName.StartsWith(tupleName) &&
                              retType.GetGenericArguments().All(t => t.IsEnumeratedType()))
@@ -238,7 +239,9 @@ namespace CodeOnlyStoredProcedure.Dynamic
                 else if (retType.IsEnumeratedType())
                 {
                     // there is only one result set. Return it
-                    e = Expression.Call(instance, getResultsMethod.Value.MakeGenericMethod(retType.GetGenericArguments().Single()));
+                    e = Expression.Call(instance,
+                        getResultsMethod.Value.MakeGenericMethod(retType.GetGenericArguments().Single()),
+                        Expression.Constant(true));
                 }
                 else if (retType.FullName.StartsWith(tupleName) &&
                          retType.GetGenericArguments().All(t => t.IsEnumeratedType()))

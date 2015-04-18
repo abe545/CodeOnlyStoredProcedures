@@ -11,7 +11,11 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
         protected override Func<IDataReader, T> CreateRowFactory(IDataReader reader, IEnumerable<IDataTransformer> xFormers)
         {
-            return Expression.Lambda<Func<IDataReader, T>>(accessor.CreateExpressionToGetValueFromReader(reader, xFormers, reader.GetFieldType(0)),
+            var a = accessor;
+            if (GlobalSettings.Instance.IsTestInstance)
+                a = new EnumAccessorFactory<T>(dataReaderExpression, Expression.Constant(0), null, null);
+
+            return Expression.Lambda<Func<IDataReader, T>>(a.CreateExpressionToGetValueFromReader(reader, xFormers, reader.GetFieldType(0)),
                                                            dataReaderExpression)
                              .Compile();
         }

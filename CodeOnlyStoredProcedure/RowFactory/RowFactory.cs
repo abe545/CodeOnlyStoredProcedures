@@ -18,14 +18,7 @@ namespace CodeOnlyStoredProcedure
         protected static readonly ParameterExpression dataReaderExpression = Expression.Parameter(typeof(IDataReader));
         private Func<IDataReader, T> parser;
 
-        public static IRowFactory<T> Create()
-        {
-            Contract.Ensures(Contract.Result<IRowFactory<T>>() != null);
-
-            return Create(true);
-        }
-
-        private static IRowFactory<T> Create(bool generateHierarchicals)
+        public static IRowFactory<T> Create(bool generateHierarchicals = true)
         {
             Contract.Ensures(Contract.Result<IRowFactory<T>>() != null);
 
@@ -66,7 +59,7 @@ namespace CodeOnlyStoredProcedure
             token.ThrowIfCancellationRequested();
 
             if (parser == null)
-                parser = CreateRowFactory(reader, dataTransformers);
+                parser = CreateRowFactory(reader, GlobalSettings.Instance.DataTransformers.Concat(dataTransformers));
 
             var res = new List<T>();
             while (reader.Read())
@@ -87,7 +80,7 @@ namespace CodeOnlyStoredProcedure
         public virtual async Task<IEnumerable<T>> ParseRowsAsync(DbDataReader reader, IEnumerable<IDataTransformer> dataTransformers, CancellationToken token)
         {
             if (parser == null)
-                parser = CreateRowFactory(reader, dataTransformers);
+                parser = CreateRowFactory(reader, GlobalSettings.Instance.DataTransformers.Concat(dataTransformers));
 
             var res = new List<T>();
             while (await reader.ReadAsync(token))

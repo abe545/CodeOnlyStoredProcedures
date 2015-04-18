@@ -131,6 +131,8 @@
     <Compile Include="Dynamic\DynamicStoredProcedureResultsAwaiter.cs" />
     <Compile Include="Dynamic\Extensions.cs" />
     <Compile Include="Dynamic\DynamicStoredProcedureResults.cs" />
+    <Compile Include="GlobalSettings.cs" />
+    <Compile Include="HierarchicalStoredProcedure.cs" />
     <Compile Include="IDataTransformer.cs" />
     <Compile Include="IDbConnectionExtensions.cs" />
     <Compile Include="OptionalResultAttribute.cs" />

@@ -40,6 +40,56 @@ namespace CodeOnlyTests.RowFactory
             }
 
             [TestMethod]
+            public void GlobalConvertAll_WillTransformSingleInteger()
+            {
+                var rdr = new Mock<IDataReader>();
+                rdr.Setup(r => r.GetFieldType(0)).Returns(typeof(float));
+                rdr.Setup(r => r.GetFloat(0)).Returns(1f);
+                rdr.SetupSequence(r => r.Read())
+                   .Returns(true)
+                   .Returns(false);
+
+                using (GlobalSettings.UseTestInstance())
+                {
+                    StoredProcedure.EnableConvertOnAllNumericValues();
+                    var toTest = new EnumRowFactory<IntEnum>();
+
+                    toTest.ParseRows(rdr.Object, Enumerable.Empty<IDataTransformer>(), CancellationToken.None)
+                          .Single().Should().Be(IntEnum.One);
+                }
+            }
+
+            // This test will fail, but I'm not 100% sure if I want to support this.
+            // Should values be converted after going through IDataTransformers? If they should,
+            // then I'm going to need a lot more tests to cover all the edge cases.
+            [Ignore]
+            [TestMethod]
+            public void GlobalConvertAll_WillTransformSingleIntegerWhenTransformerUsed()
+            {
+                var rdr = new Mock<IDataReader>();
+                rdr.Setup(r => r.GetFieldType(0)).Returns(typeof(double));
+                rdr.Setup(r => r.GetValue(0)).Returns(42.0);
+                rdr.SetupSequence(r => r.Read())
+                   .Returns(true)
+                   .Returns(false);
+
+                var xf = new Mock<IDataTransformer>();
+                xf.Setup(x => x.CanTransform(42.0, typeof(IntEnum), false, It.IsAny<IEnumerable<Attribute>>()))
+                  .Returns(true);
+                xf.Setup(x => x.Transform(42.0, typeof(IntEnum), false, It.IsAny<IEnumerable<Attribute>>()))
+                  .Returns(2f);
+
+                using (GlobalSettings.UseTestInstance())
+                {
+                    StoredProcedure.EnableConvertOnAllNumericValues();
+                    var toTest = new EnumRowFactory<IntEnum>();
+
+                    toTest.ParseRows(rdr.Object, new[] { xf.Object }, CancellationToken.None)
+                          .Single().Should().Be(IntEnum.Two);
+                }
+            }
+
+            [TestMethod]
             public void ReturnsEnumViaBoxedValue()
             {
                 var rdr = new Mock<IDataReader>();
@@ -210,6 +260,32 @@ namespace CodeOnlyTests.RowFactory
             }
 
             [TestMethod]
+            public void ReturnsEnumViaNameTransformsStringBeforeParsing_WithGlobalTransformer()
+            {
+                using (GlobalSettings.UseTestInstance())
+                {
+                    var rdr = new Mock<IDataReader>();
+                    rdr.Setup(r => r.GetFieldType(0)).Returns(typeof(string));
+                    rdr.Setup(r => r.GetString(0)).Returns("One");
+                    rdr.SetupSequence(r => r.Read())
+                       .Returns(true)
+                       .Returns(false);
+
+                    var toTest = new EnumRowFactory<IntEnum>();
+                    var xf = new Mock<IDataTransformer>();
+                    xf.Setup(x => x.CanTransform("One", typeof(IntEnum), false, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
+                      .Returns(true);
+                    xf.Setup(x => x.Transform("One", typeof(IntEnum), false, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
+                      .Returns("Two");
+
+                    StoredProcedure.AddGlobalTransformer(xf.Object);
+
+                    toTest.ParseRows(rdr.Object, new IDataTransformer[0], CancellationToken.None)
+                          .Single().Should().Be(IntEnum.Two);
+                }
+            }
+
+            [TestMethod]
             public void ReturnsNullableEnumValuesViaName()
             {
                 var rdr = new Mock<IDataReader>();
@@ -266,6 +342,42 @@ namespace CodeOnlyTests.RowFactory
 
                 toTest.ParseRows(rdr.Object, new[] { xf.Object }, CancellationToken.None)
                       .Should().ContainInOrder(IntEnum.One, null, IntEnum.Two, IntEnum.Zero);
+            }
+
+            [TestMethod]
+            public void ReturnsNullableEnumValuesViaNameTransformsBeforeParsing_WithGlobalTransformer()
+            {
+                using (GlobalSettings.UseTestInstance())
+                {
+                    var rdr = new Mock<IDataReader>();
+                    rdr.Setup(r => r.GetFieldType(0)).Returns(typeof(string));
+                    rdr.SetupSequence(r => r.IsDBNull(0))
+                       .Returns(false)
+                       .Returns(true)
+                       .Returns(false)
+                       .Returns(false);
+                    rdr.SetupSequence(r => r.GetString(0))
+                       .Returns("Blah")
+                       .Returns("Two")
+                       .Returns("Zero");
+                    rdr.SetupSequence(r => r.Read())
+                       .Returns(true)
+                       .Returns(true)
+                       .Returns(true)
+                       .Returns(true)
+                       .Returns(false);
+
+                    var toTest = RowFactory<IntEnum?>.Create();
+                    var xf = new Mock<IDataTransformer>();
+                    xf.Setup(x => x.CanTransform("Blah", typeof(IntEnum), true, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
+                      .Returns(true);
+                    xf.Setup(x => x.Transform("Blah", typeof(IntEnum), true, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
+                      .Returns("One");
+
+                    StoredProcedure.AddGlobalTransformer(xf.Object);
+                    toTest.ParseRows(rdr.Object, new IDataTransformer[0], CancellationToken.None)
+                          .Should().ContainInOrder(IntEnum.One, null, IntEnum.Two, IntEnum.Zero);
+                }
             }
         }
 
