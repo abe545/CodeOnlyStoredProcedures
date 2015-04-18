@@ -38,6 +38,56 @@ namespace CodeOnlyTests.RowFactory
                 toTest.ParseRows(rdr.Object, Enumerable.Empty<IDataTransformer>(), CancellationToken.None)
                       .Single().Should().Be(42);
             }
+            
+            [TestMethod]
+            public void GlobalConvertAll_WillTransformSingleInteger()
+            {
+                var rdr = new Mock<IDataReader>();
+                rdr.Setup(r => r.GetFieldType(0)).Returns(typeof(int));
+                rdr.Setup(r => r.GetInt32(0)).Returns(42);
+                rdr.SetupSequence(r => r.Read())
+                   .Returns(true)
+                   .Returns(false);
+
+                using (GlobalSettings.UseTestInstance())
+                {
+                    StoredProcedure.EnableConvertOnAllNumericValues();
+                    var toTest = new SimpleTypeRowFactory<double>();
+
+                    toTest.ParseRows(rdr.Object, Enumerable.Empty<IDataTransformer>(), CancellationToken.None)
+                          .Single().Should().Be(42.0);
+                }
+            }
+
+            // This test will fail, but I'm not 100% sure if I want to support this.
+            // Should values be converted after going through IDataTransformers? If they should,
+            // then I'm going to need a lot more tests to cover all the edge cases.
+            [Ignore]
+            [TestMethod]
+            public void GlobalConvertAll_WillTransformSingleIntegerWhenTransformerUsed()
+            {
+                var rdr = new Mock<IDataReader>();
+                rdr.Setup(r => r.GetFieldType(0)).Returns(typeof(double));
+                rdr.Setup(r => r.GetValue(0)).Returns(42.0);
+                rdr.SetupSequence(r => r.Read())
+                   .Returns(true)
+                   .Returns(false);
+
+                var xf = new Mock<IDataTransformer>();
+                xf.Setup(x => x.CanTransform(42.0, typeof(float), false, It.IsAny<IEnumerable<Attribute>>()))
+                  .Returns(true);
+                xf.Setup(x => x.Transform(42.0, typeof(float), false, It.IsAny<IEnumerable<Attribute>>()))
+                  .Returns(2f);
+
+                using (GlobalSettings.UseTestInstance())
+                {
+                    StoredProcedure.EnableConvertOnAllNumericValues();
+                    var toTest = new SimpleTypeRowFactory<float>();
+
+                    toTest.ParseRows(rdr.Object, new[] { xf.Object }, CancellationToken.None)
+                          .Single().Should().Be(2f);
+                }
+            }
 
             [TestMethod]
             public void ParsesThroughDataTransformer()

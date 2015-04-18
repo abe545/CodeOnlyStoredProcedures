@@ -8,9 +8,11 @@ namespace CodeOnlyStoredProcedure
     {
         private static GlobalSettings instance = new GlobalSettings();
 
-        public static GlobalSettings                   Instance         { get { return instance; } }
-        public        IList<IDataTransformer>          DataTransformers { get; private set; }
-        public        ConcurrentDictionary<Type, Type> InterfaceMap     { get; private set; }
+        public static GlobalSettings                   Instance                { get { return instance; } }
+        public        IList<IDataTransformer>          DataTransformers        { get; private set; }
+        public        ConcurrentDictionary<Type, Type> InterfaceMap            { get; private set; }
+        public        bool                             IsTestInstance          { get; private set; }
+        public        bool                             ConvertAllNumericValues { get; set; }
 
         private GlobalSettings()
         {
@@ -21,7 +23,7 @@ namespace CodeOnlyStoredProcedure
         public static IDisposable UseTestInstance()
         {
             var disposer = new Disposer();
-            instance = new GlobalSettings();
+            instance = new GlobalSettings { IsTestInstance = true };
             return disposer;
         }
 

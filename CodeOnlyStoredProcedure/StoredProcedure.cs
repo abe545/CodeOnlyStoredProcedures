@@ -382,6 +382,15 @@ namespace CodeOnlyStoredProcedure
         {
             GlobalSettings.Instance.DataTransformers.Add(transformer);
         }
+
+        /// <summary>
+        /// Will automatically convert all values returned from the database into the proper type to set
+        /// on the model properties for every StoredProcedure that executes.
+        /// </summary>
+        public static void EnableConvertOnAllNumericValues()
+        {
+            GlobalSettings.Instance.ConvertAllNumericValues = true;
+        }
         #endregion
 
         /// <summary>
