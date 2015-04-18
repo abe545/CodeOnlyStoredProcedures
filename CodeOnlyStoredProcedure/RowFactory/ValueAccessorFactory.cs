@@ -21,7 +21,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
                readonly Expression                                attributeExpression;
                readonly string                                    errorMessage;
                readonly string                                    propertyName;
-               readonly bool                                      convertNumeric;
+               readonly bool                                      convertNumeric = GlobalSettings.Instance.ConvertAllNumericValues;
 
         public ValueAccessorFactory(ParameterExpression dataReaderExpression, Expression index, PropertyInfo propertyInfo, string columnName)
         {
@@ -53,7 +53,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
                                     .OrderBy(x => x.Order)
                                     .ToArray();
                 attributeExpression = Expression.Constant(attrs);
-                convertNumeric = attrs.OfType<ConvertNumericAttribute>().Any();
+                convertNumeric |= attrs.OfType<ConvertNumericAttribute>().Any();
             }
 
             unboxedExpression = CreateUnboxedRetrieval<T>(dataReaderExpression, index, transformers, errorMessage);

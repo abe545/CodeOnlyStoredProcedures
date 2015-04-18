@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Dynamic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -14,6 +15,8 @@ namespace CodeOnlyStoredProcedure.RowFactory
         static ParameterExpression readerExpression      = Expression                         .Parameter(typeof(IDataReader));
         static ParameterExpression resultExpression      = Expression                         .Parameter(typeof(ExpandoObject));
         static ParameterExpression valuesExpression      = Expression                         .Parameter(typeof(object[]));
+        static Lazy<MethodInfo>    canTransformMethod    = new Lazy<MethodInfo>(() => typeof(IDataTransformer).GetMethod("CanTransform"));
+        static Lazy<MethodInfo>    transformMethod       = new Lazy<MethodInfo>(() => typeof(IDataTransformer).GetMethod("Transform"));
 
         protected override Func<IDataReader, T> CreateRowFactory(IDataReader reader, IEnumerable<IDataTransformer> xFormers)
         {
@@ -25,10 +28,33 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
             for (int i = 0; i < reader.FieldCount; i++)
             {
+                Expression getValue = Expression.ArrayIndex(valuesExpression, Expression.Constant(i));
+
+                if (xFormers.Any())
+                {
+                    var valType  = Expression.Constant(reader.GetFieldType(i));
+                    var curValue = Expression.Variable(typeof(object), "value");
+                    var exprs    = new List<Expression>();
+                    var trueExpr = Expression.Constant(true);
+                    var attrExpr = Expression.Constant(new Attribute[0]);
+
+                    exprs.Add(Expression.Assign(curValue, getValue));
+
+                    foreach (var x in xFormers)
+                    {
+                        var xExpr = Expression.Constant(x);
+                        exprs.Add(Expression.IfThen(Expression.Call(xExpr, canTransformMethod.Value, curValue, valType, trueExpr, attrExpr),
+                            Expression.Assign(curValue, Expression.Call(xExpr, transformMethod.Value, curValue, valType, trueExpr, attrExpr))));
+                    }
+
+                    exprs.Add(curValue);
+                    getValue = Expression.Block(new[] { curValue }, exprs.ToArray());
+                }
+
                 all.Add(Expression.Call(resultExpression,
                                         addToDictionaryMethod,
                                         Expression.Constant(reader.GetName(i)),
-                                        Expression.ArrayIndex(valuesExpression, Expression.Constant(i))));
+                                        getValue));
             }
 
             all.Add(Expression.Convert(resultExpression, typeof(T)));

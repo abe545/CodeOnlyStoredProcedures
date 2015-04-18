@@ -244,10 +244,8 @@ namespace CodeOnlyTests
         [TestMethod]
         public void IsValidResultType_ReturnsFalseForUnmappedInterface()
         {
-            lock (CodeOnlyStoredProcedure.TypeExtensions.interfaceMap)
+            using (GlobalSettings.UseTestInstance())
             {
-                // make sure that there is nothing in the map
-                CodeOnlyStoredProcedure.TypeExtensions.interfaceMap.Clear();
                 typeof(IModel).IsValidResultType().Should().BeFalse("because unmapped interfaces can not be constructed");
             }
         }
@@ -255,11 +253,9 @@ namespace CodeOnlyTests
         [TestMethod]
         public void IsValidResultType_ReturnsTrueForMappedInterface()
         {
-            lock (CodeOnlyStoredProcedure.TypeExtensions.interfaceMap)
+            using (GlobalSettings.UseTestInstance())
             {
-                // make sure that there is nothing in the map
-                CodeOnlyStoredProcedure.TypeExtensions.interfaceMap.Clear();
-                CodeOnlyStoredProcedure.TypeExtensions.interfaceMap.TryAdd(typeof(IModel), typeof(Model));
+                GlobalSettings.Instance.InterfaceMap.TryAdd(typeof(IModel), typeof(Model));
 
                 typeof(IModel).IsValidResultType().Should().BeTrue("because mapped interfaces can be constructed");
             }

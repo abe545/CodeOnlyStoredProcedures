@@ -18,7 +18,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
         static ComplexTypeRowFactory()
         {
-            if (!TypeExtensions.interfaceMap.TryGetValue(resultType, out implType))
+            if (!GlobalSettings.Instance.InterfaceMap.TryGetValue(resultType, out implType))
                 implType = resultType;
 
             var props             = implType.GetResultPropertiesBySqlName();

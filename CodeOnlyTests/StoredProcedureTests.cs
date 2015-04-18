@@ -329,51 +329,17 @@ namespace CodeOnlyTests
         #endregion
 
         #region ExecuteAsync Tests
+        [TestMethod]
 #if NET40
-        [TestMethod]
         public void TestExecuteAsync_DoesNotExecuteMethodFromSameThreadWhenRunningInSynchronizationContext()
-        {            
-            var reader = new Mock<IDataReader>();
-            var command = new Mock<IDbCommand>();
-            var ctx = new TestSynchronizationContext();
-
-            SynchronizationContext.SetSynchronizationContext(ctx);
-
-            command.Setup(d => d.ExecuteReader())
-                   .Returns(reader.Object);
-
-            reader.SetupGet(r => r.FieldCount)
-                  .Returns(1);
-
-            var results = new[] { "Hello", ", ", "World!" };
-
-            int index = -1;
-            reader.Setup(r => r.Read())
-                  .Callback(() => ++index)
-                  .Returns(() => index < results.Length);
-
-            reader.Setup(r => r.GetName(0))
-                  .Returns("Id");
-            reader.Setup(r => r.GetString(0)).Returns((int _) => results[index]);
-            reader.Setup(r => r.GetFieldType(0)).Returns(typeof(string));
-
-            var connection = new Mock<IDbConnection>();
-            connection.Setup(c => c.CreateCommand())
-                      .Callback(() => ctx.Worker.Should().NotBeSameAs(Thread.CurrentThread, "Command called from the same thread as the reentrant Task."))
-                      .Returns(command.Object);
-
-            var sp = new StoredProcedure<InterfaceImpl>("foo");
-            var res = sp.ExecuteAsync(connection.Object).Result;
-
-            var idx = 0;
-            foreach (var toTest in res)
-                toTest.ShouldBeEquivalentTo(new InterfaceImpl { Id = results[idx++] });
-
-            SynchronizationContext.SetSynchronizationContext(null);
+        {
+            TestExecuteAsync_DoesNotExecuteMethodFromSameThreadWhenRunningInSynchronizationContextWrapper().Wait();
         }
+
+        public async Task TestExecuteAsync_DoesNotExecuteMethodFromSameThreadWhenRunningInSynchronizationContextWrapper()
 #else
-        [TestMethod]
         public async Task TestExecuteAsync_DoesNotExecuteMethodFromSameThreadWhenRunningInSynchronizationContext()
+#endif
         {
             var reader = new Mock<IDataReader>();
             var command = new Mock<IDbCommand>();
@@ -413,7 +379,6 @@ namespace CodeOnlyTests
 
             SynchronizationContext.SetSynchronizationContext(null);
         }
-#endif
         #endregion
 
         #region PrettyPrint Tests
@@ -470,22 +435,11 @@ namespace CodeOnlyTests
         [TestMethod]
         public void UnMappedInterface_ThrowsWhenConstructingStoredProcedure()
         {
-            lock (CodeOnlyStoredProcedure.TypeExtensions.interfaceMap)
+            using (GlobalSettings.UseTestInstance())
             {
-                // clear any mapped interfaces
-                CodeOnlyStoredProcedure.TypeExtensions.interfaceMap.Clear();
-                try
-                {
-                    var sp = new StoredProcedure<Interface>("foo");
-                    Assert.Fail("Did not throw exception when constructing an unmapped interface");
-                }
-                catch (Exception ex)
-                {
-                    // This exception is a ContractException but, since it isn't a public 
-                    // class, we can't catch it directly.
-                    Assert.AreEqual("Precondition failed: typeof(T1).IsValidResultType()",
-                                    ex.Message);
-                }
+                this.Invoking(_ => new StoredProcedure<Interface>("foo"))
+                    .ShouldThrow<Exception>() // This exception is a ContractException but, since it isn't a public class, we can't catch it directly.
+                    .Which.Message.Should().Be("Precondition failed: typeof(T1).IsValidResultType()");
             }
         }
         #endregion

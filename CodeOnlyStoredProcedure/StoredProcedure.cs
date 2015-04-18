@@ -356,19 +356,40 @@ namespace CodeOnlyStoredProcedure
         }
         #endregion
 
-        #region MapResultType
+        #region Global Settings
         /// <summary>
         /// Adds a mapping for a given interface to an implementation. After doing so,
         /// any StoredProcedure that returns TInterface will return instances of TImpl
         /// </summary>
-        /// <typeparam name="TInterface"></typeparam>
-        /// <typeparam name="TImpl"></typeparam>
+        /// <typeparam name="TInterface">The interface to map to a concrete type.</typeparam>
+        /// <typeparam name="TImpl">The implementation that implements the interface.</typeparam>
         public static void MapResultType<TInterface, TImpl>()
             where TImpl : TInterface, new()
         {
-            TypeExtensions.interfaceMap.AddOrUpdate(typeof(TInterface),
-                                                    typeof(TImpl),
-                                                    (_, __) => typeof(TImpl));
+            GlobalSettings.Instance.InterfaceMap.AddOrUpdate(typeof(TInterface),
+                                                             typeof(TImpl),
+                                                             (_, __) => typeof(TImpl));
+        }
+
+        /// <summary>
+        /// Adds a <see cref="IDataTransformer"/> that will be run for all StoredProcedures.
+        /// There is no way to remove these once they have been set, so do not add them unless
+        /// you really want them to transform all your data. If this is a <see cref="IDataTransformer{T}"/>,
+        /// it will only be run for columns of type T.
+        /// </summary>
+        /// <param name="transformer">The <see cref="IDataTransformer"/> to apply to all results.</param>
+        public static void AddGlobalTransformer(IDataTransformer transformer)
+        {
+            GlobalSettings.Instance.DataTransformers.Add(transformer);
+        }
+
+        /// <summary>
+        /// Will automatically convert all values returned from the database into the proper type to set
+        /// on the model properties for every StoredProcedure that executes.
+        /// </summary>
+        public static void EnableConvertOnAllNumericValues()
+        {
+            GlobalSettings.Instance.ConvertAllNumericValues = true;
         }
         #endregion
 
