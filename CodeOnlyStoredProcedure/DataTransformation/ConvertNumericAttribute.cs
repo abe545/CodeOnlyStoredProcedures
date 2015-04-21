@@ -7,5 +7,15 @@ namespace CodeOnlyStoredProcedure.DataTransformation
     /// the type of the property. Be warned that you may lose some data if the value from the database
     /// doesn't fit in the numeric type you're converting to.
     /// </summary>
+    /// <example>
+    /// <code language="C#" title="C#">
+    /// public class Person
+    /// {
+    ///     // The db returns a double
+    ///     [ConvertNumeric]
+    ///     public decimal Age { get; set; }
+    /// }
+    /// </code>
+    /// </example>
     public class ConvertNumericAttribute : Attribute { }
 }

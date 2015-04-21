@@ -7,8 +7,36 @@ using System.Threading.Tasks;
 namespace CodeOnlyStoredProcedure.DataTransformation
 {
     /// <summary>
-    /// Trims all strings returned by the stored procedure.
+    /// If you pass this transformer to a <see cref="StoredProcedure"/>, all string values will be trimmed before
+    /// the model properties are set.
     /// </summary>
+    /// <seealso cref="IDataTransformer{T}"/>
+    /// <remarks>If this transformer is used, " Bar  " will be transformed into "Bar" when set on the model properties.</remarks>
+    /// <example>
+    /// <code language="C#" title="C#">
+    /// public class DataModel
+    /// {
+    ///     public IEnumerable&lt;Person&gt; GetPeople_FluentSyntax(IDbConnection db)
+    ///     {
+    ///         return StoredProcedure.Create("usp_getPeople")
+    ///                               .WithDataTransformer(new TrimAllStringsTransformer())
+    ///                               .WithResults&lt;Person&gt;()
+    ///                               .Execute(db);
+    ///     }
+    /// 
+    ///     public IEnumerable&lt;Person&gt; GetPeople_DynamicSyntax(IDbConnection db)
+    ///     {
+    ///         return db.Execute(new TrimAllStringsTransformer()).usp_getPeople();
+    ///     }
+    ///     
+    ///     public class Person
+    ///     {
+    ///         public string FirstName { get; set; }
+    ///         public string LastName { get; set; }
+    ///     }
+    /// }
+    /// </code>
+    /// </example>
     public class TrimAllStringsTransformer : IDataTransformer<string>
     {
         /// <summary>

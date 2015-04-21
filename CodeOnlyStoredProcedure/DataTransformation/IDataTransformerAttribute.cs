@@ -6,6 +6,28 @@
     /// has to happen. Doing so improves speed dramatically.
     /// </summary>
     /// <typeparam name="T">The type that the attribute transforms.</typeparam>
+    /// <remarks>You must inherit from <see cref="DataTransformerAttributeBase"/>, otherwise the attribute will be ignored.</remarks>
+    /// <example>
+    /// <code language="C#" title="C#">
+    /// public class ToUtcAttribute : DataTransformerAttributeBase, IDataTransformerAttribute&lt;DateTime&gt;
+    /// {
+    ///     public ToUtcAttribute(int order = 0) 
+    ///         : base(order)
+    ///     {
+    ///     }
+    ///     
+    ///     public DateTime Transform(DateTime value) 
+    ///     {
+    ///         return value.ToUniversalTime();
+    ///     }
+    ///     
+    ///     public override object Transform(object value) 
+    ///     {
+    ///         return Transform((DateTime)value); 
+    ///     }
+    /// }
+    /// </code>
+    /// </example>
     public interface IDataTransformerAttribute<T>
     {
         /// <summary>

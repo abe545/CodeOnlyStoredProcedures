@@ -4,8 +4,35 @@ using System.Collections.Generic;
 namespace CodeOnlyStoredProcedure.DataTransformation
 {
     /// <summary>
-    /// An <see cref="IDataTransformer"/> that will intern all strings returned.
+    /// An <see cref="IDataTransformer"/> that will intern all strings returned from a <see cref="StoredProcedure"/>.
     /// </summary>
+    /// <seealso cref="IDataTransformer{T}"/>
+    /// <remarks>If this transformer is used, all strings will be interned before being set on the model properties.</remarks>
+    /// <example>
+    /// <code language="C#" title="C#">
+    /// public class DataModel
+    /// {
+    ///     public IEnumerable&lt;Person&gt; GetPeople_FluentSyntax(IDbConnection db)
+    ///     {
+    ///         return StoredProcedure.Create("usp_getPeople")
+    ///                               .WithDataTransformer(new InternAllStringsTransformer())
+    ///                               .WithResults&lt;Person&gt;()
+    ///                               .Execute(db);
+    ///     }
+    /// 
+    ///     public IEnumerable&lt;Person&gt; GetPeople_DynamicSyntax(IDbConnection db)
+    ///     {
+    ///         return db.Execute(new InternAllStringsTransformer()).usp_getPeople();
+    ///     }
+    ///     
+    ///     public class Person
+    ///     {
+    ///         public string FirstName { get; set; }
+    ///         public string LastName { get; set; }
+    ///     }
+    /// }
+    /// </code>
+    /// </example>
     public class InternAllStringsTransformer : IDataTransformer<string>
     {
         /// <summary>
