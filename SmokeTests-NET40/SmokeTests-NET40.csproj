@@ -145,6 +145,9 @@
     <Compile Include="..\SmokeTests\SmokeDb.cs">
       <Link>SmokeDb.cs</Link>
     </Compile>
+    <Compile Include="..\SmokeTests\SmokeTestAttribute.cs">
+      <Link>SmokeTestAttribute.cs</Link>
+    </Compile>
     <Compile Include="..\SmokeTests\SmokeTestExtensions.cs">
       <Link>SmokeTestExtensions.cs</Link>
     </Compile>

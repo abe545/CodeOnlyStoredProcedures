@@ -1135,8 +1135,6 @@ namespace CodeOnlyTests.RowFactory
                       .Returns(keys.Count);
                 reader.Setup(r => r.GetFieldType(It.IsAny<int>()))
                       .Returns((int i) => vals[i].GetType());
-                reader.Setup(r => r.GetOrdinal(It.IsAny<string>()))
-                      .Returns((string s) => keys.IndexOf(s));
                 reader.Setup(r => r.IsDBNull(It.IsAny<int>()))
                       .Returns((int i) => vals[i] == null);
 

@@ -462,7 +462,6 @@ namespace CodeOnlyTests.Dynamic
                 reader.Setup(r => r.GetName(0))
                       .Returns(() => resultSet == 0 ? "FirstName" : "LastName");
                 reader.Setup(r => r.GetFieldType(0)).Returns(typeof(string));
-                reader.Setup(r => r.GetOrdinal(It.IsAny<string>())).Returns(0);
                 reader.SetupSequence(r => r.Read())
                       .Returns(true)
                       .Returns(false)
@@ -684,7 +683,6 @@ namespace CodeOnlyTests.Dynamic
             reader.SetupGet(r => r.FieldCount).Returns(1);
             reader.Setup(r => r.GetName(0)).Returns("FirstName");
             reader.Setup(r => r.GetFieldType(0)).Returns(typeof(string));
-            reader.Setup(r => r.GetOrdinal("FirstName")).Returns(0);
 
             var setup = reader.SetupSequence(r => r.Read());
 

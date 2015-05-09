@@ -26,8 +26,8 @@ namespace SmokeTests
             var toTest = new SmokeDb();
 
             var container       = new CompositionContainer(new AssemblyCatalog(Assembly.GetEntryAssembly()));
-            var smokeTests      = container.GetExports<Func<IDbConnection,      Tuple<bool, string>>,  IDictionary<string, object>>();
-            var asyncSmokeTests = container.GetExports<Func<IDbConnection, Task<Tuple<bool, string>>>, IDictionary<string, object>>();
+            var smokeTests      = container.GetExports<Func<IDbConnection,      Tuple<bool, string>>,  ISmokeTest>();
+            var asyncSmokeTests = container.GetExports<Func<IDbConnection, Task<Tuple<bool, string>>>, ISmokeTest>();
 
             var res  = RunTests(toTest.Database.Connection, smokeTests,      (t, db) => t(db));
                 res &= RunTests(toTest.Database.Connection, asyncSmokeTests, (t, db) => t(db).Result);
@@ -35,6 +35,9 @@ namespace SmokeTests
             if (!res)
             {
                 // tests failed
+                Console.ForegroundColor = ConsoleColor.DarkRed;
+                Console.WriteLine("Tests failed!");
+                Exiting();
                 return 1;
             }
 
@@ -47,7 +50,7 @@ namespace SmokeTests
 
         private static bool RunTests<T>(
             IDbConnection db,
-            IEnumerable<Lazy<T, IDictionary<string, object>>> tests,
+            IEnumerable<Lazy<T, ISmokeTest>> tests,
             Func<T, IDbConnection, Tuple<bool, string>> runner)
         {
             var result = true;
@@ -71,20 +74,19 @@ namespace SmokeTests
             Console.ReadLine();
         }
 
-        private static void BeginTest(IDictionary<string, object> metadata)
+        private static void BeginTest(ISmokeTest metadata)
         {
-            var name = metadata["Name"].ToString();
-            Console.Write("Running {0} - ", name);
+            Console.Write("Running {0} - ", metadata.Name);
             
             if (isInAppveyor)
             {
-                var message = BuildAppveyorTestMessage(name, AppveyorTestStatus.Running);
+                var message = BuildAppveyorTestMessage(metadata.Name, AppveyorTestStatus.Running);
                 SendAppveyorTestMessage("POST", message);
                 testWatch = Stopwatch.StartNew();
             }
         }
 
-        private static void TestSucceeded(IDictionary<string, object> metadata)
+        private static void TestSucceeded(ISmokeTest metadata)
         {
             if (testWatch != null)
                 testWatch.Stop();
@@ -95,16 +97,15 @@ namespace SmokeTests
 
             if (isInAppveyor)
             {
-                var name = metadata["Name"].ToString();
                 var message = BuildAppveyorTestMessage(
-                    name,
+                    metadata.Name,
                     AppveyorTestStatus.Passed,
                     Tuple.Create("durationMilliseconds", testWatch.ElapsedMilliseconds.ToString()));
                 SendAppveyorTestMessage("PUT", message);
             }
         }
 
-        private static void TestFailed(string error, IDictionary<string, object> metadata)
+        private static void TestFailed(string error, ISmokeTest metadata)
         {
             if (testWatch != null)
                 testWatch.Stop();
@@ -116,9 +117,8 @@ namespace SmokeTests
             
             if (isInAppveyor)
             {
-                var name = metadata["Name"].ToString();
                 var message = BuildAppveyorTestMessage(
-                    name,
+                    metadata.Name,
                     AppveyorTestStatus.Failed,
                     Tuple.Create("ErrorMessage", error),
                     Tuple.Create("durationMilliseconds", testWatch.ElapsedMilliseconds.ToString()));

@@ -15,7 +15,7 @@ namespace SmokeTests
     class FluentSyntax
     {
         #region Single ResultSet
-        [Export, ExportMetadata("Name", "Fluent Syntax Single ResultSet")]
+        [SmokeTest("Fluent Syntax Single ResultSet")]
         Tuple<bool, string> SingleResultSet(IDbConnection db)
         {
             return StoredProcedure.Create("usp_GetItems")
@@ -24,7 +24,28 @@ namespace SmokeTests
                                   .TestGetItemsResults();
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax Single ResultSet WithParameter")]
+        [SmokeTest("Fluent Syntax Single ResultSet with Missing Columns (should throw)")]
+        Tuple<bool, string> SingleResultSet_WithMissingColumns(IDbConnection db)
+        {
+            try
+            {
+                StoredProcedure.Create("usp_GetItems")
+                               .WithResults<ItemShouldThrow>()
+                               .Execute(db, Program.timeout);
+
+                return Tuple.Create(false, "No exception was thrown, even though one of the expected columns is not mapped.");
+            }
+            catch (StoredProcedureResultsException)
+            {
+                return Tuple.Create(true, "");
+            }
+            catch (Exception ex)
+            {
+                return Tuple.Create(false, "Expected Exception of type StoredProcedureResultsException, but a " + ex.GetType() + " was thrown.\n" + ex.ToString());
+            }
+        }
+
+        [SmokeTest("Fluent Syntax Single ResultSet WithParameter")]
         Tuple<bool, string> SingleResultSet_WithParameter(IDbConnection db)
         {
             return StoredProcedure.Create("usp_GetItem")
@@ -34,7 +55,7 @@ namespace SmokeTests
                                   .TestGetItemResults();
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax Single ResultSet WithParameter (expecting no results)")]
+        [SmokeTest("Fluent Syntax Single ResultSet WithParameter (expecting no results)")]
         Tuple<bool, string> SingleResultSet_WithParameterNoResults(IDbConnection db)
         {
             var res = StoredProcedure.Create("usp_GetItem")
@@ -48,7 +69,7 @@ namespace SmokeTests
             return Tuple.Create(true, "");
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax Single ResultSet WithInput")]
+        [SmokeTest("Fluent Syntax Single ResultSet WithInput")]
         Tuple<bool, string> SingleResultSet_WithInput(IDbConnection db)
         {
             return StoredProcedure.Create("usp_GetItem")
@@ -58,7 +79,7 @@ namespace SmokeTests
                                   .TestGetItemResults();
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax Single ResultSet WithIDataTransformer")]
+        [SmokeTest("Fluent Syntax Single ResultSet WithIDataTransformer")]
         Tuple<bool, string> SingleResultSet_WithIDataTransformer(IDbConnection db)
         {
             var res = StoredProcedure.Create("usp_GetItems")
@@ -77,7 +98,7 @@ namespace SmokeTests
             return Tuple.Create(true, "");
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax async Single ResultSet")]
+        [SmokeTest("Fluent Syntax async Single ResultSet")]
         async Task<Tuple<bool, string>> AsyncSingleResultSet(IDbConnection db)
         {
             var res = await StoredProcedure.Create("usp_GetItems")
@@ -87,7 +108,7 @@ namespace SmokeTests
             return res.TestGetItemsResults();
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax async Single ResultSet WithParameter")]
+        [SmokeTest("Fluent Syntax async Single ResultSet WithParameter")]
         async Task<Tuple<bool, string>> AsyncSingleResultSet_WithParameter(IDbConnection db)
         {
             var res = await StoredProcedure.Create("usp_GetItem")
@@ -98,7 +119,7 @@ namespace SmokeTests
             return res.TestGetItemResults();
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax async Single ResultSet WithInput")]
+        [SmokeTest("Fluent Syntax async Single ResultSet WithInput")]
         async Task<Tuple<bool, string>> AsyncSingleResultSet_WithInput(IDbConnection db)
         {
             var res = await StoredProcedure.Create("usp_GetItem")
@@ -109,7 +130,7 @@ namespace SmokeTests
             return res.TestGetItemResults();
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax async Single ResultSet WithIDataTransformer")]
+        [SmokeTest("Fluent Syntax async Single ResultSet WithIDataTransformer")]
         async Task<Tuple<bool, string>> AsyncSingleResultSet_WithIDataTransformer(IDbConnection db)
         {
             var res = await StoredProcedure.Create("usp_GetItems")
@@ -128,7 +149,7 @@ namespace SmokeTests
             return Tuple.Create(true, "");
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax Task Single ResultSet multiple asynchronous calls")]
+        [SmokeTest("Fluent Syntax Task Single ResultSet multiple asynchronous calls")]
         Task<Tuple<bool, string>> TaskSingleResultSet_MultipleExecutionsConcurrently(IDbConnection db)
         {
             var res1 = StoredProcedure.Create("usp_GetItem")
@@ -152,7 +173,7 @@ namespace SmokeTests
         #endregion
 
         #region Simple ResultSet
-        [Export, ExportMetadata("Name", "Fluent Syntax Simple ResultSet")]
+        [SmokeTest("Fluent Syntax Simple ResultSet")]
         Tuple<bool, string> SimpleResultSet(IDbConnection db)
         {
             var res = StoredProcedure.Create("usp_GetSpokes")
@@ -165,7 +186,7 @@ namespace SmokeTests
             return Tuple.Create(true, "");
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax Simple ResultSet WithParameter")]
+        [SmokeTest("Fluent Syntax Simple ResultSet WithParameter")]
         Tuple<bool, string> SimpleResultSet_WithParameter(IDbConnection db)
         {
             var res = StoredProcedure.Create("usp_GetSpokes")
@@ -179,7 +200,7 @@ namespace SmokeTests
             return Tuple.Create(true, "");
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax Simple ResultSet WithInput")]
+        [SmokeTest("Fluent Syntax Simple ResultSet WithInput")]
         Tuple<bool, string> SimpleResultSet_WithInput(IDbConnection db)
         {
             var res = StoredProcedure.Create("usp_GetSpokes")
@@ -193,7 +214,7 @@ namespace SmokeTests
             return Tuple.Create(true, "");
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax Simple ResultSet with IDataTransformer")]
+        [SmokeTest("Fluent Syntax Simple ResultSet with IDataTransformer")]
         Tuple<bool, string> SimpleResultSet_WithDataTransformer(IDbConnection db)
         {
             var res = StoredProcedure.Create("usp_GetSpokes")
@@ -207,7 +228,7 @@ namespace SmokeTests
             return Tuple.Create(true, "");
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax async Simple ResultSet")]
+        [SmokeTest("Fluent Syntax async Simple ResultSet")]
         async Task<Tuple<bool, string>> AsyncSimpleResultSet(IDbConnection db)
         {
             var res = await StoredProcedure.Create("usp_GetSpokes")
@@ -220,7 +241,7 @@ namespace SmokeTests
             return Tuple.Create(true, "");
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax async Simple ResultSet WithParameter")]
+        [SmokeTest("Fluent Syntax async Simple ResultSet WithParameter")]
         async Task<Tuple<bool, string>> AsyncSimpleResultSet_WithParameter(IDbConnection db)
         {
             var res = await StoredProcedure.Create("usp_GetSpokes")
@@ -234,7 +255,7 @@ namespace SmokeTests
             return Tuple.Create(true, "");
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax async Simple ResultSet WithInput")]
+        [SmokeTest("Fluent Syntax async Simple ResultSet WithInput")]
         async Task<Tuple<bool, string>> AsyncSimpleResultSet_WithInput(IDbConnection db)
         {
             var res = await StoredProcedure.Create("usp_GetSpokes")
@@ -248,7 +269,7 @@ namespace SmokeTests
             return Tuple.Create(true, "");
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax async Simple ResultSet with IDataTransformer")]
+        [SmokeTest("Fluent Syntax async Simple ResultSet with IDataTransformer")]
         async Task<Tuple<bool, string>> AsyncSimpleResultSet_WithDataTransformer(IDbConnection db)
         {
             var res = await StoredProcedure.Create("usp_GetSpokes")
@@ -264,7 +285,7 @@ namespace SmokeTests
         #endregion
 
         #region Enum ResultSet
-        [Export, ExportMetadata("Name", "Fluent Syntax Enum ResultSet")]
+        [SmokeTest("Fluent Syntax Enum ResultSet")]
         Tuple<bool, string> EnumResultSet(IDbConnection db)
         {
             var res = StoredProcedure.Create("usp_GetSpokes")
@@ -277,7 +298,7 @@ namespace SmokeTests
             return Tuple.Create(true, "");
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax Enum ResultSet WithParameter")]
+        [SmokeTest("Fluent Syntax Enum ResultSet WithParameter")]
         Tuple<bool, string> EnumResultSet_WithParameter(IDbConnection db)
         {
             var res = StoredProcedure.Create("usp_GetSpokes")
@@ -291,7 +312,7 @@ namespace SmokeTests
             return Tuple.Create(true, "");
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax Enum ResultSet WithInput")]
+        [SmokeTest("Fluent Syntax Enum ResultSet WithInput")]
         Tuple<bool, string> EnumResultSet_WithInput(IDbConnection db)
         {
             var res = StoredProcedure.Create("usp_GetSpokes")
@@ -305,7 +326,7 @@ namespace SmokeTests
             return Tuple.Create(true, "");
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax Enum ResultSet with IDataTransformer")]
+        [SmokeTest("Fluent Syntax Enum ResultSet with IDataTransformer")]
         Tuple<bool, string> EnumResultSet_WithDataTransformer(IDbConnection db)
         {
             var res = StoredProcedure.Create("usp_GetSpokes")
@@ -319,7 +340,7 @@ namespace SmokeTests
             return Tuple.Create(true, "");
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax async Enum ResultSet")]
+        [SmokeTest("Fluent Syntax async Enum ResultSet")]
         async Task<Tuple<bool, string>> AsyncEnumResultSet(IDbConnection db)
         {
             var res = await StoredProcedure.Create("usp_GetSpokes")
@@ -332,7 +353,7 @@ namespace SmokeTests
             return Tuple.Create(true, "");
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax async Enum ResultSet WithParameter")]
+        [SmokeTest("Fluent Syntax async Enum ResultSet WithParameter")]
         async Task<Tuple<bool, string>> AsyncEnumResultSet_WithParameter(IDbConnection db)
         {
             var res = await StoredProcedure.Create("usp_GetSpokes")
@@ -346,7 +367,7 @@ namespace SmokeTests
             return Tuple.Create(true, "");
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax async Enum ResultSet WithInput")]
+        [SmokeTest("Fluent Syntax async Enum ResultSet WithInput")]
         async Task<Tuple<bool, string>> AsyncEnumResultSet_WithInput(IDbConnection db)
         {
             var res = await StoredProcedure.Create("usp_GetSpokes")
@@ -360,7 +381,7 @@ namespace SmokeTests
             return Tuple.Create(true, "");
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax async Enum ResultSet with IDataTransformer")]
+        [SmokeTest("Fluent Syntax async Enum ResultSet with IDataTransformer")]
         async Task<Tuple<bool, string>> AsyncEnumResultSet_WithDataTransformer(IDbConnection db)
         {
             var res = await StoredProcedure.Create("usp_GetSpokes")
@@ -376,7 +397,7 @@ namespace SmokeTests
         #endregion
 
         #region Return Value
-        [Export, ExportMetadata("Name", "Fluent Syntax return value via WithInput")]
+        [SmokeTest("Fluent Syntax return value via WithInput")]
         Tuple<bool, string> ReturnValueViaWithInput(IDbConnection db)
         {
             var ro = new ReturnsOne();
@@ -390,7 +411,7 @@ namespace SmokeTests
             return Tuple.Create(true, "");
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax return value via WithReturnValue")]
+        [SmokeTest("Fluent Syntax return value via WithReturnValue")]
         Tuple<bool, string> ReturnValueViaWithReturnValue(IDbConnection db)
         {
             int retVal = -1;
@@ -404,7 +425,7 @@ namespace SmokeTests
             return Tuple.Create(true, "");
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax async return value via WithInput")]
+        [SmokeTest("Fluent Syntax async return value via WithInput")]
         async Task<Tuple<bool, string>> AsyncReturnValueViaWithInput(IDbConnection db)
         {
             var ro = new ReturnsOne();
@@ -418,7 +439,7 @@ namespace SmokeTests
             return Tuple.Create(true, "");
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax async return value via WithReturnValue")]
+        [SmokeTest("Fluent Syntax async return value via WithReturnValue")]
         async Task<Tuple<bool, string>> AsyncReturnValueViaWithReturnValue(IDbConnection db)
         {
             int retVal = -1;
@@ -432,7 +453,7 @@ namespace SmokeTests
             return Tuple.Create(true, "");
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax multiple async return values via WithReturnValue")]
+        [SmokeTest("Fluent Syntax multiple async return values via WithReturnValue")]
         Task<Tuple<bool, string>> MultipleAsyncReturnValuesSimultaneously(IDbConnection db)
         {
             var retVals = new ConcurrentBag<int>();
@@ -462,7 +483,7 @@ namespace SmokeTests
         #endregion
 
         #region Multiple ResultSets
-        [Export, ExportMetadata("Name", "Fluent Syntax Multiple ResultSets WithParameter")]
+        [SmokeTest("Fluent Syntax Multiple ResultSets WithParameter")]
         Tuple<bool, string> MultipleResultSet_WithParameter(IDbConnection db)
         {
             return StoredProcedure.Create("usp_GetWidget")
@@ -472,7 +493,7 @@ namespace SmokeTests
                                   .TestGetWidgetResults();
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax Multiple ResultSets WithInput")]
+        [SmokeTest("Fluent Syntax Multiple ResultSets WithInput")]
         Tuple<bool, string> MultipleResultSet_WithInput(IDbConnection db)
         {
             return StoredProcedure.Create("usp_GetWidget")
@@ -482,7 +503,7 @@ namespace SmokeTests
                                   .TestGetWidgetResults();
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax async Multiple ResultSets WithParameter")]
+        [SmokeTest("Fluent Syntax async Multiple ResultSets WithParameter")]
         async Task<Tuple<bool, string>> AsyncMultipleResultSet_WithParameter(IDbConnection db)
         {
             var res = await StoredProcedure.Create("usp_GetWidget")
@@ -493,7 +514,7 @@ namespace SmokeTests
             return res.TestGetWidgetResults();
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax async Multiple ResultSets WithInput")]
+        [SmokeTest("Fluent Syntax async Multiple ResultSets WithInput")]
         async Task<Tuple<bool, string>> AsyncMultipleResultSet_WithInput(IDbConnection db)
         {
             var res = await StoredProcedure.Create("usp_GetWidget")
@@ -504,7 +525,7 @@ namespace SmokeTests
             return res.TestGetWidgetResults();
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax two async Multiple ResultSets WithParameter simultaneously")]
+        [SmokeTest("Fluent Syntax two async Multiple ResultSets WithParameter simultaneously")]
         Task<Tuple<bool, string>> AsyncMultipleResultSet_MultipleExcecutions(IDbConnection db)
         {
             var sp = StoredProcedure.Create("usp_GetWidget")
@@ -525,7 +546,7 @@ namespace SmokeTests
         #endregion
 
         #region Hierarchical ResultSet
-        [Export, ExportMetadata("Name", "Fluent Syntax Hierarchical ResultSet when children returned first")]
+        [SmokeTest("Fluent Syntax Hierarchical ResultSet when children returned first")]
         Tuple<bool, string> HierarchicalResultSet_ChildrenReturnedFirst(IDbConnection db)
         {
             return StoredProcedure.Create("usp_GetCitiesAndStates")
@@ -534,7 +555,7 @@ namespace SmokeTests
                                   .TestGetStatesResults();
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax Hierarchical ResultSet when parents returned first")]
+        [SmokeTest("Fluent Syntax Hierarchical ResultSet when parents returned first")]
         Tuple<bool, string> HierarchicalResultSet_ParentsReturnedFirst(IDbConnection db)
         {
             return StoredProcedure.Create("usp_GetStatesAndCities")
@@ -543,7 +564,7 @@ namespace SmokeTests
                                   .TestGetStatesResults();
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax Hierarchical ResultSet model order specified")]
+        [SmokeTest("Fluent Syntax Hierarchical ResultSet model order specified")]
         Tuple<bool, string> HierarchicalResultSet_ModelOrderSpecified(IDbConnection db)
         {
             return StoredProcedure.Create("usp_GetCitiesAndStates")
@@ -553,7 +574,7 @@ namespace SmokeTests
                                   .TestGetStatesResults();
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax async Hierarchical ResultSet when children returned first")]
+        [SmokeTest("Fluent Syntax async Hierarchical ResultSet when children returned first")]
         async Task<Tuple<bool, string>> AsyncHierarchicalResultSet_ChildrenReturnedFirst(IDbConnection db)
         {
             var res = await StoredProcedure.Create("usp_GetCitiesAndStates")
@@ -563,7 +584,7 @@ namespace SmokeTests
             return res.TestGetStatesResults();
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax async Hierarchical ResultSet when parents returned first")]
+        [SmokeTest("Fluent Syntax async Hierarchical ResultSet when parents returned first")]
         async Task<Tuple<bool, string>> AsyncHierarchicalResultSet_ParentsReturnedFirst(IDbConnection db)
         {
             var res = await StoredProcedure.Create("usp_GetStatesAndCities")
@@ -573,7 +594,7 @@ namespace SmokeTests
             return res.TestGetStatesResults();
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax Hierarchical ResultSet model order specified")]
+        [SmokeTest("Fluent Syntax Hierarchical ResultSet model order specified")]
         async Task<Tuple<bool, string>> AsyncHierarchicalResultSet_ModelOrderSpecified(IDbConnection db)
         {
             var res = await StoredProcedure.Create("usp_GetStatesAndCities")
@@ -592,7 +613,7 @@ namespace SmokeTests
             new Person { FirstName = "Jane", LastName = "Doe" }
         };
 
-        [Export, ExportMetadata("Name", "Fluent Syntax TVP WithTableValuedParameter")]
+        [SmokeTest("Fluent Syntax TVP WithTableValuedParameter")]
         Tuple<bool, string> TVP_WithTableValuedParameter(IDbConnection db)
         {
             return StoredProcedure.Create("usp_GetExistingPeople")
@@ -602,7 +623,7 @@ namespace SmokeTests
                                   .TestGetExistingPeopleResults();
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax async TVP WithTableValuedParameter")]
+        [SmokeTest("Fluent Syntax async TVP WithTableValuedParameter")]
         Task<Tuple<bool, string>> AsyncTVP_WithTableValuedParameter(IDbConnection db)
         {
             return StoredProcedure.Create("usp_GetExistingPeople")
@@ -612,7 +633,7 @@ namespace SmokeTests
                                   .ContinueWith(r => r.Result.TestGetExistingPeopleResults());
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax TVP WithInput no Attribute")]
+        [SmokeTest("Fluent Syntax TVP WithInput no Attribute")]
         Tuple<bool, string> TVP_WithInput_NoAttribute(IDbConnection db)
         {
             return StoredProcedure.Create("usp_GetExistingPeople")
@@ -622,7 +643,7 @@ namespace SmokeTests
                                   .TestGetExistingPeopleResults();
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax async TVP WithInput no Attribute")]
+        [SmokeTest("Fluent Syntax async TVP WithInput no Attribute")]
         Task<Tuple<bool, string>> AsyncTVP_WithInput_NoAttribute(IDbConnection db)
         {
             return StoredProcedure.Create("usp_GetExistingPeople")
@@ -632,7 +653,7 @@ namespace SmokeTests
                                   .ContinueWith(r => r.Result.TestGetExistingPeopleResults());
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax TVP WithInput with Attribute")]
+        [SmokeTest("Fluent Syntax TVP WithInput with Attribute")]
         Tuple<bool, string> TVP_WithInput_WithAttribute(IDbConnection db)
         {
             return StoredProcedure.Create("usp_GetExistingPeople")
@@ -642,7 +663,7 @@ namespace SmokeTests
                                   .TestGetExistingPeopleResults();
         }
 
-        [Export, ExportMetadata("Name", "Fluent Syntax async TVP WithInput with Attribute")]
+        [SmokeTest("Fluent Syntax async TVP WithInput with Attribute")]
         Task<Tuple<bool, string>> AsyncTVP_WithInput_WithAttribute(IDbConnection db)
         {
             return StoredProcedure.Create("usp_GetExistingPeople")
