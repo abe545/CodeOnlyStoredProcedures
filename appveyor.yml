@@ -3,7 +3,7 @@ skip_tags: true
 
 environment:
   releaseVersion: 2.1.0
-  packageVersion: 2.1.0-pre
+  packageVersion: 2.1.0-pre1
 
 assembly_info:
   patch: true
