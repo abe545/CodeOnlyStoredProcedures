@@ -8,7 +8,7 @@ namespace CodeOnlyStoredProcedure.DataTransformation
     /// doesn't fit in the numeric type you're converting to.
     /// </summary>
     /// <example>
-    /// <code language="C#" title="C#">
+    /// <code language='cs'>
     /// public class Person
     /// {
     ///     // The db returns a double

@@ -8,7 +8,7 @@ using Microsoft.SqlServer.Server;
 namespace CodeOnlyStoredProcedure
 {
     /// <summary>
-    /// Attribute to control parameters passed to a <see cref="StoredProcedure"/> using the <see cref="StoredProcedureExtensions.WithInput"/>
+    /// Attribute to control parameters passed to a <see cref="StoredProcedure"/> using the <see cref="StoredProcedureExtensions.WithInput{TSP, TInput}"/>
     /// extension method.
     /// </summary>
     [AttributeUsage(AttributeTargets.Property)]

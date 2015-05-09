@@ -8,7 +8,7 @@
     /// <typeparam name="T">The type that the attribute transforms.</typeparam>
     /// <remarks>You must inherit from <see cref="DataTransformerAttributeBase"/>, otherwise the attribute will be ignored.</remarks>
     /// <example>
-    /// <code language="C#" title="C#">
+    /// <code language='cs'>
     /// public class ToUtcAttribute : DataTransformerAttributeBase, IDataTransformerAttribute&lt;DateTime&gt;
     /// {
     ///     public ToUtcAttribute(int order = 0) 

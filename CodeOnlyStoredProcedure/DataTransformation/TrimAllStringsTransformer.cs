@@ -13,7 +13,7 @@ namespace CodeOnlyStoredProcedure.DataTransformation
     /// <seealso cref="IDataTransformer{T}"/>
     /// <remarks>If this transformer is used, " Bar  " will be transformed into "Bar" when set on the model properties.</remarks>
     /// <example>
-    /// <code language="C#" title="C#">
+    /// <code language='cs'>
     /// public class DataModel
     /// {
     ///     public IEnumerable&lt;Person&gt; GetPeople_FluentSyntax(IDbConnection db)

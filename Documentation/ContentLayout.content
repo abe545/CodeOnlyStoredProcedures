@@ -1,18 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Topics>
-  <Topic id="aa2c11d2-f0f3-4d38-a884-e28eb2d67f75" visible="True" isDefault="true" isSelected="true" title="Welcome to the [TODO: Add project name]">
+  <Topic id="aa2c11d2-f0f3-4d38-a884-e28eb2d67f75" visible="False" isMSHVRoot="true" isSelected="true" title="Code Only Stored Procedures API Reference">
     <HelpKeywords>
       <HelpKeyword index="K" term="Welcome" />
     </HelpKeywords>
-  </Topic>
-  <Topic id="4a56337a-71be-49eb-91d2-e3a4948e703c" visible="True" isExpanded="true" title="Version History">
-    <HelpKeywords>
-      <HelpKeyword index="K" term="version, history" />
-    </HelpKeywords>
-    <Topic id="5333e785-4900-49da-acf7-39b836647ece" visible="True" title="Version 1.0.0.0">
-      <HelpKeywords>
-        <HelpKeyword index="K" term="version, 1.0.0.0" />
-      </HelpKeywords>
-    </Topic>
   </Topic>
 </Topics>

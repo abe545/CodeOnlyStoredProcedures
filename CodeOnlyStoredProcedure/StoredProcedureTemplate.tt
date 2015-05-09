@@ -196,6 +196,7 @@ public class StoredProcedureTemplate : Template
 		WriteLine("/// Creates a <see cref=\"HierarchicalStoredProcedure{T}\"/> with the results expected in the order declared for this stored procedure.");
 		WriteLine("/// </summary>");
         WriteLine("/// <returns>A hierarchical stored procedure.</returns>");
+		WriteLine("/// <typeparam name=\"TFactory\">The root type of the hierarchy.</typeparam>");
 
 		Write("public ");
 		if (TypeCount == 2) 
@@ -235,7 +236,7 @@ public class StoredProcedureTemplate : Template
 #>
 	#region StoredProcedure<#+ GetTypes(TypeCount); #>
 
-	/// <summary>Calls a StoredProcedure that returns <#+ Write(TypeCount.ToString()); #> result set(s).</summary>
+	/// <summary>Calls a StoredProcedure that returns <#+ Write(TypeCount.ToString()); #> result set<#+ if (TypeCount > 1) Write("s"); else Write(" or an automatically detected hierarchical result set"); #>.</summary>
 	<#+ WriteTypeParams(); #>
 	public class StoredProcedure<#+ GetTypes(TypeCount); #> : StoredProcedure<#+ GetTypes(TypeCount - 1); #>
 	{
@@ -284,7 +285,7 @@ public class StoredProcedureTemplate : Template
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
         /// in the <paramref name="schema"/> schema, with the <see cref="IStoredProcedureParameter"/>s
-        /// to pass, the output action map, and the <see cref="IDataTransformer"/>s to 
+        /// to pass and the <see cref="IDataTransformer"/>s to 
         /// use to transform the results.
         /// </summary>
         /// <param name="schema">The schema of the stored procedure.</param>

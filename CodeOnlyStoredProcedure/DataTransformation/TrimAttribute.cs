@@ -11,7 +11,7 @@ namespace CodeOnlyStoredProcedure.DataTransformation
     /// </remarks>
     /// <seealso cref="IDataTransformerAttribute{T}"/>
     /// <example>
-    /// <code language="C#" title="C#">
+    /// <code language='cs'>
     /// public class DataModel
     /// {
     ///     [Trim]

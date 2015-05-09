@@ -21,6 +21,17 @@ namespace CodeOnlyStoredProcedure
         /// <param name="tableTypeName">The name of the table that the database's stored procedure expects
         /// in its Table Valued Parameter.</param>
         /// <returns>A copy of the <see cref="StoredProcedure"/> that has the Table Valued Parameter set.</returns>
+        /// <remarks>StoredProcedures are immutable, so all the Fluent API methods return copies.</remarks>
+        /// <example>
+        /// <code language="cs">
+        /// public void AddPeople(IDbConnection conn, IEnumerable&lt;Person&gt; people)
+        /// {
+        ///     StoredProcedure.Create("usp_getWidgetCount")
+        ///                    .WithTableValuedParameter("people", people, "PersonInput")
+        ///                    .Execute(conn);
+        /// }
+        /// </code>
+        /// </example>
         public static TSP WithTableValuedParameter<TSP, TRow>(this TSP sp,
             string            name,
             IEnumerable<TRow> table,
@@ -50,6 +61,17 @@ namespace CodeOnlyStoredProcedure
         /// <param name="tableTypeName">The name of the table that the database's stored procedure expects
         /// in its Table Valued Parameter.</param>
         /// <returns>A copy of the <see cref="StoredProcedure"/> that has the Table Valued Parameter set.</returns>
+        /// <remarks>StoredProcedures are immutable, so all the Fluent API methods return copies.</remarks>
+        /// <example>
+        /// <code language="cs">
+        /// public void AddPeople(IDbConnection conn, IEnumerable&lt;Person&gt; people)
+        /// {
+        ///     StoredProcedure.Create("usp_getWidgetCount")
+        ///                    .WithTableValuedParameter("people", people, "tvp", "Person")
+        ///                    .Execute(conn);
+        /// }
+        /// </code>
+        /// </example>
         public static TSP WithTableValuedParameter<TSP, TRow>(this TSP sp,
             string            name,
             IEnumerable<TRow> table,
