@@ -6,7 +6,7 @@ namespace CodeOnlyStoredProcedure
     public static partial class StoredProcedureExtensions
     {
         /// <summary>
-        /// Adds an input parameter to the stored procedure.
+        /// Clones the given <see cref="StoredProcedure"/> with the given input parameter.
         /// </summary>
         /// <typeparam name="TSP">The type of StoredProcedure. Can be a StoredProcedure with or without results.</typeparam>
         /// <typeparam name="TValue">The type of value to pass.</typeparam>
@@ -15,6 +15,12 @@ namespace CodeOnlyStoredProcedure
         /// <param name="value">The value to pass.</param>
         /// <returns>A copy of the StoredProcedure with the input parameter passed.</returns>
         /// <remarks>StoredProcedures are immutable, so all the Fluent API methods return copies.</remarks>
+        /// <example>
+        /// <code language="cs">
+        /// var sp = StoredProcedure.Create("usp_incrementWidgetCount")
+        ///                         .WithParameter("widgetCount", 2);
+        /// </code>
+        /// </example>
         public static TSP WithParameter<TSP, TValue>(this TSP sp, string name, TValue value)
             where TSP : StoredProcedure
         {
@@ -26,7 +32,7 @@ namespace CodeOnlyStoredProcedure
         }
 
         /// <summary>
-        /// Adds an input parameter to the stored procedure.
+        /// Clones the given <see cref="StoredProcedure"/> with the given input parameter.
         /// </summary>
         /// <typeparam name="TSP">The type of StoredProcedure. Can be a StoredProcedure with or without results.</typeparam>
         /// <typeparam name="TValue">The type of value to pass.</typeparam>
@@ -36,6 +42,12 @@ namespace CodeOnlyStoredProcedure
         /// <param name="dbType">The <see cref="DbType"/> that the StoredProcedure expects.</param>
         /// <returns>A copy of the StoredProcedure with the input parameter passed.</returns>
         /// <remarks>StoredProcedures are immutable, so all the Fluent API methods return copies.</remarks>
+        /// <example>
+        /// <code language="cs">
+        /// var sp = StoredProcedure.Create("usp_incrementWidgetCount")
+        ///                         .WithParameter("widgetCount", -1, DbType.Int16);
+        /// </code>
+        /// </example>
         public static TSP WithParameter<TSP, TValue>(this TSP sp, string name, TValue value, DbType dbType)
             where TSP : StoredProcedure
         {

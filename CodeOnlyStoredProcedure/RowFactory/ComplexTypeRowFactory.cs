@@ -60,11 +60,19 @@ namespace CodeOnlyStoredProcedure.RowFactory
         {
             var exprs   = new List<Expression>();
             var row     = Expression.Variable(implType);
-            var byIndex = accessorsByColumnName.Select(c => new { Index = reader.GetOrdinal(c.Name), c.Name, c.AccessorFactory, c.Property, c.IsOptional })
-                                               .OrderBy(c => c.Index)
-                                               .ToArray();
+            var byIndex = Enumerable.Range(0, reader.FieldCount)
+                                    .Select(i =>
+                                    {
+                                        var col = accessorsByColumnName.SingleOrDefault(c => c.Name == reader.GetName(i));
+                                        if (col != null)
+                                            return new { Index = i, col.Name, col.AccessorFactory, col.Property, Accessor = col };
+                                        else
+                                            return null;
+                                    })
+                                    .Where(c => c != null)
+                                    .ToArray();
 
-            var notFound = byIndex.Where(c => c.Index < 0 && !c.IsOptional);
+            var notFound = accessorsByColumnName.Except(byIndex.Select(c => c.Accessor)).Where(c => !c.IsOptional);
             if (notFound.Any())
                 throw new StoredProcedureResultsException(resultType, notFound.Select(t => t.Name).ToArray());
 

@@ -13,6 +13,9 @@
 [Bb]in/
 [Oo]bj/
 
+# Sandcastle Help Generated Files
+[Dd]ocumentation/[Hh]elp
+
 # NuGet Packages Directory
 packages/
 

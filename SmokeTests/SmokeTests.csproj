@@ -124,6 +124,7 @@
       <Link>Properties\VersionInfo.cs</Link>
     </Compile>
     <Compile Include="SmokeDb.cs" />
+    <Compile Include="SmokeTestAttribute.cs" />
     <Compile Include="SmokeTestExtensions.cs" />
   </ItemGroup>
   <ItemGroup>

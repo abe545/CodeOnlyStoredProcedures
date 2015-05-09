@@ -3,8 +3,22 @@
 namespace CodeOnlyStoredProcedure.DataTransformation
 {
     /// <summary>
-    /// Removes all whitespace from a string value
+    /// Removes all whitespace from a string value returned from a Stored Procedure.
     /// </summary>
+    /// <remarks>
+    /// If the stored procedure returns " Foo  ", and [Trim] decorates a model's property,
+    /// the value set on that property will be "Foo".
+    /// </remarks>
+    /// <seealso cref="IDataTransformerAttribute{T}"/>
+    /// <example>
+    /// <code language='cs'>
+    /// public class DataModel
+    /// {
+    ///     [Trim]
+    ///     public string Name { get; set; }
+    /// }
+    /// </code>
+    /// </example>
     public class TrimAttribute : DataTransformerAttributeBase, IDataTransformerAttribute<string>
     {
         /// <summary>

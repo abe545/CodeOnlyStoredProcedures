@@ -7,7 +7,7 @@ namespace CodeOnlyStoredProcedure
     public static partial class StoredProcedureExtensions
     {
         /// <summary>
-        /// Creates a clone of the given <see cref="StoredProcedure"/> with an output parameter.
+        /// Clones the given <see cref="StoredProcedure"/> with an output parameter.
         /// </summary>
         /// <typeparam name="TSP">The type of StoredProcedure to add an output parameter to.</typeparam>
         /// <typeparam name="TValue">The type of output parameter.</typeparam>
@@ -18,6 +18,16 @@ namespace CodeOnlyStoredProcedure
         /// <param name="scale">The scale expected for the Sql data type. This can normally be omitted.</param>
         /// <param name="precision">The precision expected for the Sql data type. This can normally be omitted.</param>
         /// <returns>A copy of the <see cref="StoredProcedure"/> with the parameter setup.</returns>
+        /// <remarks>StoredProcedures are immutable, so all the Fluent API methods return copies.</remarks>
+        /// <example>
+        /// <code language="cs">
+        /// int count;
+        /// StoredProcedure.Create("usp_getWidgetCount")
+        ///                .WithOutputParameter("count", i => count = i)
+        ///                .Execute(db);
+        /// // count will now be set to the value returned by the stored procedure in the @count parameter
+        /// </code>
+        /// </example>
         public static TSP WithOutputParameter<TSP, TValue>(this TSP sp,
             string         name,
             Action<TValue> setter,
@@ -35,7 +45,7 @@ namespace CodeOnlyStoredProcedure
         }
 
         /// <summary>
-        /// Creates a clone of the given <see cref="StoredProcedure"/> with an output parameter.
+        /// Clones the given <see cref="StoredProcedure"/> with an output parameter.
         /// </summary>
         /// <typeparam name="TSP">The type of StoredProcedure to add an output parameter to.</typeparam>
         /// <typeparam name="TValue">The type of output parameter.</typeparam>
@@ -47,6 +57,16 @@ namespace CodeOnlyStoredProcedure
         /// <param name="scale">The scale expected for the Sql data type. This can normally be omitted.</param>
         /// <param name="precision">The precision expected for the Sql data type. This can normally be omitted.</param>
         /// <returns>A copy of the <see cref="StoredProcedure"/> with the parameter setup.</returns>
+        /// <remarks>StoredProcedures are immutable, so all the Fluent API methods return copies.</remarks>
+        /// <example>
+        /// <code language="cs">
+        /// int count;
+        /// StoredProcedure.Create("usp_getWidgetCount")
+        ///                .WithOutputParameter("count", i => count = i, DbType.Int16)
+        ///                .Execute(db);
+        /// // count will now be set to the value returned by the stored procedure in the @count parameter
+        /// </code>
+        /// </example>
         public static TSP WithOutputParameter<TSP, TValue>(this TSP sp,
             string         name,
             Action<TValue> setter,

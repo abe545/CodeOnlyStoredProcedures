@@ -65,6 +65,8 @@ public class StoredProcedureExtensionsWithResultsTemplate : Template
 		<#+ WriteTypeParams(); #>
 		/// <param name="sp">The <see cref="StoredProcedure" /> to clone.</param>
 		/// <returns>A copy of the <see cref="StoredProcedure" />, but that will return the given results.</returns>
+        /// <remarks>StoredProcedures are immutable, so all the Fluent API methods return copies.</remarks>
+		<#+ if (TypeCount == 1) WriteLine("/// <example>\n\t\t/// <code language=\"cs\">\n\t\t/// var sp = StoredProcedure.Create(\"usp_getPeople\").WithResults&lt;Person&gt;();\n\t\t/// </code>\n\t\t/// </example>"); #>
 		public static StoredProcedure<#+ GetTypes(TypeCount); #> WithResults<#+ GetTypes(TypeCount); #>(this StoredProcedure sp)
 		{
             Contract.Requires(sp != null);

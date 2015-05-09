@@ -19,6 +19,12 @@ namespace SmokeTests
         public string Name   { get; set; }
     }
 
+    public class ItemShouldThrow
+    {
+        public int    Id   { get; set; }
+        public string Name { get; set; }
+    }
+
     public class Widget
     {
         public int     WidgetId { get; set; }

@@ -15,6 +15,7 @@ Added global data transformers, that will be applied for all columns in all stor
 Added option to enable numeric conversions for all numeric properties. This should be specified before any StoredProcedure is created.
 Fixed bug where System.Single (float in C#) property types could not be returned (it would throw an exception).
 Fixed bug where StoredProcedure&lt;dynamic&gt; would not apply any IDataTransformers specified.
+Fixed bug where expected columns that don't get returned were throwing an IndexOutOfRangeException instead of a StoredProcedureResultsException
           
 2.0.0
 Removed dependency on SQL Server for all stored procedures (except those that accept Table Valued Parameters)
@@ -54,6 +55,7 @@ Added xml comments to all public methods. While not complete documentation, they
             <group targetFramework=".NETFramework4.0">
                 <dependency id="EntityFramework" version="6.1.3" />
             </group>
+            <group targetFramework=".NETFramework4.5" />
         </dependencies>
         <references>
             <reference file="CodeOnlyStoredProcedure.dll" />

@@ -13,13 +13,13 @@ using System.Data.Common;
 namespace CodeOnlyStoredProcedure
 {
     /// <summary>
-    /// Calls a stored procedure in the database.
+    /// Calls a stored procedure in the database that doesn't return results.
     /// </summary>
     /// <remarks> This type will not return a result set. To get results from the Stored Procedure,
     /// use the <see cref="StoredProcedure{T}"/>class. If your procedure returns more than one
     /// result set, you can use the <see cref="StoredProcedure{T1,T2}"/>, <see cref="StoredProcedure{T1,T2,T3}"/>,
     /// <see cref="StoredProcedure{T1,T2,T3,T4}"/>, <see cref="StoredProcedure{T1,T2,T3,T4,T5}"/>,
-    /// <see cref="StoredProcedure{T1,T2,T3,T4,T5,T6}"/>, or <see cref="StoredProcedure{T1,T2,T3,T4,T5,T6, T7}"/>
+    /// <see cref="StoredProcedure{T1,T2,T3,T4,T5,T6}"/>, or <see cref="StoredProcedure{T1,T2,T3,T4,T5,T6,T7}"/>
     /// classes.</remarks>
     public partial class StoredProcedure
     {
@@ -146,7 +146,7 @@ namespace CodeOnlyStoredProcedure
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
         /// in the <paramref name="schema"/> schema, with the <see cref="IStoredProcedureParameter"/>s
-        /// to pass, the output action map, and the <see cref="IDataTransformer"/>s to 
+        /// to pass and the <see cref="IDataTransformer"/>s to 
         /// use to transform the results.
         /// </summary>
         /// <param name="schema">The schema of the stored procedure.</param>
