@@ -3,9 +3,21 @@
 namespace CodeOnlyStoredProcedure.DataTransformation
 {
     /// <summary>
-    /// DataTransformer Attribute that will call String.Intern on the input. This can potentially
-    /// save a lot of memory if you have many strings that constanty recur
+    /// DataTransformer Attribute that will call String.Intern on the input. 
     /// </summary>
+    /// <remarks>
+    /// This can potentially save a lot of memory if you have many strings that are returned often.
+    /// </remarks>
+    /// <seealso cref="IDataTransformerAttribute{T}"/>
+    /// <example>
+    /// <code language='cs'>
+    /// public class DataModel
+    /// {
+    ///     [Intern]
+    ///     public string Name { get; set; }
+    /// }
+    /// </code>
+    /// </example>
     public class InternAttribute : DataTransformerAttributeBase, IDataTransformerAttribute<string>
     {
         /// <summary>

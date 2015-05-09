@@ -15,7 +15,7 @@ namespace CodeOnlyStoredProcedure
         /// can be an anonymous type.</param>
         /// <returns>A clone of the <see cref="StoredProcedure"/> with the input parameters.</returns>
         /// <example>When passing input to a StoredProcedure, you have a few options. You can use WithInput to have more control over
-        /// the parameters that are created (by creating a input class, and decorating its properties with the appropriate attributes):
+        /// the parameters that are created (by creating an input class, and decorating its properties with an <see cref="StoredProcedureParameterAttribute"/>).
         /// <code language='cs'>
         /// public class MyInputArgs
         /// {
@@ -29,7 +29,7 @@ namespace CodeOnlyStoredProcedure
         /// // after calling execute, input.BarSize will have an output result from the stored procedure.
         /// sp = sp.WithInput(input);
         /// </code>
-        /// You can also use WithInput to add a number of parameters at the same time, like so:
+        /// You can also use WithInput to add a number of parameters using an anonymous type.
         /// <code language='cs'>
         /// sp = sp.WithInput(new { foo = "value", bar = 131.35, baz = DateTime.Now });
         /// </code>
@@ -41,20 +41,13 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(input                  != null);
             Contract.Ensures (Contract.Result<TSP>() != null);
 
-            return (TSP)sp.WithInput(input, typeof(TInput));
-        }
+            StoredProcedure temp = sp;
+            foreach (var p in typeof(TInput).GetParameters(input))
+                temp = temp.CloneWith(p);
 
-        internal static StoredProcedure WithInput(this StoredProcedure sp, object input, Type inputType)
-        {
-            Contract.Requires(sp                                 != null);
-            Contract.Requires(input                              != null);
-            Contract.Requires(inputType                          != null);
-            Contract.Ensures (Contract.Result<StoredProcedure>() != null);
-
-            foreach (var p in inputType.GetParameters(input))
-                sp = sp.CloneWith(p);
-
-            return sp;
+            // only do one cast at the end. if the implementation class doesn't implement CloneWith correctly,
+            // this will obviously fail, but there really is no need to do the cast after every CloneWith.
+            return (TSP)temp;
         }
     }
 }

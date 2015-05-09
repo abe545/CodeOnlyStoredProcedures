@@ -7,7 +7,7 @@ namespace CodeOnlyStoredProcedure
     public static partial class StoredProcedureExtensions
     {
         /// <summary>
-        /// Creates a clone of the given <see cref="StoredProcedure"/> with an input/output parameter.
+        /// Clones the given <see cref="StoredProcedure"/> with an input/output parameter.
         /// </summary>
         /// <typeparam name="TSP">The type of StoredProcedure to add an input/output parameter to.</typeparam>
         /// <typeparam name="TValue">The type of output parameter.</typeparam>
@@ -19,6 +19,16 @@ namespace CodeOnlyStoredProcedure
         /// <param name="scale">The scale expected for the Sql data type. This can normally be omitted.</param>
         /// <param name="precision">The precision expected for the Sql data type. This can normally be omitted.</param>
         /// <returns>A clone of the <see cref="StoredProcedure"/> with the parameter setup.</returns>
+        /// <remarks>StoredProcedures are immutable, so all the Fluent API methods return copies.</remarks>
+        /// <example>
+        /// <code language="cs">
+        /// int count;
+        /// StoredProcedure.Create("usp_updateWidgetCount")
+        ///                .WithInputOutputParameter("count", 4, i => count = i)
+        ///                .Execute(db);
+        /// // count will now be set to the value returned by the stored procedure in the @count parameter
+        /// </code>
+        /// </example>
         public static TSP WithInputOutputParameter<TSP, TValue>(this TSP sp,
             string         name,
             TValue         value,
@@ -37,7 +47,7 @@ namespace CodeOnlyStoredProcedure
         }
 
         /// <summary>
-        /// Creates a clone of the given <see cref="StoredProcedure"/> with an input/output parameter.
+        /// Clones the given <see cref="StoredProcedure"/> with an input/output parameter.
         /// </summary>
         /// <typeparam name="TSP">The type of StoredProcedure to add an input/output parameter to.</typeparam>
         /// <typeparam name="TValue">The type of output parameter.</typeparam>
@@ -50,6 +60,16 @@ namespace CodeOnlyStoredProcedure
         /// <param name="scale">The scale expected for the Sql data type. This can normally be omitted.</param>
         /// <param name="precision">The precision expected for the Sql data type. This can normally be omitted.</param>
         /// <returns>A clone of the <see cref="StoredProcedure"/> with the parameter setup.</returns>
+        /// <remarks>StoredProcedures are immutable, so all the Fluent API methods return copies.</remarks>
+        /// <example>
+        /// <code language="cs">
+        /// int count;
+        /// StoredProcedure.Create("usp_updateWidgetCount")
+        ///                .WithInputOutputParameter("count", 4, i => count = i, DbType.Int16)
+        ///                .Execute(db);
+        /// // count will now be set to the value returned by the stored procedure in the @count parameter
+        /// </code>
+        /// </example>
         public static TSP WithInputOutputParameter<TSP, TValue>(this TSP sp,
             string         name,
             TValue         value,
@@ -66,17 +86,6 @@ namespace CodeOnlyStoredProcedure
             Contract.Ensures (Contract.Result<TSP>() != null);
 
             return (TSP)sp.CloneWith(new InputOutputParameter(name, o => setter((TValue)o), value, dbType, size, scale, precision));
-        }
-
-        internal static TSP WithInputOutputParameter<TSP>(this TSP sp, string name, object value, Action<object> setter)
-            where TSP : StoredProcedure
-        {
-            Contract.Requires(sp != null);
-            Contract.Requires(!string.IsNullOrWhiteSpace(name));
-            Contract.Requires(setter != null);
-            Contract.Ensures(Contract.Result<TSP>() != null);
-
-            return (TSP)sp.CloneWith(new InputOutputParameter(name, setter, value));
         }
     }
 }

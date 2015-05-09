@@ -48,8 +48,8 @@ Assistance Markup Language (MAML) which is used to create these topics.</para>
 			</content>
 		</section>
 
-		<relatedTopics>
+		<!--<relatedTopics>
 			<link xlink:href="4a56337a-71be-49eb-91d2-e3a4948e703c" />
-		</relatedTopics>
+		</relatedTopics>-->
 	</developerConceptualDocument>
 </topic>

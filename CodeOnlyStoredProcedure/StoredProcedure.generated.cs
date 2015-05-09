@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace CodeOnlyStoredProcedure
 {
 	#region StoredProcedure<T1>
-	/// <summary>Calls a StoredProcedure that returns 1 result set(s).</summary>
+	/// <summary>Calls a StoredProcedure that returns 1 result set or an automatically detected hierarchical result set.</summary>
 	/// <typeparam name="T1">The type of the first result set returned by the stored procedure.</typeparam>
 	public class StoredProcedure<T1> : StoredProcedure	{
 		private Lazy<IRowFactory<T1>> factory;
@@ -60,7 +60,7 @@ namespace CodeOnlyStoredProcedure
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
         /// in the <paramref name="schema"/> schema, with the <see cref="IStoredProcedureParameter"/>s
-        /// to pass, the output action map, and the <see cref="IDataTransformer"/>s to 
+        /// to pass and the <see cref="IDataTransformer"/>s to 
         /// use to transform the results.
         /// </summary>
         /// <param name="schema">The schema of the stored procedure.</param>
@@ -230,7 +230,7 @@ namespace CodeOnlyStoredProcedure
 	#endregion
 
 	#region StoredProcedure<T1, T2>
-	/// <summary>Calls a StoredProcedure that returns 2 result set(s).</summary>
+	/// <summary>Calls a StoredProcedure that returns 2 result sets.</summary>
 	/// <typeparam name="T1">The type of the first result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T2">The type of the second result set returned by the stored procedure.</typeparam>
 	public class StoredProcedure<T1, T2> : StoredProcedure<T1>	{
@@ -285,7 +285,7 @@ namespace CodeOnlyStoredProcedure
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
         /// in the <paramref name="schema"/> schema, with the <see cref="IStoredProcedureParameter"/>s
-        /// to pass, the output action map, and the <see cref="IDataTransformer"/>s to 
+        /// to pass and the <see cref="IDataTransformer"/>s to 
         /// use to transform the results.
         /// </summary>
         /// <param name="schema">The schema of the stored procedure.</param>
@@ -447,6 +447,7 @@ namespace CodeOnlyStoredProcedure
 		/// Creates a <see cref="HierarchicalStoredProcedure{T}"/> with the results expected in the order declared for this stored procedure.
 		/// </summary>
 		/// <returns>A hierarchical stored procedure.</returns>
+		/// <typeparam name="TFactory">The root type of the hierarchy.</typeparam>
 		public virtual HierarchicalStoredProcedure<TFactory> AsHierarchical<TFactory>()
 		{
 			if (typeof(TFactory) != typeof(T1) && typeof(TFactory) != typeof(T2))
@@ -479,7 +480,7 @@ namespace CodeOnlyStoredProcedure
 	#endregion
 
 	#region StoredProcedure<T1, T2, T3>
-	/// <summary>Calls a StoredProcedure that returns 3 result set(s).</summary>
+	/// <summary>Calls a StoredProcedure that returns 3 result sets.</summary>
 	/// <typeparam name="T1">The type of the first result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T2">The type of the second result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T3">The type of the third result set returned by the stored procedure.</typeparam>
@@ -538,7 +539,7 @@ namespace CodeOnlyStoredProcedure
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
         /// in the <paramref name="schema"/> schema, with the <see cref="IStoredProcedureParameter"/>s
-        /// to pass, the output action map, and the <see cref="IDataTransformer"/>s to 
+        /// to pass and the <see cref="IDataTransformer"/>s to 
         /// use to transform the results.
         /// </summary>
         /// <param name="schema">The schema of the stored procedure.</param>
@@ -708,6 +709,7 @@ namespace CodeOnlyStoredProcedure
 		/// Creates a <see cref="HierarchicalStoredProcedure{T}"/> with the results expected in the order declared for this stored procedure.
 		/// </summary>
 		/// <returns>A hierarchical stored procedure.</returns>
+		/// <typeparam name="TFactory">The root type of the hierarchy.</typeparam>
 		public override HierarchicalStoredProcedure<TFactory> AsHierarchical<TFactory>()
 		{
 			if (typeof(TFactory) != typeof(T1) && typeof(TFactory) != typeof(T2) && typeof(TFactory) != typeof(T3))
@@ -740,7 +742,7 @@ namespace CodeOnlyStoredProcedure
 	#endregion
 
 	#region StoredProcedure<T1, T2, T3, T4>
-	/// <summary>Calls a StoredProcedure that returns 4 result set(s).</summary>
+	/// <summary>Calls a StoredProcedure that returns 4 result sets.</summary>
 	/// <typeparam name="T1">The type of the first result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T2">The type of the second result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T3">The type of the third result set returned by the stored procedure.</typeparam>
@@ -803,7 +805,7 @@ namespace CodeOnlyStoredProcedure
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
         /// in the <paramref name="schema"/> schema, with the <see cref="IStoredProcedureParameter"/>s
-        /// to pass, the output action map, and the <see cref="IDataTransformer"/>s to 
+        /// to pass and the <see cref="IDataTransformer"/>s to 
         /// use to transform the results.
         /// </summary>
         /// <param name="schema">The schema of the stored procedure.</param>
@@ -981,6 +983,7 @@ namespace CodeOnlyStoredProcedure
 		/// Creates a <see cref="HierarchicalStoredProcedure{T}"/> with the results expected in the order declared for this stored procedure.
 		/// </summary>
 		/// <returns>A hierarchical stored procedure.</returns>
+		/// <typeparam name="TFactory">The root type of the hierarchy.</typeparam>
 		public override HierarchicalStoredProcedure<TFactory> AsHierarchical<TFactory>()
 		{
 			if (typeof(TFactory) != typeof(T1) && typeof(TFactory) != typeof(T2) && typeof(TFactory) != typeof(T3) && typeof(TFactory) != typeof(T4))
@@ -1013,7 +1016,7 @@ namespace CodeOnlyStoredProcedure
 	#endregion
 
 	#region StoredProcedure<T1, T2, T3, T4, T5>
-	/// <summary>Calls a StoredProcedure that returns 5 result set(s).</summary>
+	/// <summary>Calls a StoredProcedure that returns 5 result sets.</summary>
 	/// <typeparam name="T1">The type of the first result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T2">The type of the second result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T3">The type of the third result set returned by the stored procedure.</typeparam>
@@ -1080,7 +1083,7 @@ namespace CodeOnlyStoredProcedure
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
         /// in the <paramref name="schema"/> schema, with the <see cref="IStoredProcedureParameter"/>s
-        /// to pass, the output action map, and the <see cref="IDataTransformer"/>s to 
+        /// to pass and the <see cref="IDataTransformer"/>s to 
         /// use to transform the results.
         /// </summary>
         /// <param name="schema">The schema of the stored procedure.</param>
@@ -1266,6 +1269,7 @@ namespace CodeOnlyStoredProcedure
 		/// Creates a <see cref="HierarchicalStoredProcedure{T}"/> with the results expected in the order declared for this stored procedure.
 		/// </summary>
 		/// <returns>A hierarchical stored procedure.</returns>
+		/// <typeparam name="TFactory">The root type of the hierarchy.</typeparam>
 		public override HierarchicalStoredProcedure<TFactory> AsHierarchical<TFactory>()
 		{
 			if (typeof(TFactory) != typeof(T1) && typeof(TFactory) != typeof(T2) && typeof(TFactory) != typeof(T3) && typeof(TFactory) != typeof(T4) && typeof(TFactory) != typeof(T5))
@@ -1298,7 +1302,7 @@ namespace CodeOnlyStoredProcedure
 	#endregion
 
 	#region StoredProcedure<T1, T2, T3, T4, T5, T6>
-	/// <summary>Calls a StoredProcedure that returns 6 result set(s).</summary>
+	/// <summary>Calls a StoredProcedure that returns 6 result sets.</summary>
 	/// <typeparam name="T1">The type of the first result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T2">The type of the second result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T3">The type of the third result set returned by the stored procedure.</typeparam>
@@ -1369,7 +1373,7 @@ namespace CodeOnlyStoredProcedure
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
         /// in the <paramref name="schema"/> schema, with the <see cref="IStoredProcedureParameter"/>s
-        /// to pass, the output action map, and the <see cref="IDataTransformer"/>s to 
+        /// to pass and the <see cref="IDataTransformer"/>s to 
         /// use to transform the results.
         /// </summary>
         /// <param name="schema">The schema of the stored procedure.</param>
@@ -1563,6 +1567,7 @@ namespace CodeOnlyStoredProcedure
 		/// Creates a <see cref="HierarchicalStoredProcedure{T}"/> with the results expected in the order declared for this stored procedure.
 		/// </summary>
 		/// <returns>A hierarchical stored procedure.</returns>
+		/// <typeparam name="TFactory">The root type of the hierarchy.</typeparam>
 		public override HierarchicalStoredProcedure<TFactory> AsHierarchical<TFactory>()
 		{
 			if (typeof(TFactory) != typeof(T1) && typeof(TFactory) != typeof(T2) && typeof(TFactory) != typeof(T3) && typeof(TFactory) != typeof(T4) && typeof(TFactory) != typeof(T5) && typeof(TFactory) != typeof(T6))
@@ -1595,7 +1600,7 @@ namespace CodeOnlyStoredProcedure
 	#endregion
 
 	#region StoredProcedure<T1, T2, T3, T4, T5, T6, T7>
-	/// <summary>Calls a StoredProcedure that returns 7 result set(s).</summary>
+	/// <summary>Calls a StoredProcedure that returns 7 result sets.</summary>
 	/// <typeparam name="T1">The type of the first result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T2">The type of the second result set returned by the stored procedure.</typeparam>
 	/// <typeparam name="T3">The type of the third result set returned by the stored procedure.</typeparam>
@@ -1670,7 +1675,7 @@ namespace CodeOnlyStoredProcedure
         /// <summary>
         /// Creates a <see cref="StoredProcedure"/> with the given <paramref name="name"/>
         /// in the <paramref name="schema"/> schema, with the <see cref="IStoredProcedureParameter"/>s
-        /// to pass, the output action map, and the <see cref="IDataTransformer"/>s to 
+        /// to pass and the <see cref="IDataTransformer"/>s to 
         /// use to transform the results.
         /// </summary>
         /// <param name="schema">The schema of the stored procedure.</param>
@@ -1872,6 +1877,7 @@ namespace CodeOnlyStoredProcedure
 		/// Creates a <see cref="HierarchicalStoredProcedure{T}"/> with the results expected in the order declared for this stored procedure.
 		/// </summary>
 		/// <returns>A hierarchical stored procedure.</returns>
+		/// <typeparam name="TFactory">The root type of the hierarchy.</typeparam>
 		public override HierarchicalStoredProcedure<TFactory> AsHierarchical<TFactory>()
 		{
 			if (typeof(TFactory) != typeof(T1) && typeof(TFactory) != typeof(T2) && typeof(TFactory) != typeof(T3) && typeof(TFactory) != typeof(T4) && typeof(TFactory) != typeof(T5) && typeof(TFactory) != typeof(T6) && typeof(TFactory) != typeof(T7))
