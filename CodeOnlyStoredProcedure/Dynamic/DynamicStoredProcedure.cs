@@ -97,14 +97,29 @@ namespace CodeOnlyStoredProcedure.Dynamic
                                            .FirstOrDefault();
 
                     if (attr == null)
-                        throw new NotSupportedException("You must apply the TableValuedParameter attribute to a class to use as a Table Valued Parameter when using the dynamic syntax.");
-
-                    parameters.Add(
-                        new TableValuedParameter(attr.Name ?? parmName,
-                                                 (IEnumerable)args[idx],
-                                                 itemType,
-                                                 attr.TableName,
-                                                 attr.Schema));
+                    {
+                        if (itemType == typeof(string))
+                            throw new NotSupportedException("You can not use a string as a Table-Valued Parameter, since you really need to use a class with properties.");
+                        else if (itemType.Name.StartsWith("<"))
+                            throw new NotSupportedException("You can not use an anonymous type as a Table-Valued Parameter, since you really need to match the type name with something in the database.");
+                        else
+                        {
+                            parameters.Add(
+                                new TableValuedParameter(parmName,
+                                                         (IEnumerable)args[idx],
+                                                         itemType,
+                                                         itemType.Name));
+                        }
+                    }
+                    else
+                    {
+                        parameters.Add(
+                            new TableValuedParameter(attr.Name ?? parmName,
+                                                     (IEnumerable)args[idx],
+                                                     itemType,
+                                                     attr.TableName,
+                                                     attr.Schema));
+                    }
                 }
                 else if (argType.IsClass && argType != typeof(string))
                     parameters.AddRange(argType.GetParameters(args[idx]));
