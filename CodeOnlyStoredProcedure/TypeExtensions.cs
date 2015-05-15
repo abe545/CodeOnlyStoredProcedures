@@ -318,6 +318,8 @@ namespace CodeOnlyStoredProcedure
 
                 if (tableAttr != null)
                     parameter = tableAttr.CreateParameter(instance, pi);
+                else if (pi.PropertyType.IsEnumeratedType())
+                    parameter = CreateTableValuedParameter(pi.PropertyType.GetEnumeratedType(), pi.Name, pi.GetValue(instance, null));
                 else if (attr != null)
                     parameter = attr.CreateParameter(instance, pi);
                 else
@@ -334,6 +336,18 @@ namespace CodeOnlyStoredProcedure
 
             if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
                 type = type.GetGenericArguments()[0];
+        }
+
+        internal static IStoredProcedureParameter CreateTableValuedParameter(this Type itemType, string parmName, object items)
+        {
+            Contract.Requires(itemType != null);
+
+            if (itemType == typeof(string))
+                throw new NotSupportedException("You can not use a string as a Table-Valued Parameter, since you really need to use a class with properties.");
+            else if (itemType.Name.StartsWith("<"))
+                throw new NotSupportedException("You can not use an anonymous type as a Table-Valued Parameter, since you really need to match the type name with something in the database.");
+            
+            return new TableValuedParameter(parmName, (IEnumerable)items, itemType, itemType.Name);
         }
     }
 }

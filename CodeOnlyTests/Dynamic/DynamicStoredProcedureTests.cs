@@ -308,7 +308,7 @@ namespace CodeOnlyTests.Dynamic
                 this.Invoking(_ =>
                 {
                     toTest.usp_AddPeople(people: new[] { "Foo", "Bar" });
-                }).ShouldThrow<NotSupportedException>("because anonymous types should not be allowed to be used as TVPs")
+                }).ShouldThrow<NotSupportedException>("because the string type should not be allowed to be used as TVPs")
                   .WithMessage("You can not use a string as a Table-Valued Parameter, since you really need to use a class with properties.",
                                "because the message should be helpful");
             }

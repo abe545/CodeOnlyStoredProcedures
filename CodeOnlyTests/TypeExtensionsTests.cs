@@ -352,6 +352,52 @@ namespace CodeOnlyTests
         }
         #endregion
 
+        #region CreateTableValuedParameter
+        [TestMethod]
+        public void ThrowsWhenTypeIsString()
+        {
+            this.Invoking(_ =>
+            {
+                typeof(string).CreateTableValuedParameter("Foo", new[] { "Bar" });
+            }).ShouldThrow<NotSupportedException>("because the string type should not be allowed to be used as TVPs")
+                  .WithMessage("You can not use a string as a Table-Valued Parameter, since you really need to use a class with properties.",
+                               "because the message should be helpful");
+        }
+
+        [TestMethod]
+        public void ThrowsWhenTypeIsAnonymous()
+        {
+            this.Invoking(_ =>
+            {
+                var p1 = new { FirstName = "Bar" };
+                p1.GetType().CreateTableValuedParameter("Foo", new[] { p1 });
+            }).ShouldThrow<NotSupportedException>("because anonymous types should not be allowed to be used as TVPs")
+                  .WithMessage("You can not use an anonymous type as a Table-Valued Parameter, since you really need to match the type name with something in the database.",
+                               "because the message should be helpful");
+        }
+
+        [TestMethod]
+        public void ReturnsATableValuedParameterForValidType()
+        {
+            this.Invoking(_ =>
+            {
+                var p1 = new Model
+                {
+                    Foo = "Foo",
+                    Bar = 1
+                };
+
+                var res = p1.GetType().CreateTableValuedParameter("Bar", new[] { p1 });
+                res.Should().BeOfType<TableValuedParameter>("because it should create a TableValuedParameter");
+                res.ParameterName.Should().Be("Bar", "because it was passed in");
+
+                ((TableValuedParameter)res).Value.As<IEnumerable<Model>>().Should().ContainInOrder(new[] { p1 }, "because it was passed in");
+                ((TableValuedParameter)res).TypeName.Should().Be("[dbo].[Model]", "because it should be inferred from the Type's name");
+
+            }).ShouldNotThrow("because it should be successful");
+        }
+        #endregion
+
         #region Types To Test With
         private interface IModel
         {

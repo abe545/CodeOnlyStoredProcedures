@@ -97,20 +97,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
                                            .FirstOrDefault();
 
                     if (attr == null)
-                    {
-                        if (itemType == typeof(string))
-                            throw new NotSupportedException("You can not use a string as a Table-Valued Parameter, since you really need to use a class with properties.");
-                        else if (itemType.Name.StartsWith("<"))
-                            throw new NotSupportedException("You can not use an anonymous type as a Table-Valued Parameter, since you really need to match the type name with something in the database.");
-                        else
-                        {
-                            parameters.Add(
-                                new TableValuedParameter(parmName,
-                                                         (IEnumerable)args[idx],
-                                                         itemType,
-                                                         itemType.Name));
-                        }
-                    }
+                        parameters.Add(itemType.CreateTableValuedParameter(parmName, args[idx]));
                     else
                     {
                         parameters.Add(
