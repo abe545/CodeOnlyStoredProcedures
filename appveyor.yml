@@ -1,5 +1,10 @@
 version: 2.2.0.{build}
-skip_tags: true
+skip_tags: false
+
+branches:
+  # blacklist gh-pages, since the documentation branch shouldn't be built
+  except:
+    - gh-pages
 
 environment:
   releaseVersion: 2.2.0
@@ -24,6 +29,8 @@ before_build:
 
 build:
   project: CodeOnlyStoredProcedure.sln
+  parallel: true
+  verbosity: quiet
 
 test:
   assemblies:
@@ -43,6 +50,7 @@ deploy:
   - provider: NuGet
     on:
       branch: master
+      appveyor_repo_tag: true   # Now that I'm using github pull requests, only tags should be released to nuget
     api_key:
       secure: YpmJQ9N6F0dfai0xFAoerzB7nruq9NOlhDquhAliwy5cS2A87wU7U+X4Q5eH8vyx
     skip_symbols: false
