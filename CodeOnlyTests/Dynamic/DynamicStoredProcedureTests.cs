@@ -579,9 +579,9 @@ namespace CodeOnlyTests.Dynamic
             public void ConfigureAwaitControlsThreadContinuationHappensOn()
             {
                 // sleep so the task won't get inlined
-                var ctx = CreatePeople(_ => Thread.Sleep(25), "Foo");
+                var ctx = CreatePeople(_ => Thread.Sleep(250), "Foo");
 
-                var toTest = new DynamicStoredProcedure(ctx, transformers, CancellationToken.None, TEST_TIMEOUT, DynamicExecutionMode.Asynchronous);
+                var toTest = new DynamicStoredProcedure(ctx, transformers, CancellationToken.None, 400, DynamicExecutionMode.Asynchronous);
 
                 var res = GetPeopleInBackground(toTest).Result;
 
@@ -649,7 +649,7 @@ namespace CodeOnlyTests.Dynamic
 
                 var results = await toTest.usp_GetPeople().ConfigureAwait(false);
 
-                Assert.AreNotEqual(entryThread, Thread.CurrentThread);
+                Thread.CurrentThread.Should().NotBe(entryThread, "because the await should have configured the continuation to run on a different thread");
 
                 return results;
             }
