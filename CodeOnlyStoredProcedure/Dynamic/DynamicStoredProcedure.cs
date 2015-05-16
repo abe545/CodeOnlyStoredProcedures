@@ -97,14 +97,16 @@ namespace CodeOnlyStoredProcedure.Dynamic
                                            .FirstOrDefault();
 
                     if (attr == null)
-                        throw new NotSupportedException("You must apply the TableValuedParameter attribute to a class to use as a Table Valued Parameter when using the dynamic syntax.");
-
-                    parameters.Add(
-                        new TableValuedParameter(attr.Name ?? parmName,
-                                                 (IEnumerable)args[idx],
-                                                 itemType,
-                                                 attr.TableName,
-                                                 attr.Schema));
+                        parameters.Add(itemType.CreateTableValuedParameter(parmName, args[idx]));
+                    else
+                    {
+                        parameters.Add(
+                            new TableValuedParameter(attr.Name ?? parmName,
+                                                     (IEnumerable)args[idx],
+                                                     itemType,
+                                                     attr.TableName,
+                                                     attr.Schema));
+                    }
                 }
                 else if (argType.IsClass && argType != typeof(string))
                     parameters.AddRange(argType.GetParameters(args[idx]));

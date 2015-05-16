@@ -230,8 +230,87 @@ namespace CodeOnlyTests.Dynamic
 
                 Tuple<IEnumerable<Person>, IEnumerable<Family>> results = toTest.usp_GetPeople();
 
-                Assert.AreEqual("Foo", results.Item1.Single().FirstName, "First result set not returned.");
-                Assert.AreEqual("Bar", results.Item2.Single().LastName, "Second result set not returned.");
+                results.Item1.Single().FirstName.Should().Be("Foo", "First result set not returned.");
+                results.Item2.Single().LastName.Should().Be("Bar", "Second result set not returned.");
+            }
+
+            [TestMethod]
+            public void CanPassUnattributedTableValueParameterClass()
+            {
+                var reader = new Mock<IDataReader>();
+                reader.SetupGet(r => r.FieldCount).Returns(0);
+                reader.Setup(r => r.Read()).Returns(false);
+
+                var parms = new DataParameterCollection();
+                var cmd = new Mock<IDbCommand>();
+                cmd.SetupAllProperties();
+                cmd.Setup(c => c.ExecuteReader()).Returns(reader.Object);
+                cmd.SetupGet(c => c.Parameters).Returns(parms);
+                cmd.Setup(c => c.CreateParameter()).Returns(new SqlParameter());
+
+                var ctx = new Mock<IDbConnection>();
+                ctx.Setup(c => c.CreateCommand()).Returns(cmd.Object);
+                
+                dynamic toTest = new DynamicStoredProcedure(ctx.Object, transformers, CancellationToken.None, TEST_TIMEOUT, DynamicExecutionMode.Synchronous);
+
+                toTest.usp_AddPeople(people: new[] { "Foo", "Bar" }.Select(s => new Person { FirstName = s }));
+
+                var p = parms.OfType<SqlParameter>().Single();
+                p.ParameterName.Should().Be("people", "because that was the argument name");
+                p.SqlDbType.Should().Be(SqlDbType.Structured, "because it is a table-valued parameter");
+                p.TypeName.Should().Be("[dbo].[Person]", "because that is the name of the Class being passed as a TVP");
+            }
+
+            [TestMethod]
+            public void CanNotPassAnonymousClassForTableValueParameter()
+            {
+                var reader = new Mock<IDataReader>();
+                reader.SetupGet(r => r.FieldCount).Returns(0);
+                reader.Setup(r => r.Read()).Returns(false);
+
+                var parms = new DataParameterCollection();
+                var cmd = new Mock<IDbCommand>();
+                cmd.SetupAllProperties();
+                cmd.Setup(c => c.ExecuteReader()).Returns(reader.Object);
+                cmd.SetupGet(c => c.Parameters).Returns(parms);
+
+                var ctx = new Mock<IDbConnection>();
+                ctx.Setup(c => c.CreateCommand()).Returns(cmd.Object);
+                
+                dynamic toTest = new DynamicStoredProcedure(ctx.Object, transformers, CancellationToken.None, TEST_TIMEOUT, DynamicExecutionMode.Synchronous);
+                
+                this.Invoking(_ =>
+                {
+                    toTest.usp_AddPeople(people: new[] { "Foo", "Bar" }.Select(s => new { FirstName = s }));
+                }).ShouldThrow<NotSupportedException>("because anonymous types should not be allowed to be used as TVPs")
+                  .WithMessage("You can not use an anonymous type as a Table-Valued Parameter, since you really need to match the type name with something in the database.", 
+                               "because the message should be helpful");
+            }
+
+            [TestMethod]
+            public void CanNotPassStringsForTableValueParameter()
+            {
+                var reader = new Mock<IDataReader>();
+                reader.SetupGet(r => r.FieldCount).Returns(0);
+                reader.Setup(r => r.Read()).Returns(false);
+
+                var parms = new DataParameterCollection();
+                var cmd = new Mock<IDbCommand>();
+                cmd.SetupAllProperties();
+                cmd.Setup(c => c.ExecuteReader()).Returns(reader.Object);
+                cmd.SetupGet(c => c.Parameters).Returns(parms);
+
+                var ctx = new Mock<IDbConnection>();
+                ctx.Setup(c => c.CreateCommand()).Returns(cmd.Object);
+
+                dynamic toTest = new DynamicStoredProcedure(ctx.Object, transformers, CancellationToken.None, TEST_TIMEOUT, DynamicExecutionMode.Synchronous);
+
+                this.Invoking(_ =>
+                {
+                    toTest.usp_AddPeople(people: new[] { "Foo", "Bar" });
+                }).ShouldThrow<NotSupportedException>("because the string type should not be allowed to be used as TVPs")
+                  .WithMessage("You can not use a string as a Table-Valued Parameter, since you really need to use a class with properties.",
+                               "because the message should be helpful");
             }
         }
 
@@ -500,9 +579,9 @@ namespace CodeOnlyTests.Dynamic
             public void ConfigureAwaitControlsThreadContinuationHappensOn()
             {
                 // sleep so the task won't get inlined
-                var ctx = CreatePeople(_ => Thread.Sleep(25), "Foo");
+                var ctx = CreatePeople(_ => Thread.Sleep(250), "Foo");
 
-                var toTest = new DynamicStoredProcedure(ctx, transformers, CancellationToken.None, TEST_TIMEOUT, DynamicExecutionMode.Asynchronous);
+                var toTest = new DynamicStoredProcedure(ctx, transformers, CancellationToken.None, 400, DynamicExecutionMode.Asynchronous);
 
                 var res = GetPeopleInBackground(toTest).Result;
 
@@ -570,7 +649,7 @@ namespace CodeOnlyTests.Dynamic
 
                 var results = await toTest.usp_GetPeople().ConfigureAwait(false);
 
-                Assert.AreNotEqual(entryThread, Thread.CurrentThread);
+                Thread.CurrentThread.Should().NotBe(entryThread, "because the await should have configured the continuation to run on a different thread");
 
                 return results;
             }

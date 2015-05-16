@@ -9,7 +9,10 @@
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>A library for easily calling Stored Procedures in .NET. Works great with Entity Framework Code First models. 
 Code Only Stored Procedures will not create any Stored Procedures on your database. Instead, its aim is to make it easy to call your existing stored procedures by writing simple code.</description>
-        <releaseNotes>2.1.0
+        <releaseNotes>2.2.0
+Added ability to pass Table Valued Parameters in the dynamic syntax, and as a property via WithInput, without decorating the class with the TableValuedParameterAttribute. It will use the class name as the TableName, and dbo as the Schema.
+
+2.1.0
 Added ability to specify the order in which multiple result sets are returned for hierarchical models.
 Added global data transformers, that will be applied for all columns in all stored procedures. These should be specified before any StoredProcedure is created.
 Added option to enable numeric conversions for all numeric properties. This should be specified before any StoredProcedure is created.
@@ -44,12 +47,7 @@ Improved exceptions so that it is easier to determine why the data returned does
 Now ignores read-only properties, so they don't have to be attributed with [NotMapped]
 
 1.0.1
-Fixed bug where calling a stored procedure within a Task that was executing on the SynchronizationContext could cause a deadlock.
-
-1.0.0
-Added implementation of ToString that will print the stored procedure's schema, name, and parameters.
-Significantly improved speed of the code that converts values to enum values.
-Added xml comments to all public methods. While not complete documentation, they are a huge first step.</releaseNotes>
+Fixed bug where calling a stored procedure within a Task that was executing on the SynchronizationContext could cause a deadlock.</releaseNotes>
         <tags>StoredProcedure EntityFramework EF</tags>
         <dependencies>
             <group targetFramework=".NETFramework4.0">
