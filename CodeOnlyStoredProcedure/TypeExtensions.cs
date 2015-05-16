@@ -340,7 +340,9 @@ namespace CodeOnlyStoredProcedure
 
         internal static IStoredProcedureParameter CreateTableValuedParameter(this Type itemType, string parmName, object items)
         {
+            Contract.Requires(!string.IsNullOrWhiteSpace(parmName));
             Contract.Requires(itemType != null);
+            Contract.Requires(items    != null);
 
             if (itemType == typeof(string))
                 throw new NotSupportedException("You can not use a string as a Table-Valued Parameter, since you really need to use a class with properties.");
