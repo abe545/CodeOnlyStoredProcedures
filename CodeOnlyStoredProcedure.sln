@@ -23,13 +23,18 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmokeTests-NET40", "SmokeTe
 EndProject
 Project("{7CF6DF6D-3B04-46F8-A40B-537D21BCA0B4}") = "Documentation", "Documentation\Documentation.shfbproj", "{CFFB3E02-288C-4971-B373-3B7C812D35C1}"
 	ProjectSection(ProjectDependencies) = postProject
-		{31800E2D-04B0-4D10-A40F-D59ECD63933A} = {31800E2D-04B0-4D10-A40F-D59ECD63933A}
 		{37762E7B-48CC-4001-B479-ECB1923AE2E0} = {37762E7B-48CC-4001-B479-ECB1923AE2E0}
+		{E9AD65DE-E694-4FFE-B1CF-6763AF4B6DDD} = {E9AD65DE-E694-4FFE-B1CF-6763AF4B6DDD}
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Docs", "Docs", "{83B3F35F-3954-4900-A1C8-97914D030C51}"
 	ProjectSection(SolutionItems) = preProject
 		readme.md = readme.md
+	EndProjectSection
+EndProject
+Project("{7CF6DF6D-3B04-46F8-A40B-537D21BCA0B4}") = "Documentation-NET40", "Documentation-NET40\Documentation-NET40.shfbproj", "{E9AD65DE-E694-4FFE-B1CF-6763AF4B6DDD}"
+	ProjectSection(ProjectDependencies) = postProject
+		{31800E2D-04B0-4D10-A40F-D59ECD63933A} = {31800E2D-04B0-4D10-A40F-D59ECD63933A}
 	EndProjectSection
 EndProject
 Global
@@ -66,6 +71,9 @@ Global
 		{CFFB3E02-288C-4971-B373-3B7C812D35C1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{CFFB3E02-288C-4971-B373-3B7C812D35C1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CFFB3E02-288C-4971-B373-3B7C812D35C1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E9AD65DE-E694-4FFE-B1CF-6763AF4B6DDD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E9AD65DE-E694-4FFE-B1CF-6763AF4B6DDD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E9AD65DE-E694-4FFE-B1CF-6763AF4B6DDD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
