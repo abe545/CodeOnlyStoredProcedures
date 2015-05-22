@@ -102,19 +102,22 @@
 
     <relatedTopics>
       <externalLink>
-          <linkText>CodeOnlyStoredProcedures on nuget</linkText>
-          <linkAlternateText>Code Only StoredProcedures on nuget</linkAlternateText>
-          <linkUri>http://www.nuget.org/packages/CodeOnlyStoredProcedures</linkUri>
+        <linkText>CodeOnlyStoredProcedures on nuget</linkText>
+        <linkAlternateText>Code Only Stored Procedures on nuget</linkAlternateText>
+        <linkUri>http://www.nuget.org/packages/CodeOnlyStoredProcedures</linkUri>
+        <linkTarget>_self</linkTarget>
       </externalLink>
       <externalLink>
-          <linkText>CodeOnlyStoredProcedures on github</linkText>
-          <linkAlternateText>Code Only StoredProcedures on github</linkAlternateText>
-          <linkUri>https://github.com/abe545/CodeOnlyStoredProcedures</linkUri>
+        <linkText>CodeOnlyStoredProcedures on github</linkText>
+        <linkAlternateText>Code Only Stored Procedures on github</linkAlternateText>
+        <linkUri>https://github.com/abe545/CodeOnlyStoredProcedures</linkUri>
+        <linkTarget>_self</linkTarget>
       </externalLink>
       <externalLink>
         <linkText>CodeOnlyStoredProcedures wiki</linkText>
-        <linkAlternateText>Code Only StoredProcedures wiki</linkAlternateText>
+        <linkAlternateText>Code Only Stored Procedures wiki</linkAlternateText>
         <linkUri>https://github.com/abe545/CodeOnlyStoredProcedures/wiki</linkUri>
+        <linkTarget>_self</linkTarget>
       </externalLink>
       <link xlink:href="04422aa2-352c-4b50-b767-ab61553e6039" />
     </relatedTopics>
