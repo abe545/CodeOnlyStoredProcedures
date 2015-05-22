@@ -62,7 +62,7 @@
     <CodeContractsMissingPublicEnsuresAsWarnings>True</CodeContractsMissingPublicEnsuresAsWarnings>
     <CodeContractsInferEnsuresAutoProperties>True</CodeContractsInferEnsuresAutoProperties>
     <CodeContractsSuggestAssumptionsForCallees>False</CodeContractsSuggestAssumptionsForCallees>
-    <CodeContractsNecessaryEnsures>True</CodeContractsNecessaryEnsures>
+    <CodeContractsNecessaryEnsures>False</CodeContractsNecessaryEnsures>
     <CodeContractsSuggestReadonly>True</CodeContractsSuggestReadonly>
     <CodeContractsSkipAnalysisIfCannotConnectToCache>False</CodeContractsSkipAnalysisIfCannotConnectToCache>
     <CodeContractsBeingOptimisticOnExternal>True</CodeContractsBeingOptimisticOnExternal>

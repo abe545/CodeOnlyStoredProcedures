@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.SqlClient;
 using System.Diagnostics.Contracts;
 using System.Dynamic;
 using System.Linq;
@@ -76,30 +77,36 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
                 token.ThrowIfCancellationRequested();
                 tcs.SetResult(res);
-
-                this.resultTask = tcs.Task;
+                resultTask = tcs.Task;
             }
             else
             {
-                this.resultTask = Task.Factory.StartNew(() => command.ExecuteReader(),
-                                                        token,
-                                                        TaskCreationOptions.None,
-                                                        TaskScheduler.Default)
-                                               .ContinueWith(r =>
-                                               {
-                                                   foreach (IDbDataParameter p in command.Parameters)
-                                                   {
-                                                       if (p.Direction != ParameterDirection.Input)
-                                                       {
-                                                           var x = parameters.OfType<IOutputStoredProcedureParameter>()
-                                                                             .FirstOrDefault(sp => sp.ParameterName == p.ParameterName);
-                                                           if (x != null)
-                                                               x.TransferOutputValue(p.Value);
-                                                       }
-                                                   }
+#if !NET40
+                var sqlCommand = command as SqlCommand;
+                if (sqlCommand != null)
+                    resultTask = sqlCommand.ExecuteReaderAsync(token).ContinueWith(r => (IDataReader)r.Result, token);
+                else
+#endif
+                    resultTask = Task.Factory.StartNew(() => command.ExecuteReader(),
+                                                       token,
+                                                       TaskCreationOptions.None,
+                                                       TaskScheduler.Default);
 
-                                                   return r.Result;
-                                               }, token);
+                resultTask = resultTask.ContinueWith(r =>
+                                       {
+                                           foreach (IDbDataParameter p in command.Parameters)
+                                           {
+                                               if (p.Direction != ParameterDirection.Input)
+                                               {
+                                                   var x = parameters.OfType<IOutputStoredProcedureParameter>()
+                                                                     .FirstOrDefault(sp => sp.ParameterName == p.ParameterName);
+                                                   if (x != null)
+                                                       x.TransferOutputValue(p.Value);
+                                               }
+                                           }
+                                       
+                                           return r.Result;
+                                       }, token);
             }
         }
 
@@ -116,6 +123,11 @@ namespace CodeOnlyStoredProcedure.Dynamic
         private Task<IEnumerable<T>> CreateSingleContinuation<T>(bool isSingle)
         {
             return resultTask.ContinueWith(_ => GetResults<T>(isSingle), token);
+        }
+
+        private Task<T> CreateSingleRowContinuation<T>(bool isSingle)
+        {
+            return resultTask.ContinueWith(_ => GetResults<T>(isSingle).SingleOrDefault(), token);
         }
 
         private T GetMultipleResults<T>()
@@ -168,6 +180,8 @@ namespace CodeOnlyStoredProcedure.Dynamic
             private static readonly Lazy<MethodInfo> continueSingle  = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod("CreateSingleContinuation", BindingFlags.Instance | BindingFlags.NonPublic));
             private static readonly Lazy<MethodInfo> continueMulti   = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod("CreateMultipleContinuation", BindingFlags.Instance | BindingFlags.NonPublic));
             private static readonly Lazy<MethodInfo> getMultiResults = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod("GetMultipleResults", BindingFlags.Instance | BindingFlags.NonPublic));
+            private static readonly Lazy<MethodInfo> singleExtension = new Lazy<MethodInfo>(() => typeof(Enumerable).GetMethods().Where(m => m.Name == "SingleOrDefault" && m.GetParameters().Length == 1).Single());
+            private static readonly Lazy<MethodInfo> singleRowAsync  = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod("CreateSingleRowContinuation", BindingFlags.Instance | BindingFlags.NonPublic));
 
             private readonly DynamicStoredProcedureResults results;
 
@@ -223,10 +237,11 @@ namespace CodeOnlyStoredProcedure.Dynamic
                     // we are going to have to return a continuation from our task...
                     // first figure out what the result is.
                     retType = retType.GetGenericArguments().Single();
+                     
                     if (retType.IsEnumeratedType())
                     {
                         // there is only one result set. Return it from a continuation.
-                        e = Expression.Call(instance, 
+                        e = Expression.Call(instance,
                             continueSingle.Value.MakeGenericMethod(retType.GetGenericArguments().Single()),
                             Expression.Constant(true));
                     }
@@ -234,6 +249,12 @@ namespace CodeOnlyStoredProcedure.Dynamic
                              retType.GetGenericArguments().All(t => t.IsEnumeratedType()))
                     {
                         e = Expression.Call(instance, continueMulti.Value.MakeGenericMethod(retType));
+                    }
+                    else
+                    {
+                        e = Expression.Call(instance,
+                            singleRowAsync.Value.MakeGenericMethod(retType),
+                            Expression.Constant(true));
                     }
                 }
                 else if (retType.IsEnumeratedType())
@@ -248,6 +269,16 @@ namespace CodeOnlyStoredProcedure.Dynamic
                 {
                     // it is a tuple of enumerables
                     e = Expression.Call(instance, getMultiResults.Value.MakeGenericMethod(retType));
+                }
+                else
+                {
+                    // there is only one result set (with one item). Return it from a continuation.
+                    e = Expression.Call(instance,
+                        getResultsMethod.Value.MakeGenericMethod(retType),
+                        Expression.Constant(true));
+
+                    // call Single()
+                    e = Expression.Call(null, singleExtension.Value.MakeGenericMethod(retType), e);
                 }
 
                 if (e != null)
