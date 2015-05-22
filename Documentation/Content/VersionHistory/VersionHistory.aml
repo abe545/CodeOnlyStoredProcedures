@@ -1,0 +1,174 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<topic id="04422aa2-352c-4b50-b767-ab61553e6039" revisionNumber="1">
+	<developerConceptualDocument xmlns="http://ddue.schemas.microsoft.com/authoring/2003/5" xmlns:xlink="http://www.w3.org/1999/xlink">
+		<introduction>
+			<para>This page contains links to the release history of the Code Only Stored Procedures project.</para>
+		</introduction>
+
+		<section>
+			<title>Version History</title>
+			<content>
+				<para>Every stable release is listed below. Release notes are available at the nuget link. Full source is available from github for every release.</para>
+        <para>There are numerous unstable, and pre-release builds that have been released, but it is just too much work to list them all :).</para>
+
+				<list class="nobullet">
+          <listItem>
+            <para>
+              <markup>
+                <h1>
+                  2.2.0
+                  <a href="https://www.nuget.org/packages/CodeOnlyStoredProcedures/2.2.0">
+                    <img src="../Media/nuget.png" Width="32" Height="32" alt="Release 2.2.0 on nuget.org"></img>
+                  </a>
+                  <a href="https://github.com/abe545/CodeOnlyStoredProcedures/releases/tag/2.2.0" style="margin-left: 8px;">
+                    <img src="../Media/github.png" Width="32" Height="32" alt="Release 2.2.0 on github.com"></img>
+                  </a>
+                </h1>
+              </markup>
+            </para>
+          </listItem>
+          <listItem>
+            <para>
+              <markup>
+                <h1>
+                  2.1.0
+                  <a href="https://www.nuget.org/packages/CodeOnlyStoredProcedures/2.1.0">
+                    <img src="../Media/nuget.png" Width="32" Height="32" alt="Release 2.1.0 on nuget.org"></img>
+                  </a>
+                  <a href="https://github.com/abe545/CodeOnlyStoredProcedures/releases/tag/2.1.0" style="margin-left: 8px;">
+                    <img src="../Media/github.png" Width="32" Height="32" alt="Release 2.1.0 on github.com"></img>
+                  </a>
+                </h1>
+              </markup>
+            </para>
+          </listItem>
+          <listItem>
+            <para>
+              <markup>
+                <h1>
+                  2.0.0
+                  <a href="https://www.nuget.org/packages/CodeOnlyStoredProcedures/2.0.0">
+                    <img src="../Media/nuget.png" Width="32" Height="32" alt="Release 2.0.0 on nuget.org"></img>
+                  </a>
+                  <a href="https://github.com/abe545/CodeOnlyStoredProcedures/releases/tag/2.0.0" style="margin-left: 8px;">
+                    <img src="../Media/github.png" Width="32" Height="32" alt="Release 2.0.0 on github.com"></img>
+                  </a>
+                </h1>
+              </markup>
+            </para>
+          </listItem>
+          <listItem>
+            <para>
+              <markup>
+                <h1>
+                  1.3.1
+                  <a href="https://www.nuget.org/packages/CodeOnlyStoredProcedures/1.3.1">
+                    <img src="../Media/nuget.png" Width="32" Height="32" alt="Release 1.3.1 on nuget.org"></img>
+                  </a>
+                  <a href="https://github.com/abe545/CodeOnlyStoredProcedures/releases/tag/1.3.1" style="margin-left: 8px;">
+                    <img src="../Media/github.png" Width="32" Height="32" alt="Release 1.3.1 on github.com"></img>
+                  </a>
+                </h1>
+              </markup>
+            </para>
+          </listItem>
+          <listItem>
+            <para>
+              <markup>
+                <h1>
+                  1.3.0
+                  <a href="https://www.nuget.org/packages/CodeOnlyStoredProcedures/1.3.0">
+                    <img src="../Media/nuget.png" Width="32" Height="32" alt="Release 1.3.0 on nuget.org"></img>
+                  </a>
+                  <a href="https://github.com/abe545/CodeOnlyStoredProcedures/releases/tag/1.3.0" style="margin-left: 8px;">
+                    <img src="../Media/github.png" Width="32" Height="32" alt="Release 1.3.0 on github.com"></img>
+                  </a>
+                </h1>
+              </markup>
+            </para>
+          </listItem>
+          <listItem>
+            <para>
+              <markup>
+                <h1>
+                  1.2.1
+                  <a href="https://www.nuget.org/packages/CodeOnlyStoredProcedures/1.2.1">
+                    <img src="../Media/nuget.png" Width="32" Height="32" alt="Release 1.2.1 on nuget.org"></img>
+                  </a>
+                  <a href="https://github.com/abe545/CodeOnlyStoredProcedures/releases/tag/1.2.1" style="margin-left: 8px;">
+                    <img src="../Media/github.png" Width="32" Height="32" alt="Release 1.2.1 on github.com"></img>
+                  </a>
+                </h1>
+              </markup>
+            </para>
+          </listItem>
+          <listItem>
+            <para>
+              <markup>
+                <h1>
+                  1.2.0
+                  <a href="https://www.nuget.org/packages/CodeOnlyStoredProcedures/1.2.0">
+                    <img src="../Media/nuget.png" Width="32" Height="32" alt="Release 1.2.0 on nuget.org"></img>
+                  </a>
+                  <a href="https://github.com/abe545/CodeOnlyStoredProcedures/releases/tag/1.2.0" style="margin-left: 8px;">
+                    <img src="../Media/github.png" Width="32" Height="32" alt="Release 1.2.0 on github.com"></img>
+                  </a>
+                </h1>
+              </markup>
+            </para>
+          </listItem>
+          <listItem>
+            <para>
+              <markup>
+                <h1>
+                  1.1.0
+                  <a href="https://www.nuget.org/packages/CodeOnlyStoredProcedures/1.1.0">
+                    <img src="../Media/nuget.png" Width="32" Height="32" alt="Release 1.1.0 on nuget.org"></img>
+                  </a>
+                  <a href="https://github.com/abe545/CodeOnlyStoredProcedures/releases/tag/1.1.0" style="margin-left: 8px;">
+                    <img src="../Media/github.png" Width="32" Height="32" alt="Release 1.1.0 on github.com"></img>
+                  </a>
+                </h1>
+              </markup>
+            </para>
+          </listItem>
+          <listItem>
+            <para>
+              <markup>
+                <h1>
+                  1.0.1
+                  <a href="https://www.nuget.org/packages/CodeOnlyStoredProcedures/1.0.1">
+                    <img src="../Media/nuget.png" Width="32" Height="32" alt="Release 1.0.1 on nuget.org"></img>
+                  </a>
+                  <a href="https://github.com/abe545/CodeOnlyStoredProcedures/releases/tag/1.0.1" style="margin-left: 8px;">
+                    <img src="../Media/github.png" Width="32" Height="32" alt="Release 1.0.1 on github.com"></img>
+                  </a>
+                </h1>
+              </markup>
+            </para>
+          </listItem>
+          <listItem>
+            <para>
+              <markup>
+                <h1>
+                  1.0.0
+                  <a href="https://www.nuget.org/packages/CodeOnlyStoredProcedures/1.0.0">
+                    <img src="../Media/nuget.png" Width="32" Height="32" alt="Release 1.0.0 on nuget.org"></img>
+                  </a>
+                  <a href="https://github.com/abe545/CodeOnlyStoredProcedures/releases/tag/1.0.0" style="margin-left: 8px;">
+                    <img src="../Media/github.png" Width="32" Height="32" alt="Release 1.0.0 on github.com"></img>
+                  </a>
+                </h1>
+              </markup>
+            </para>
+          </listItem>
+				</list>
+
+			</content>
+		</section>
+
+		<relatedTopics>
+		</relatedTopics>
+
+	</developerConceptualDocument>
+</topic>

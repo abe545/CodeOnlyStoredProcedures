@@ -58,7 +58,8 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(!string.IsNullOrEmpty(schema));
             Contract.Requires(parameters         != null);
             Contract.Requires(dataTransformers   != null);
-            Contract.Requires(resultTypesInOrder != null && Contract.ForAll(resultTypesInOrder, t => t.IsValidResultType()));
+            Contract.Requires(resultTypesInOrder != null);
+            Contract.Requires(Contract.ForAll(resultTypesInOrder, t => t.IsValidResultType()));
 
             this.resultTypesInOrder = resultTypesInOrder;
         }

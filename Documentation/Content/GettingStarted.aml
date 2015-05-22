@@ -1,0 +1,125 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<topic id="6a2d9060-4924-46ff-a085-1121237639d8" revisionNumber="1">
+  <developerConceptualDocument
+    xmlns="http://ddue.schemas.microsoft.com/authoring/2003/5"
+    xmlns:xlink="http://www.w3.org/1999/xlink">
+
+    <introduction>
+      <para>Calling a stored procedure from code is really simple with this library. This document will get you going quickly!</para>
+    </introduction>
+
+    <section address="prerequisites">
+      <title>Prerequisites</title>
+      <content>
+        <list class="bullet">
+          <listItem>
+            <para>A .NET project (4.0 minimum)</para>
+          </listItem>
+          <listItem>
+            <para>
+              CodeOnlyStoredProcedures installed via
+              <externalLink>
+                <linkText>nuget</linkText>
+                <linkAlternateText>Code Only StoredProcedures on nuget</linkAlternateText>
+                <linkUri>http://www.nuget.org/packages/CodeOnlyStoredProcedures</linkUri>
+              </externalLink>
+            </para>
+          </listItem>
+          <listItem>
+            <para>
+              A database with a stored procedure you wish to call (this is a Code <legacyBold>Only</legacyBold> library,
+              so it can't create one for you)
+            </para>
+          </listItem>
+        </list>
+      </content>
+    </section>
+
+    <section address="connection">
+      <title>Getting a connection</title>
+      <content>
+        <para>
+          The first thing you need is an <codeInline>IDbConnection</codeInline>. If you're already using
+          EntityFramework, your <codeInline>DbContext</codeInline> class has a <codeInline>Database</codeInline>
+          property, which itself has a <codeInline>Connection</codeInline> property that is what you want.
+          Since these are both public properties, you don't have to create a helper, but to make your life easier,
+          you might want to add a Connection property to your Context.
+        </para>
+        <code>
+          using System.Data;
+          using System.Data.Entity;
+          using CodeOnlyStoredProcedure;
+              
+          public class DataContext : DbContext
+          {
+            private IDbConnection Connection { get { return Database.Connection; } }
+          }
+        </code>
+        <para>
+          If you're not using EntityFramework, you can construct a database connection yourself. Since support
+          for SQL Server is built into .NET, you can easily access it with a <codeInline>SqlConnection</codeInline>.
+        </para>
+        <code>
+          using System.Data;
+          using System.Data.SqlClient;
+          using CodeOnlyStoredProcedure;
+
+          public class DataModel
+          {
+            private readonly SqlConnection connection = new SqlConnection("Server=myServerAddress;Database=myDataBase;Trusted_Connection=True;");
+            private IDbConnection Connection { get { return connection; } }
+          }
+        </code>
+      </content>
+    </section>
+    <section address="no_results">
+      <title>Calling a stored procedure that doesn't return results</title>
+      <content>
+        <para>
+          Once you have a <codeInline>IDbConnection</codeInline>, you're ready to start executing stored procedures on
+          your database. If you have a stored procedure <codeInline>usp_MyProc</codeInline> that takes one argument
+          <codeInline>name</codeInline>, and returns no results, you can call it easily:
+        </para>
+        <code>Connection.Execute().usp_MyProc(name: name);</code>
+      </content>
+    </section>
+    <section address="with_results">
+      <title>Calling a stored procedure that returns results</title>
+      <content>
+        <para>
+          If you have a procedure that returns results, say <codeInline>usp_GetPeople</codeInline>, that too is simple:
+        </para>
+        <code>
+          public class Person
+          {
+            public string Name { get; set; }
+            public DateTime DateOfBirth { get; set; }
+          }
+        </code>
+        <code>IEnumerable&lt;Person&gt; people = Connection.Execute().usp_GetPeople();</code>
+      </content>
+    </section>
+
+    <relatedTopics>
+      <externalLink>
+        <linkText>CodeOnlyStoredProcedures on nuget</linkText>
+        <linkAlternateText>Code Only Stored Procedures on nuget</linkAlternateText>
+        <linkUri>http://www.nuget.org/packages/CodeOnlyStoredProcedures</linkUri>
+        <linkTarget>_self</linkTarget>
+      </externalLink>
+      <externalLink>
+        <linkText>CodeOnlyStoredProcedures on github</linkText>
+        <linkAlternateText>Code Only Stored Procedures on github</linkAlternateText>
+        <linkUri>https://github.com/abe545/CodeOnlyStoredProcedures</linkUri>
+        <linkTarget>_self</linkTarget>
+      </externalLink>
+      <externalLink>
+        <linkText>CodeOnlyStoredProcedures wiki</linkText>
+        <linkAlternateText>Code Only Stored Procedures wiki</linkAlternateText>
+        <linkUri>https://github.com/abe545/CodeOnlyStoredProcedures/wiki</linkUri>
+        <linkTarget>_self</linkTarget>
+      </externalLink>
+      <link xlink:href="04422aa2-352c-4b50-b767-ab61553e6039" />
+    </relatedTopics>
+  </developerConceptualDocument>
+</topic>

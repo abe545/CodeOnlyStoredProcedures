@@ -102,21 +102,14 @@ namespace CodeOnlyTests.Dynamic
             }
 
             [TestMethod]
-            public void CastingToNonEnumeratedTypeThrows()
+            public void CanGetSingleResultWithoutExpectingIEnumerable()
             {
                 var ctx = CreatePeople("Foo");
 
                 dynamic toTest = new DynamicStoredProcedure(ctx, transformers, CancellationToken.None, TEST_TIMEOUT, DynamicExecutionMode.Synchronous);
 
-                try
-                {
-                    var families = (Person)toTest.usp_GetPeople();
-                    Assert.Fail("Casting a result set to a single item type should fail.");
-                }
-                catch (RuntimeBinderException)
-                {
-                    // expected
-                }
+                var foo = (Person)toTest.usp_GetPeople();
+                foo.FirstName.Should().Be("Foo", "because that is the name of the only person returned by the Stored Procedure");
             }
 
             [TestMethod]
@@ -318,6 +311,7 @@ namespace CodeOnlyTests.Dynamic
         public abstract class Asynchronous
         {
             protected abstract Task<IEnumerable<Person>> GetPeople(dynamic toTest);
+            protected abstract Task<Person> GetPerson(dynamic toTest);
             protected abstract Task<IEnumerable<Person>> GetPeopleShouldThrow(dynamic toTest, ParameterDirection direction);
             protected abstract Task<IEnumerable<Person>> GetPeople<T>(dynamic toTest, T args);
             protected abstract Task<Tuple<IEnumerable<Person>, IEnumerable<Family>>> GetFamilies(dynamic toTest);
@@ -333,6 +327,17 @@ namespace CodeOnlyTests.Dynamic
                 var result = GetPeople(toTest).Result;
 
                 Assert.AreEqual("Foo", result.Single().FirstName);
+            }
+
+            [TestMethod]
+            public void CanGetSingleResultWithoutExpectingIEnumerable()
+            {
+                var ctx = CreatePeople("Foo");
+
+                var toTest = new DynamicStoredProcedure(ctx, transformers, CancellationToken.None, TEST_TIMEOUT, DynamicExecutionMode.Asynchronous);
+
+                var foo = GetPerson(toTest).Result;
+                foo.FirstName.Should().Be("Foo", "because that is the name of the only person returned by the Stored Procedure");
             }
 
             [TestMethod]
@@ -659,6 +664,11 @@ namespace CodeOnlyTests.Dynamic
                 return await toTest.usp_GetPeople();
             }
 
+            protected override async Task<Person> GetPerson(dynamic toTest)
+            {
+                return await toTest.usp_GetPeople();
+            }
+
             protected async override Task<IEnumerable<Person>> GetPeopleShouldThrow(dynamic toTest, ParameterDirection direction)
             {
                 switch (direction)
@@ -711,6 +721,11 @@ namespace CodeOnlyTests.Dynamic
             }
 
             protected override Task<IEnumerable<Person>> GetPeople(dynamic toTest)
+            {
+                return toTest.usp_GetPeople();
+            }
+
+            protected override Task<Person> GetPerson(dynamic toTest)
             {
                 return toTest.usp_GetPeople();
             }

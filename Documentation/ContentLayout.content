@@ -1,8 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Topics>
-  <Topic id="aa2c11d2-f0f3-4d38-a884-e28eb2d67f75" visible="False" isMSHVRoot="true" isSelected="true" title="Code Only Stored Procedures API Reference">
+  <Topic id="6a2d9060-4924-46ff-a085-1121237639d8" visible="True" isDefault="true" isSelected="true" title="Getting Started">
     <HelpKeywords>
-      <HelpKeyword index="K" term="Welcome" />
+      <HelpKeyword index="K" term="getting, started" />
+    </HelpKeywords>
+  </Topic>
+  <Topic id="04422aa2-352c-4b50-b767-ab61553e6039" visible="True" apiParentMode="InsertBefore" title="Version History">
+    <HelpKeywords>
+      <HelpKeyword index="K" term="version, history" />
     </HelpKeywords>
   </Topic>
 </Topics>
