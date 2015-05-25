@@ -379,5 +379,50 @@ namespace SmokeTests
             return res.ContinueWith(r => r.Result.TestGetWidgetResultsDynamic());
         }
         #endregion
+
+        #region Single Column Single Row TimeSpan
+        [SmokeTest("Dynamic Syntax Single Column Single Row")]
+        Tuple<bool, string> SingleColumnSingleRowTimeSpanSync(IDbConnection db)
+        {
+            var d1 = DateTime.Now;
+            var d2 = d1.AddHours(1);
+            TimeSpan result = db.Execute(Program.timeout).usp_TimeDifference(date1: d1, date2: d2);
+
+            if (result != TimeSpan.FromHours(1))
+                return Tuple.Create(false, string.Format("expected {0}, but returned {1}", TimeSpan.FromHours(1), result));
+
+            return Tuple.Create(true, "");
+        }
+        
+        [SmokeTest("Dynamic Syntax Single Column Single Row (Await)")]
+        async Task<Tuple<bool, string>> SingleColumnSingleRowTimeSpanAsync(IDbConnection db)
+        {
+            var d1 = DateTime.Now;
+            var d2 = d1.AddHours(1);
+            TimeSpan result = await db.ExecuteAsync(Program.timeout).usp_TimeDifference(date1: d1, date2: d2);
+
+            if (result != TimeSpan.FromHours(1))
+                return Tuple.Create(false, string.Format("expected {0}, but returned {1}", TimeSpan.FromHours(1), result));
+
+            return Tuple.Create(true, "");
+        }
+
+        [SmokeTest("Dynamic Syntax Single Column Single Row (Task)")]
+        Task<Tuple<bool, string>> SingleColumnSingleRowTimeSpanTask(IDbConnection db)
+        {
+
+            var d1 = DateTime.Now;
+            var d2 = d1.AddHours(1);
+            Task<TimeSpan> result = db.ExecuteAsync(Program.timeout).usp_TimeDifference(date1: d1, date2: d2);
+
+            return result.ContinueWith(r =>
+            {
+                if (r.Result != TimeSpan.FromHours(1))
+                    return Tuple.Create(false, string.Format("expected {0}, but returned {1}", TimeSpan.FromHours(1), r.Result));
+
+                return Tuple.Create(true, "");
+            });
+        }
+        #endregion
     }
 }

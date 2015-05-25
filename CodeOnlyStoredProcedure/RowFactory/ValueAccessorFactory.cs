@@ -17,11 +17,12 @@ namespace CodeOnlyStoredProcedure.RowFactory
                readonly ParameterExpression                       dataReaderExpression;
                readonly Expression                                indexExpression;
                readonly Expression                                boxedExpression;
-               readonly Expression                                unboxedExpression;
                readonly Expression                                attributeExpression;
                readonly string                                    errorMessage;
                readonly string                                    propertyName;
                readonly bool                                      convertNumeric = GlobalSettings.Instance.ConvertAllNumericValues;
+                        bool                                      isFirstExecution = true;
+                        Expression                                unboxedExpression;
 
         public ValueAccessorFactory(ParameterExpression dataReaderExpression, Expression index, PropertyInfo propertyInfo, string columnName)
         {
@@ -55,12 +56,16 @@ namespace CodeOnlyStoredProcedure.RowFactory
                 attributeExpression = Expression.Constant(attrs);
                 convertNumeric |= attrs.OfType<ConvertNumericAttribute>().Any();
             }
-
-            unboxedExpression = CreateUnboxedRetrieval<T>(dataReaderExpression, index, transformers, errorMessage);
         }
 
         public override Expression CreateExpressionToGetValueFromReader(IDataReader reader, IEnumerable<IDataTransformer> xFormers, Type dbColumnType)
         {
+            if (isFirstExecution)
+            {
+                isFirstExecution  = false;
+                unboxedExpression = CreateUnboxedRetrieval<T>(reader, dataReaderExpression, indexExpression, transformers, errorMessage);
+            }
+
             var        type         = typeof(T);
             Expression body         = null;
             var        expectedType = type;
@@ -69,7 +74,8 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
             if (unboxedExpression != null && xFormers.All(IsTypedTransformer))
             {
-                body = CreateTypedRetrieval<T>(dataReaderExpression,
+                body = CreateTypedRetrieval<T>(reader,
+                                               dataReaderExpression,
                                                indexExpression,
                                                unboxedExpression,
                                                transformers,
@@ -124,7 +130,8 @@ namespace CodeOnlyStoredProcedure.RowFactory
             }
             else
             {
-                body = CreateTypedRetrieval<T>(dataReaderExpression,
+                body = CreateTypedRetrieval<T>(reader,
+                                               dataReaderExpression,
                                                indexExpression,
                                                unboxedExpression,
                                                transformers,

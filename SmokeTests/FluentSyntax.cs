@@ -674,6 +674,68 @@ namespace SmokeTests
         }
         #endregion
 
+        #region Single Column Single Row TimeSpan
+        [SmokeTest("Fluent Syntax Single Column Single Row")]
+        Tuple<bool, string> SingleColumnSingleRowTimeSpanSync(IDbConnection db)
+        {
+            var d1 = DateTime.Now;
+            var d2 = d1.AddHours(1);
+            var result = StoredProcedure.Create("usp_TimeDifference")
+                                        .WithParameter("date1", d1)
+                                        .WithParameter("date2", d2)
+                                        .WithResults<TimeSpan>()
+                                        .Execute(db, Program.timeout)
+                                        .Single();
+
+            if (result != TimeSpan.FromHours(1))
+                return Tuple.Create(false, string.Format("expected {0}, but returned {1}", TimeSpan.FromHours(1), result));
+
+            return Tuple.Create(true, "");
+        }
+
+        [SmokeTest("Fluent Syntax Single Column Single Row (Await)")]
+        async Task<Tuple<bool, string>> SingleColumnSingleRowTimeSpanAsync(IDbConnection db)
+        {
+            var d1 = DateTime.Now;
+            var d2 = d1.AddHours(1);
+
+            var results = await StoredProcedure.Create("usp_TimeDifference")
+                                               .WithParameter("date1", d1)
+                                               .WithParameter("date2", d2)
+                                               .WithResults<TimeSpan>()
+                                               .ExecuteAsync(db, Program.timeout);
+
+            var result = results.Single();
+            if (result != TimeSpan.FromHours(1))
+                return Tuple.Create(false, string.Format("expected {0}, but returned {1}", TimeSpan.FromHours(1), result));
+
+            return Tuple.Create(true, "");
+        }
+
+        [SmokeTest("Fluent Syntax Single Column Single Row (Task)")]
+        Task<Tuple<bool, string>> SingleColumnSingleRowTimeSpanTask(IDbConnection db)
+        {
+
+            var d1 = DateTime.Now;
+            var d2 = d1.AddHours(1);
+
+            var results = StoredProcedure.Create("usp_TimeDifference")
+                                         .WithParameter("date1", d1)
+                                         .WithParameter("date2", d2)
+                                         .WithResults<TimeSpan>()
+                                         .ExecuteAsync(db, Program.timeout);
+
+            return results.ContinueWith(r =>
+            {
+                var res = r.Result.Single();
+                if (res != TimeSpan.FromHours(1))
+                    return Tuple.Create(false, string.Format("expected {0}, but returned {1}", TimeSpan.FromHours(1), res));
+
+                return Tuple.Create(true, "");
+            });
+        }
+        #endregion
+
         private class DoublingTransformer : IDataTransformer<int>, IDataTransformer<Spoke>
         {
             public bool CanTransform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes)

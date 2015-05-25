@@ -33,6 +33,8 @@ namespace CodeOnlyStoredProcedure
                 typeof(Boolean),
                 typeof(Byte),
                 typeof(DateTime),
+                typeof(DateTimeOffset),
+                typeof(TimeSpan),
                 typeof(Char),
                 typeof(Guid)
             };
