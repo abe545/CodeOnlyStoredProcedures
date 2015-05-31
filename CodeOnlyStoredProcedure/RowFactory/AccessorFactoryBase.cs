@@ -311,6 +311,9 @@ namespace CodeOnlyStoredProcedure.RowFactory
             if (expectedDbType != null)
             {
                 res = CreateCallExpression(reader, dbReader, index, expectedDbType);
+                if (res == null)
+                    return null;
+
                 if (type == typeof(bool) || type == typeof(bool?))
                 {
                     res = Expression.NotEqual(res, Zero(expectedDbType));
@@ -321,7 +324,11 @@ namespace CodeOnlyStoredProcedure.RowFactory
                     res = Expression.Convert(res, dbType);
             }
             else
+            {
                 res = CreateCallExpression(reader, dbReader, index, dbType);
+                if (res == null)
+                    return null;
+            }
 
             if (switchSign)
                 res = Expression.Convert(res, unswitched);
@@ -457,7 +464,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
                     if (foundMethod != null)
                         return Expression.Call(Expression.Convert(dbReader, reader.GetType()), foundMethod, index);
                     else
-                        throw new NotSupportedException("Can not determine the method to call on the IDataRecord for column of type " + type);
+                        return null;
             }
         }
 

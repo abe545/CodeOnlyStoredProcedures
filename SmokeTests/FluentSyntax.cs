@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Linq;
 using System.Text;
@@ -675,6 +676,7 @@ namespace SmokeTests
         #endregion
 
         #region Single Column Single Row TimeSpan
+
         [SmokeTest("Fluent Syntax Single Column Single Row")]
         Tuple<bool, string> SingleColumnSingleRowTimeSpanSync(IDbConnection db)
         {
@@ -734,6 +736,72 @@ namespace SmokeTests
                 return Tuple.Create(true, "");
             });
         }
+
+        [SmokeTest("Fluent Syntax Single Column Single Row Untyped")]
+        Tuple<bool, string> SingleColumnSingleRowUntypedTimeSpanSync(IDbConnection db)
+        {
+            var d1 = DateTime.Now;
+            var d2 = d1.AddHours(1);
+            var result = StoredProcedure.Create("usp_TimeDifference")
+                                        .WithParameter("date1", d1)
+                                        .WithParameter("date2", d2)
+                                        .WithResults<TimespanResult>()
+                                        .Execute(db, Program.timeout)
+                                        .Single();
+
+            if (result.Value != TimeSpan.FromHours(2))
+                return Tuple.Create(false, string.Format("expected {0}, but returned {1}", TimeSpan.FromHours(2), result.Value));
+
+            return Tuple.Create(true, "");
+        }
+
+        [SmokeTest("Fluent Syntax Single Column Single Row Untyped (Await)")]
+        async Task<Tuple<bool, string>> SingleColumnSingleRowUntypedTimeSpanAsync(IDbConnection db)
+        {
+            var d1 = DateTime.Now;
+            var d2 = d1.AddHours(1);
+
+            var results = await StoredProcedure.Create("usp_TimeDifference")
+                                               .WithParameter("date1", d1)
+                                               .WithParameter("date2", d2)
+                                               .WithResults<TimespanResult>()
+                                               .ExecuteAsync(db, Program.timeout);
+
+            var result = results.Single();
+            if (result.Value != TimeSpan.FromHours(2))
+                return Tuple.Create(false, string.Format("expected {0}, but returned {1}", TimeSpan.FromHours(2), result.Value));
+
+            return Tuple.Create(true, "");
+        }
+
+        [SmokeTest("Fluent Syntax Single Column Single Row Untyped (Task)")]
+        Task<Tuple<bool, string>> SingleColumnSingleRowUntypedTimeSpanTask(IDbConnection db)
+        {
+
+            var d1 = DateTime.Now;
+            var d2 = d1.AddHours(1);
+
+            var results = StoredProcedure.Create("usp_TimeDifference")
+                                         .WithParameter("date1", d1)
+                                         .WithParameter("date2", d2)
+                                         .WithResults<TimespanResult>()
+                                         .ExecuteAsync(db, Program.timeout);
+
+            return results.ContinueWith(r =>
+            {
+                var res = r.Result.Single();
+                if (res.Value != TimeSpan.FromHours(2))
+                    return Tuple.Create(false, string.Format("expected {0}, but returned {1}", TimeSpan.FromHours(2), res.Value));
+
+                return Tuple.Create(true, "");
+            });
+        }
+
+        private class TimespanResult
+        {
+            [DoubleTimespan]
+            public TimeSpan Value { get; set; }
+        }
         #endregion
 
         private class DoublingTransformer : IDataTransformer<int>, IDataTransformer<Spoke>
@@ -758,5 +826,16 @@ namespace SmokeTests
                 return (Spoke)((int)value * 2);
             }
         }
+
+        // This is untyped, because we need to test the untyped retrieval
+        private class DoubleTimespanAttribute : DataTransformerAttributeBase
+        {
+            public override object Transform(object value, Type targetType, bool isNullable)
+            {
+                var ts = (TimeSpan)value;
+                return ts + ts;
+            }
+        }
+
     }
 }

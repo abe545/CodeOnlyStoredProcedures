@@ -423,6 +423,67 @@ namespace SmokeTests
                 return Tuple.Create(true, "");
             });
         }
+
+        [SmokeTest("Dynamic Syntax Single Column Single Row Untyped")]
+        Tuple<bool, string> SingleColumnSingleRowUntypedTimeSpanSync(IDbConnection db)
+        {
+            var d1 = DateTime.Now;
+            var d2 = d1.AddHours(1);
+            TimeSpan result = db.Execute(Program.timeout, new TimeDoubler()).usp_TimeDifference(date1: d1, date2: d2);
+
+            if (result != TimeSpan.FromHours(2))
+                return Tuple.Create(false, string.Format("expected {0}, but returned {1}", TimeSpan.FromHours(2), result));
+
+            return Tuple.Create(true, "");
+        }
+
+        [SmokeTest("Dynamic Syntax Single Column Single Row Untyped (Await)")]
+        async Task<Tuple<bool, string>> SingleColumnSingleRowUntypedTimeSpanAsync(IDbConnection db)
+        {
+            var d1 = DateTime.Now;
+            var d2 = d1.AddHours(1);
+            TimeSpan result = await db.ExecuteAsync(Program.timeout, new TimeDoubler()).usp_TimeDifference(date1: d1, date2: d2);
+
+            if (result != TimeSpan.FromHours(2))
+                return Tuple.Create(false, string.Format("expected {0}, but returned {1}", TimeSpan.FromHours(2), result));
+
+            return Tuple.Create(true, "");
+        }
+
+        [SmokeTest("Dynamic Syntax Single Column Single Row Untyped (Task)")]
+        Task<Tuple<bool, string>> SingleColumnSingleRowUntypedTimeSpanTask(IDbConnection db)
+        {
+
+            var d1 = DateTime.Now;
+            var d2 = d1.AddHours(1);
+            Task<TimeSpan> result = db.ExecuteAsync(Program.timeout, new TimeDoubler()).usp_TimeDifference(date1: d1, date2: d2);
+
+            return result.ContinueWith(r =>
+            {
+                if (r.Result != TimeSpan.FromHours(2))
+                    return Tuple.Create(false, string.Format("expected {0}, but returned {1}", TimeSpan.FromHours(2), r.Result));
+
+                return Tuple.Create(true, "");
+            });
+        }
+
+        // don't implement the typed version, because we are trying to test the untyped retrieval with this transformer
+        private class TimeDoubler : IDataTransformer
+        {
+            public bool CanTransform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes)
+            {
+                return targetType == typeof(TimeSpan);
+            }
+
+            public object Transform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes)
+            {
+                if (targetType != typeof(TimeSpan))
+                    throw new NotSupportedException();
+
+                var ts = (TimeSpan)value;
+                return ts + ts;
+            }
+        }
         #endregion
     }
 }
