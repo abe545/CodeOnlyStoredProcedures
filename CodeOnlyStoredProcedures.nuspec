@@ -9,7 +9,10 @@
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>A library for easily calling Stored Procedures in .NET. Works great with Entity Framework Code First models. 
 Code Only Stored Procedures will not create any Stored Procedures on your database. Instead, its aim is to make it easy to call your existing stored procedures by writing simple code.</description>
-        <releaseNotes>2.2.0
+        <releaseNotes>2.2.1
+Fixed bug where Timespan and DateTimeOffset result columns would throw an exception.
+
+2.2.0
 Added ability to pass Table Valued Parameters in the dynamic syntax, and as a property via WithInput, without decorating the class with the TableValuedParameterAttribute. It will use the class name as the TableName, and dbo as the Schema.
 Added ability to return single rows from dynamic stored procedures in one line, so long as the stored procedure returns one or fewer items
 
