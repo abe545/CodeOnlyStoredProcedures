@@ -1124,6 +1124,28 @@ namespace CodeOnlyTests.RowFactory
                 }
             }
 
+            [TestMethod]
+            public void TimeSpanAndDateTimeOffset_ColumnsReturnedFromGetValue()
+            {
+                var values = new Dictionary<string, object>
+                {
+                    { "DateTimeOffset", new DateTimeOffset(new DateTime(1984, 1, 1), TimeSpan.FromHours(1)) },
+                    { "TimeSpan",       TimeSpan.FromMinutes(42) } 
+                };
+
+                var reader = CreateDataReader(values, true);
+                var toTest = new ComplexTypeRowFactory<ForbiddenDates>();
+                var res    = toTest.ParseRows(reader, new IDataTransformer[0], CancellationToken.None);
+
+                res.Should().ContainSingle().Which
+                   .ShouldBeEquivalentTo(
+                   new ForbiddenDates
+                   {
+                       DateTimeOffset = new DateTimeOffset(new DateTime(1984, 1, 1), TimeSpan.FromHours(1)),
+                       TimeSpan       = TimeSpan.FromMinutes(42)
+                   });
+            }
+
             private static IDataReader CreateDataReader(Dictionary<string, object> values, bool setupGetValue = false)
             {
                 var keys = values.Keys.OrderBy(s => s).ToList();
@@ -1424,6 +1446,12 @@ namespace CodeOnlyTests.RowFactory
         {
             public int Id { get; set; }
             public IEnumerable<SingleColumn> Children { get; set; }
+        }
+
+        private class ForbiddenDates
+        {
+            public DateTimeOffset DateTimeOffset { get; set; }
+            public TimeSpan       TimeSpan       { get; set; }
         }
 
         private class StaticValueAttribute : DataTransformerAttributeBase

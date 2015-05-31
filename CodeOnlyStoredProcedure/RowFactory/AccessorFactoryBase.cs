@@ -247,6 +247,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
         }
 
         protected static Expression CreateTypedRetrieval<T>(
+            IDataReader                               reader,
             ParameterExpression                       dbReader,
             Expression                                index,
             Expression                                unboxedExpression,
@@ -257,6 +258,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
             Type                                      expectedDbType,
             bool                                      convertNumeric)
         {
+            Contract.Requires(reader            != null);
             Contract.Requires(dbReader          != null);
             Contract.Requires(index             != null);
             Contract.Requires(unboxedExpression != null);
@@ -269,7 +271,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
             if (dbType != expectedDbType)
             {
                 if (convertNumeric)
-                    return CreateUnboxedRetrieval<T>(dbReader, index, xFormers, errorMessage, dbType);
+                    return CreateUnboxedRetrieval<T>(reader, dbReader, index, xFormers, errorMessage, dbType);
                 else
                     throw new StoredProcedureColumnException(typeof(T), dbType, propertyName);
             }
@@ -278,6 +280,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
         }
 
         protected static Expression CreateUnboxedRetrieval<T>(
+            IDataReader                               reader,
             ParameterExpression                       dbReader,
             Expression                                index,
             IEnumerable<DataTransformerAttributeBase> xFormers,
@@ -307,7 +310,10 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
             if (expectedDbType != null)
             {
-                res = Expression.Call(dbReader, GetGetMethod(expectedDbType), index);
+                res = CreateCallExpression(reader, dbReader, index, expectedDbType);
+                if (res == null)
+                    return null;
+
                 if (type == typeof(bool) || type == typeof(bool?))
                 {
                     res = Expression.NotEqual(res, Zero(expectedDbType));
@@ -318,7 +324,11 @@ namespace CodeOnlyStoredProcedure.RowFactory
                     res = Expression.Convert(res, dbType);
             }
             else
-                res = Expression.Call(dbReader, GetGetMethod(dbType), index);
+            {
+                res = CreateCallExpression(reader, dbReader, index, dbType);
+                if (res == null)
+                    return null;
+            }
 
             if (switchSign)
                 res = Expression.Convert(res, unswitched);
@@ -421,11 +431,16 @@ namespace CodeOnlyStoredProcedure.RowFactory
                 expr = Expression.Call(Expression.Constant(x), DataTransformerCache<T>.transform, expr, attributeExpression);
         }
 
-        protected static MethodInfo GetGetMethod(Type type)
+        protected static Expression CreateCallExpression(IDataReader reader, Expression dbReader, Expression index, Type type)
         {
-            Contract.Requires(type != null);
+            Contract.Requires(reader   != null);
+            Contract.Requires(dbReader != null);
+            Contract.Requires(index    != null);
+            Contract.Requires(type     != null);
 
             var typeCode = Type.GetTypeCode(type);
+            var args     = new[] { typeof(int) };
+
             switch (typeCode)
             {
                 case TypeCode.Boolean:
@@ -438,11 +453,18 @@ namespace CodeOnlyStoredProcedure.RowFactory
                 case TypeCode.Int32:
                 case TypeCode.Int64:
                 case TypeCode.String: 
-                    return typeof(IDataRecord).GetMethod("Get" + typeCode);
+                    return Expression.Call(dbReader, typeof(IDataRecord).GetMethod("Get" + typeCode, args), index);
                 case TypeCode.Single:
-                    return typeof(IDataRecord).GetMethod("GetFloat");
+                    return Expression.Call(dbReader, typeof(IDataRecord).GetMethod("GetFloat", args), index);
                 default:
-                    throw new NotSupportedException("Can not determine the method to call on the IDataRecord for column of type " + type);
+                    // these can be supported by the data reader, but they don't exist
+                    // on the interface. So, we have to handle them once we actually have the reader
+                    var foundMethod = reader.GetType().GetMethod("Get" + type.Name, args);
+
+                    if (foundMethod != null)
+                        return Expression.Call(Expression.Convert(dbReader, reader.GetType()), foundMethod, index);
+                    else
+                        return null;
             }
         }
 

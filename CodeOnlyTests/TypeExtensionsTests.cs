@@ -176,6 +176,18 @@ namespace CodeOnlyTests
         }
 
         [TestMethod]
+        public void IsValidResultType_ReturnsTrueForDateTimeOffset()
+        {
+            typeof(DateTimeOffset).IsValidResultType().Should().BeTrue("because DateTimeOffset is an integral type");
+        }
+
+        [TestMethod]
+        public void IsValidResultType_ReturnsTrueForTimespan()
+        {
+            typeof(TimeSpan).IsValidResultType().Should().BeTrue("because TimeSpan is an integral type");
+        }
+
+        [TestMethod]
         public void IsValidResultType_ReturnsTrueForGuid()
         {
             typeof(Guid).IsValidResultType().Should().BeTrue("because Guid is an integral type");
@@ -233,6 +245,18 @@ namespace CodeOnlyTests
         public void IsValidResultType_ReturnsTrueForNullableDateTime()
         {
             typeof(DateTime?).IsValidResultType().Should().BeTrue("because nullable DateTime is an integral type");
+        }
+
+        [TestMethod]
+        public void IsValidResultType_ReturnsTrueForNullableDateTimeOffset()
+        {
+            typeof(DateTimeOffset?).IsValidResultType().Should().BeTrue("because nullable DateTimeOffset is an integral type");
+        }
+
+        [TestMethod]
+        public void IsValidResultType_ReturnsTrueForNullableTimespan()
+        {
+            typeof(TimeSpan?).IsValidResultType().Should().BeTrue("because nullable TimeSpan is an integral type");
         }
 
         [TestMethod]

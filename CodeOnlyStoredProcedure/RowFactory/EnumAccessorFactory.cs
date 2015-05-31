@@ -23,11 +23,12 @@ namespace CodeOnlyStoredProcedure.RowFactory
                readonly ParameterExpression                       dataReaderExpression;
                readonly Expression                                indexExpression;
                readonly Expression                                boxedExpression;
-               readonly Expression                                unboxedExpression;
                readonly Expression                                attributeExpression;
                readonly string                                    errorMessage;
                readonly string                                    propertyName;
                readonly bool                                      convertNumeric = GlobalSettings.Instance.ConvertAllNumericValues;
+                        bool                                      isFirstExecution = true;
+                        Expression                                unboxedExpression;
 
         static EnumAccessorFactory()
         {
@@ -72,7 +73,6 @@ namespace CodeOnlyStoredProcedure.RowFactory
                 convertNumeric |= attrs.OfType<ConvertNumericAttribute>().Any();
             }
 
-            unboxedExpression  = CreateUnboxedRetrieval<T>(dataReaderExpression, index, transformers, errorMessage);
             throwNullException = new Lazy<UnaryExpression>(() => Expression.Throw(Expression.New(
                                                                      typeof(NoNullAllowedException).GetConstructor(new[] { typeof(string) }),
                                                                      Expression.Constant(errorMessage))));
@@ -80,6 +80,12 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
         public override Expression CreateExpressionToGetValueFromReader(IDataReader reader, IEnumerable<IDataTransformer> xFormers, Type dbColumnType)
         {
+            if (isFirstExecution)
+            {
+                isFirstExecution  = false;
+                unboxedExpression = CreateUnboxedRetrieval<T>(reader, dataReaderExpression, indexExpression, transformers, errorMessage);
+            }
+
             Expression body         = null;
             var        expectedType = dbType;
             GetUnderlyingEnumType(ref expectedType);
@@ -154,7 +160,8 @@ namespace CodeOnlyStoredProcedure.RowFactory
             }
             else if (unboxedExpression != null && xFormers.All(IsTypedTransformer))
             {
-                body = CreateTypedRetrieval<T>(dataReaderExpression,
+                body = CreateTypedRetrieval<T>(reader,
+                                               dataReaderExpression,
                                                indexExpression,
                                                unboxedExpression,
                                                transformers,
@@ -200,7 +207,8 @@ namespace CodeOnlyStoredProcedure.RowFactory
             }
             else
             {
-                body = CreateTypedRetrieval<T>(dataReaderExpression,
+                body = CreateTypedRetrieval<T>(reader,
+                                               dataReaderExpression,
                                                indexExpression,
                                                unboxedExpression,
                                                transformers,
