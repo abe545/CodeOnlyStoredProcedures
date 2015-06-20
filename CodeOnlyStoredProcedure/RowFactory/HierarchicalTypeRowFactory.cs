@@ -35,6 +35,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
                                                 .Where(mi => mi.Name == "Where" && 
                                                              mi.GetParameters()[1].ParameterType.GetGenericTypeDefinition() == typeof(Func<,>))
                                                 .Single();
+            var cast    = typeof(Enumerable).GetMethod("Cast");
             var toArray = typeof(Enumerable).GetMethod("ToArray");
             var toList  = typeof(Enumerable).GetMethod("ToList");
 
@@ -44,12 +45,20 @@ namespace CodeOnlyStoredProcedure.RowFactory
                 if (!added.Add(t))
                     continue;
 
+                Type implType;
+                IEnumerable<PropertyInfo> interfaceProperties = null;
+                if (GlobalSettings.Instance.InterfaceMap.TryGetValue(t, out implType))
+                {
+                    interfaceProperties = t.GetMappedProperties();
+                    t = implType;
+                }
+
                 var props = t.GetMappedProperties();
-                var key = GetKeyProperty(t.Name, props);
+                var key   = GetKeyProperty(t.Name, props, interfaceProperties);
 
                 foreach (var child in props)
                 {
-                    if (child.PropertyType.IsEnumeratedType())
+                    if (child.CanWrite && child.PropertyType.IsEnumeratedType())
                     {
                         if (key == null)
                             throw new NotSupportedException("Can not generate a hierarchy for children of type " + t.Name + " because a key could not be determined. You should decorate a property with a Key attribute to designate it as such, or mark the properties that are IEnumerables as NotMapped, to prevent this error.");
@@ -61,24 +70,50 @@ namespace CodeOnlyStoredProcedure.RowFactory
                         var fkAttr = (ForeignKeyAttribute)Attribute.GetCustomAttribute(child, typeof(ForeignKeyAttribute));
                         if (fkAttr != null)
                             foreignKeyName = fkAttr.Name;
+                        else if (interfaceProperties != null)
+                        {
+                            var interfaceProp = interfaceProperties.FirstOrDefault(p => p.Name == child.Name);
+                            fkAttr = (ForeignKeyAttribute)Attribute.GetCustomAttribute(interfaceProp, typeof(ForeignKeyAttribute));
+                            if (fkAttr != null)
+                                foreignKeyName = fkAttr.Name;
+                        }
 
-                        var fk = childType.GetMappedProperties().FirstOrDefault(p => p.Name == foreignKeyName);
+                        implType = null;
+                        if (!GlobalSettings.Instance.InterfaceMap.TryGetValue(childType, out implType))
+                            implType = childType;
+
+                        var fk = implType.GetMappedProperties(requireReadable: true).FirstOrDefault(p => p.Name == foreignKeyName);
                         if (fk == null)
-                            throw new NotSupportedException("Could not find the foreign key property on " + childType.Name + ". Expected property named " + foreignKeyName + ", but was not found.");
+                            throw new NotSupportedException("Could not find the foreign key property on " + implType.Name + ". Expected property named " + foreignKeyName + ", but was not found.");
                         else if (fk.PropertyType != key.PropertyType)
-                            throw new NotSupportedException("Key types are not matched for " + childType.Name + ". Key on parent type: " + key.PropertyType + ".\nForeign key type on child: " + fk.PropertyType);
+                            throw new NotSupportedException("Key types are not matched for " + implType.Name + ". Key on parent type: " + key.PropertyType + ".\nForeign key type on child: " + fk.PropertyType);
 
                         var childEnumerable = typeof(IEnumerable<>).MakeGenericType(childType);
                         var parent = Expression.Parameter(t);
                         var possible = Expression.Parameter(childEnumerable);
                         var keyExpr = Expression.Property(parent, key);
 
-                        // possible.Where(c => c.ParentKey == key)
-                        var c = Expression.Parameter(childType);
-                        var funcType = typeof(Func<,>).MakeGenericType(childType, typeof(bool));
-                        var children = Expression.Call(whereMethod.MakeGenericMethod(childType),
-                                                        possible,
-                                                        Expression.Lambda(funcType, Expression.Equal(keyExpr, Expression.Property(c, fk)), c));
+                        Expression children;
+                        if (implType == childType)
+                        {
+                            // possible.Where(c => c.ParentKey == key)
+                            var c = Expression.Parameter(childType);
+                            var funcType = typeof(Func<,>).MakeGenericType(childType, typeof(bool));
+                            children = Expression.Call(whereMethod.MakeGenericMethod(childType),
+                                                       possible,
+                                                       Expression.Lambda(funcType, Expression.Equal(keyExpr, Expression.Property(c, fk)), c));
+                        }
+                        else
+                        {
+                            // possible.Cast<TImpl>().Where(c => c.ParentKey == key)
+                            var c = Expression.Parameter(implType);
+                            var funcType = typeof(Func<,>).MakeGenericType(implType, typeof(bool));
+                            children = Expression.Call(cast.MakeGenericMethod(implType), possible);
+                            children = Expression.Call(whereMethod.MakeGenericMethod(implType),
+                                                       children,
+                                                       Expression.Lambda(funcType, Expression.Equal(keyExpr, Expression.Property(c, fk)), c));
+                        }
+
                         if (child.PropertyType.IsArray) // .ToArray()
                             children = Expression.Call(toArray.MakeGenericMethod(childType), children);
                         else // .ToList()
@@ -108,17 +143,24 @@ namespace CodeOnlyStoredProcedure.RowFactory
             this.resultTypesInOrder = new ReadOnlyCollection<Type>(resultTypesInOrder.ToArray());
         }
 
-        private static PropertyInfo GetKeyProperty(string className, IEnumerable<PropertyInfo> props)
+        private static PropertyInfo GetKeyProperty(string className, IEnumerable<PropertyInfo> props, IEnumerable<PropertyInfo> interfaceProperties)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(className));
             Contract.Requires(props != null && Contract.ForAll(props, p => p != null));
 
-            var explicitKey = props.Where(p => Attribute.GetCustomAttribute(p, typeof(KeyAttribute)) != null).SingleOrDefault();
+            var explicitKey = props.Where(p => p.CanRead && Attribute.GetCustomAttribute(p, typeof(KeyAttribute)) != null).SingleOrDefault();
             if (explicitKey != null)
                 return explicitKey;
 
+            if (interfaceProperties != null)
+            {
+                explicitKey = interfaceProperties.Where(p => p.CanRead && Attribute.GetCustomAttribute(p, typeof(KeyAttribute)) != null).SingleOrDefault();
+                if (explicitKey != null)
+                    return explicitKey;
+            }
+
             var idWithClassName = className + "Id";
-            return props.SingleOrDefault(p => p.Name == "Id") ?? props.SingleOrDefault(p => p.Name == idWithClassName);
+            return props.SingleOrDefault(p => p.CanRead && p.Name == "Id") ?? props.SingleOrDefault(p => p.CanRead && p.Name == idWithClassName);
         }
 
         public override IEnumerable<T> ParseRows(IDataReader reader, IEnumerable<IDataTransformer> dataTransformers, CancellationToken token)

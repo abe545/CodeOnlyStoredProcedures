@@ -65,6 +65,26 @@ namespace CodeOnlyTests.RowFactory
                 Assert<HierarchicalType, HierarchicalTypeRowFactory<HierarchicalType>>();
             }
 
+            [TestMethod]
+            public void when_returning_HierarchicalType_by_interface()
+            {
+                using (GlobalSettings.UseTestInstance())
+                {
+                    GlobalSettings.Instance.InterfaceMap.TryAdd(typeof(IHierarchy), typeof(HierarchicalType));
+                    Assert<IHierarchy, HierarchicalTypeRowFactory<IHierarchy>>();
+                }
+            }
+
+            [TestMethod]
+            public void when_returning_ComplexType_by_interface_that_implements_hierarchy()
+            {
+                using (GlobalSettings.UseTestInstance())
+                {
+                    GlobalSettings.Instance.InterfaceMap.TryAdd(typeof(IHierarchy), typeof(ReadOnlyHierarchy));
+                    Assert<IHierarchy, ComplexTypeRowFactory<IHierarchy>>();
+                }
+            }
+
             private static void Assert<T, TFactory>(string typeName = null)
                 where TFactory : IRowFactory<T>
             {
@@ -90,12 +110,29 @@ namespace CodeOnlyTests.RowFactory
             public int ParentId { get; set; }
             public string Name { get; set; }
         }
-        private class HierarchicalType
+        private class HierarchicalType : IHierarchy
         {
             public int Id { get; set; }
             public string Name { get; set; }
             [ForeignKey("ParentId")]
             public IEnumerable<ComplexType> Children { get; set; }
+        }
+
+        private interface IHierarchy
+        {
+            IEnumerable<ComplexType> Children { get; set; }
+        }
+
+        private class ReadOnlyHierarchy : IHierarchy
+        {
+            public int Id { get; set; }
+            public string Name { get; set; }
+
+            IEnumerable<ComplexType> IHierarchy.Children
+            {
+                get { return null; }
+                set { }
+            }
         }
 	    #endregion
     }

@@ -8,7 +8,7 @@ branches:
 
 environment:
   releaseVersion: 2.2.2
-  packageVersion: 2.2.2-pre
+  packageVersion: 2.2.2-pre1
 
 assembly_info:
   patch: true
