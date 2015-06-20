@@ -53,6 +53,30 @@ namespace CodeOnlyTests.StoredProcedureParameters
         }
 
         [TestMethod]
+        public void IgnoresSetOnlyProperties()
+        {
+            var cmd = new Mock<IDbCommand>();
+            cmd.Setup(c => c.CreateParameter()).Returns(new SqlParameter());
+
+            var toTest = new TableValuedParameter("Foo", new[] { new TVP2(42) }, typeof(TVP2), "CustomInt", "Schema");
+
+            var res = toTest.CreateDbDataParameter(cmd.Object);
+
+            res.DbType.Should().Be(DbType.Object, "table valued parameters pass DbType.Object");
+            res.ParameterName.Should().Be("Foo", "it was passed in the constructor");
+            res.Direction.Should().Be(ParameterDirection.Input, "it is an input parameter");
+
+            var typed = res.Should().BeOfType<SqlParameter>().Which;
+
+            typed.SqlDbType.Should().Be(SqlDbType.Structured, "table valued parameters are Structured");
+            typed.TypeName.Should().Be("[Schema].[CustomInt]", "it was passed in the constructor");
+
+            var meta = typed.Value.Should().BeAssignableTo<IEnumerable<SqlDataRecord>>().Which.Single();
+            meta.FieldCount.Should().Be(1, "only one row was passed in");
+            meta.GetInt32(0).Should().Be(42, "it was passed in the row");
+        }
+
+        [TestMethod]
         public void ToStringRepresentsTheParameter()
         {
             new TableValuedParameter("Foo", new[] { new TVP(42) }, typeof(TVP), "CustomInt", "Schema").ToString()
@@ -64,6 +88,18 @@ namespace CodeOnlyTests.StoredProcedureParameters
             public int Int { get; set; }
 
             public TVP(int val)
+            {
+                Int = val;
+            }
+        }
+
+        private class TVP2
+        {
+            private string value;
+            public int Int { get; set; }
+            public string Value { set { this.value = value; } }
+
+            public TVP2(int val)
             {
                 Int = val;
             }
