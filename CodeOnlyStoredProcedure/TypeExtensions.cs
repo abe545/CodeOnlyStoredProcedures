@@ -298,7 +298,7 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(instance != null);
             Contract.Ensures(Contract.Result<IEnumerable<IStoredProcedureParameter>>() != null);
 
-            foreach (var pi in type.GetMappedProperties())
+            foreach (var pi in type.GetMappedProperties(requireReadable: true))
             {
                 IStoredProcedureParameter parameter;
                 var tableAttr = pi.GetCustomAttributes(false)

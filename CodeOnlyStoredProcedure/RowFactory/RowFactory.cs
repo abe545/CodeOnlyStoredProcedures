@@ -34,8 +34,14 @@ namespace CodeOnlyStoredProcedure
                 return new EnumRowFactory<T>();
             if (itemType.IsSimpleType())
                 return new SimpleTypeRowFactory<T>();
-            if (generateHierarchicals && itemType.GetMappedProperties().Any(p => p.PropertyType.IsEnumeratedType()))
-                return new HierarchicalTypeRowFactory<T>();
+            if (generateHierarchicals)
+            {
+                Type implType;
+                if (GlobalSettings.Instance.InterfaceMap.TryGetValue(itemType, out implType))
+                    itemType = implType;
+                if (itemType.GetMappedProperties(requireWritable: true).Any(p => p.PropertyType.IsEnumeratedType()))
+                    return new HierarchicalTypeRowFactory<T>();
+            }
             
             return new ComplexTypeRowFactory<T>();
         }

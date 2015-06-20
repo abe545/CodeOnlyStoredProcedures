@@ -42,6 +42,21 @@ namespace CodeOnlyTests.RowFactory
             }
 
             [TestMethod]
+            public void CanBuildHierarchyMethodsForMappedInterfaces()
+            {
+                using (GlobalSettings.UseTestInstance())
+                {
+                    GlobalSettings.Instance.InterfaceMap.TryAdd(typeof(ILevel1), typeof(Level1));
+                    GlobalSettings.Instance.InterfaceMap.TryAdd(typeof(ILevel2), typeof(Level2));
+                    GlobalSettings.Instance.InterfaceMap.TryAdd(typeof(ILevel3), typeof(Level3));
+                    GlobalSettings.Instance.InterfaceMap.TryAdd(typeof(ILevel4), typeof(Level4));
+
+                    this.Invoking(_ => new HierarchicalTypeRowFactory<ILevel1>())
+                        .ShouldNotThrow();
+                }
+            }
+
+            [TestMethod]
             public void CancelsWhenTokenCanceled()
             {
                 var sema   = new SemaphoreSlim(0, 1);
@@ -587,6 +602,61 @@ namespace CodeOnlyTests.RowFactory
             public int ParentAge { get; set; }
             public string Name { get; set; }
             public int Age { get; set; }
+        }
+
+        public interface ILevel1
+        {
+            string Name { get; }
+            IEnumerable<ILevel2> Level2s { get; }
+        }
+
+        public interface ILevel2
+        {
+            int Id { get; }
+            string Name { get; }
+            IEnumerable<ILevel3> Level3s { get; }
+        }
+
+        public interface ILevel3
+        {
+            [Key]
+            int Name { get; }
+            [ForeignKey("ParentId")]
+            IEnumerable<ILevel4> Level4s { get; }
+        }
+
+        public interface ILevel4
+        {
+            int ParentId { get; }
+            string Value { get; }
+        }
+
+        public class Level1 : ILevel1
+        {
+            [Key]
+            public string Name { get; set; }
+            [ForeignKey("Name")]
+            public IEnumerable<ILevel2> Level2s { get; set; }
+        }
+
+        public class Level2 : ILevel2
+        {
+            public int Id { get; set; }
+            public string Name { get; set; }
+            public IEnumerable<ILevel3> Level3s { get; set; }
+        }
+
+        public class Level3 : ILevel3
+        {
+            public int Name { get; set; }
+            public int Level2Id { get; set; }
+            public IEnumerable<ILevel4> Level4s { get; set; }
+        }
+
+        public class Level4 : ILevel4
+        {
+            public int ParentId { get; set; }
+            public string Value { get; set; }
         }
     }
 }
