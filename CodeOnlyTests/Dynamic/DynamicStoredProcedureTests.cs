@@ -88,17 +88,11 @@ namespace CodeOnlyTests.Dynamic
             {
                 var ctx = CreatePeople("Foo");
 
+                IEnumerable<int> results = null;
                 dynamic toTest = new DynamicStoredProcedure(ctx, transformers, CancellationToken.None, TEST_TIMEOUT, DynamicExecutionMode.Synchronous);
-
-                try
-                {
-                    var families = (IEnumerable<int>)toTest.usp_GetPeople();
-                    Assert.Fail("Casting a result set to the wrong item type should fail.");
-                }
-                catch (StoredProcedureColumnException)
-                {
-                    // expected
-                }
+                this.Invoking(_ => results = (IEnumerable<int>)toTest.usp_GetPeople())
+                    .ShouldThrow<StoredProcedureColumnException>("casting a result set to the wrong item type should fail");
+                results.Should().BeNull("casting a result set to the wrong item type should fail");
             }
 
             [TestMethod]
@@ -305,6 +299,36 @@ namespace CodeOnlyTests.Dynamic
                   .WithMessage("You can not use a string as a Table-Valued Parameter, since you really need to use a class with properties.",
                                "because the message should be helpful");
             }
+
+            [TestMethod]
+            public void CanPassNullParameter()
+            {
+                var ctx = CreatePeople(parms =>
+                {
+                    var parm = ((IDbDataParameter)parms[0]);
+                    parm.ParameterName.Should().Be("id", "it is the name passed in the stored procedure");
+                    parm.Direction.Should().Be(ParameterDirection.Input, "because the parameter is an input parameter");
+                    parm.Value.Should().Be(DBNull.Value, "because null was passed");
+                });
+
+                dynamic toTest = new DynamicStoredProcedure(ctx, transformers, CancellationToken.None, TEST_TIMEOUT, DynamicExecutionMode.Synchronous);
+                toTest.usp_GetPeople(id: default(int?));
+            }
+
+            [TestMethod]
+            public void CanPassDBNullParameter()
+            {
+                var ctx = CreatePeople(parms =>
+                {
+                    var parm = ((IDbDataParameter)parms[0]);
+                    parm.ParameterName.Should().Be("id", "it is the name passed in the stored procedure");
+                    parm.Direction.Should().Be(ParameterDirection.Input, "because the parameter is an input parameter");
+                    parm.Value.Should().Be(DBNull.Value, "because DBNull was passed");
+                });
+
+                dynamic toTest = new DynamicStoredProcedure(ctx, transformers, CancellationToken.None, TEST_TIMEOUT, DynamicExecutionMode.Synchronous);
+                toTest.usp_GetPeople(id: DBNull.Value);
+            }
         }
 
         [TestClass]
@@ -325,8 +349,7 @@ namespace CodeOnlyTests.Dynamic
                 var toTest = new DynamicStoredProcedure(ctx, transformers, CancellationToken.None, TEST_TIMEOUT, DynamicExecutionMode.Asynchronous);
 
                 var result = GetPeople(toTest).Result;
-
-                Assert.AreEqual("Foo", result.Single().FirstName);
+                result.Single().FirstName.Should().Be("Foo");
             }
 
             [TestMethod]

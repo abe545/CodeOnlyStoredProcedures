@@ -85,8 +85,16 @@ namespace CodeOnlyStoredProcedure.Dynamic
                 var argument  = getArgumentInfo(binder, i + 1);
                 var direction = getParameterDirection(argument);
                 var parmName  = getParameterName(argument);
-                var idx       = i;  // store the value, otherwise when it is lifted to lambdas, i will be the binder.CallInfo.ArgumentCount
-                var argType   = args[idx].GetType();
+                var arg       = args[i];
+
+                if (arg == null || arg == DBNull.Value)
+                {
+                    parameters.Add(new InputParameter(parmName, DBNull.Value));
+                    continue;
+                }
+
+                var idx     = i;  // store the value, otherwise when it is lifted to lambdas, i will be the binder.CallInfo.ArgumentCount
+                var argType = arg.GetType();
 
                 if (argType.IsEnumeratedType())
                 {
@@ -97,19 +105,19 @@ namespace CodeOnlyStoredProcedure.Dynamic
                                            .FirstOrDefault();
 
                     if (attr == null)
-                        parameters.Add(itemType.CreateTableValuedParameter(parmName, args[idx]));
+                        parameters.Add(itemType.CreateTableValuedParameter(parmName, arg));
                     else
                     {
                         parameters.Add(
                             new TableValuedParameter(attr.Name ?? parmName,
-                                                     (IEnumerable)args[idx],
+                                                     (IEnumerable)arg,
                                                      itemType,
                                                      attr.TableName,
                                                      attr.Schema));
                     }
                 }
                 else if (argType.IsClass && argType != typeof(string))
-                    parameters.AddRange(argType.GetParameters(args[idx]));
+                    parameters.AddRange(argType.GetParameters(arg));
                 else if (direction == ParameterDirection.Output)
                 {
                     VerifySynchronousExecutionMode(executionMode);
@@ -123,10 +131,10 @@ namespace CodeOnlyStoredProcedure.Dynamic
                 {
                     VerifySynchronousExecutionMode(executionMode);
 
-                    parameters.Add(new InputOutputParameter(parmName, o => args[idx] = o, args[idx], argType.InferDbType()));
+                    parameters.Add(new InputOutputParameter(parmName, o => args[idx] = o, arg, argType.InferDbType()));
                 }
                 else
-                    parameters.Add(new InputParameter(parmName, args[idx], argType.InferDbType()));
+                    parameters.Add(new InputParameter(parmName, arg, argType.InferDbType()));
             }
 
             result = new DynamicStoredProcedureResults(
