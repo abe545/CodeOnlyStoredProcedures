@@ -1,4 +1,4 @@
-version: 2.2.1.{build}
+version: 2.2.2.{build}
 skip_tags: false
 
 branches:
@@ -7,8 +7,8 @@ branches:
     - gh-pages
 
 environment:
-  releaseVersion: 2.2.1
-  packageVersion: 2.2.1
+  releaseVersion: 2.2.2
+  packageVersion: 2.2.2-pre
 
 assembly_info:
   patch: true
