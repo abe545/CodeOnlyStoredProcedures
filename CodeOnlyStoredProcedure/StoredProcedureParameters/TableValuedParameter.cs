@@ -69,7 +69,7 @@ namespace CodeOnlyStoredProcedure
 
             var recordList = new List<SqlDataRecord>();
             var columnList = new List<SqlMetaData>();
-            var props      = enumeratedType.GetMappedProperties().ToList();
+            var props      = enumeratedType.GetMappedProperties(requireReadable: true).ToList();
 
             foreach (var pi in props)
             {
