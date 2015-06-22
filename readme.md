@@ -27,6 +27,14 @@ They will return a tuple:
 Tuple<IEnumerable<Person>, IEnumerable<Family>> results = db.Execute().usp_GetFamilies();
 ```
 
+Or, if you want to use the fluent syntax:
+
+```cs
+var results = StoredProcedure.Create("usp_GetFamilies")
+    .WithResults<Person, Family>()
+    .Execute(connection);
+```
+
 #### But, they are hierarchical...
 The library will try to build the hierarchies for you, by following these rules
 
