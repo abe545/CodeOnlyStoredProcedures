@@ -23,7 +23,11 @@ namespace CodeOnlyStoredProcedure.RowFactory
         protected static MethodInfo CanTransform   { get { return canTransform.Value; } }
         protected static MethodInfo Transform      { get { return transform   .Value; } }
 
-        public abstract Expression CreateExpressionToGetValueFromReader(IDataReader reader, IEnumerable<IDataTransformer> xFormers, Type dbColumnType);
+        public abstract Expression CreateExpressionToGetValueFromReader(
+            IDataReader reader, 
+            IEnumerable<IDataTransformer> xFormers, 
+            Type dbColumnType,
+            CodeSteppingInfo codeSteppingInfo = null);
 
         protected static bool IsNullable(Type type)
         {
@@ -95,7 +99,12 @@ namespace CodeOnlyStoredProcedure.RowFactory
             return false;
         }
         
-        private static Expression AddTransformers(ParameterExpression val, DataTransformerAttributeBase[] xfAttrs, Type targetType, bool isNullable)
+        private static Expression AddTransformers(
+            ParameterExpression            val,
+            DataTransformerAttributeBase[] xfAttrs,
+            Type                           targetType,
+            bool                           isNullable,
+            CodeSteppingInfo               codeSteppingInfo = null)
         {
             Contract.Requires(val        != null);
             Contract.Requires(xfAttrs    != null && xfAttrs.Length > 0);
@@ -105,10 +114,12 @@ namespace CodeOnlyStoredProcedure.RowFactory
             var arg1  = Expression.Constant(targetType);
             var arg2  = Expression.Constant(isNullable);
 
-            for (int i = 0; i < xfAttrs.Length; i++)
+            if (codeSteppingInfo != null)
+                exprs.AddRange(codeSteppingInfo.AddTransformers(xfAttrs, attrTransform.Value, val, arg1, arg2));
+            else
             {
-                // val = xfAttrs[i].Transform(val, targetType, isNullable);
-                exprs.Add(Expression.Assign(val, Expression.Call(Expression.Constant(xfAttrs[i]), attrTransform.Value, val, arg1, arg2)));
+                for (int i = 0; i < xfAttrs.Length; i++)
+                    exprs.Add(Expression.Assign(val, Expression.Call(Expression.Constant(xfAttrs[i]), attrTransform.Value, val, arg1, arg2)));
             }
 
             if (exprs.Count == 1)
@@ -123,7 +134,8 @@ namespace CodeOnlyStoredProcedure.RowFactory
             ParameterExpression value,
             PropertyInfo        propertyInfo,
             string              columnName,
-            out string          exBody)
+            out string          exBody,
+            CodeSteppingInfo    codeSteppingInfo = null)
         {
             Contract.Requires(dbReader != null);
             Contract.Requires(index    != null);
@@ -131,7 +143,12 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
             var exps = new List<Expression>();
 
-            // value = dbReader.IsDBNull(index) ? null : dbReader.GetValue(index);
+            if (codeSteppingInfo != null)
+            {
+                exps.Add(codeSteppingInfo.MarkLine(
+                    string.Format("object {0} = dbReader.IsDBNull({1}) ? null : dbReader.GetValue({1});", value.Name, GetIndexName(index))));
+            }
+
             exps.Add(
                 Expression.Assign(
                     value,
@@ -159,7 +176,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
                     var type = propertyInfo.PropertyType;
                     var isNullable = GetUnderlyingNullableType(ref type);
-                    exps.Add(AddTransformers(value, xformers, type, isNullable));
+                    exps.Add(AddTransformers(value, xformers, type, isNullable, codeSteppingInfo));
                 }
             }
             else
@@ -168,7 +185,13 @@ namespace CodeOnlyStoredProcedure.RowFactory
             return Expression.Block(exps);
         }
 
-        protected static Expression CreateUnboxingExpression(Type type, bool isNullable, ParameterExpression value, List<Expression> exprs, string notNullableNullValueMessage)
+        protected static Expression CreateUnboxingExpression(
+            Type                type, 
+            bool                isNullable, 
+            ParameterExpression value, 
+            List<Expression>    exprs, 
+            string              notNullableNullValueMessage,
+            CodeSteppingInfo    codeSteppingInfo = null)
         {
             Contract.Requires(type  != null);
             Contract.Requires(value != null);
@@ -176,19 +199,38 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
             if (!isNullable)
             {
-                // if (value == null)
-                //     throw new NoNullAllowedException("Expected result of type " + typeof(T) + " for single column result set.");
-                exprs.Add(
-                    Expression.IfThen(
-                        Expression.ReferenceEqual(value, Expression.Constant(null, typeof(object))),
-                        Expression.Throw(
-                            Expression.New(
-                                typeof(NoNullAllowedException).GetConstructor(new[] { typeof(string) }),
-                                Expression.Constant(notNullableNullValueMessage)
+                if (codeSteppingInfo != null)
+                {
+                    exprs.Add(codeSteppingInfo.MarkLine(string.Format("if ({0} == null)", value.Name)));
+                    exprs.Add(
+                        Expression.IfThen(
+                            Expression.ReferenceEqual(value, Expression.Constant(null, typeof(object))),
+                            Expression.Block(
+                                codeSteppingInfo.MarkLine(string.Format("throw new NoNullAllowedException(\"{0}\");", notNullableNullValueMessage), true),
+                                Expression.Throw(
+                                    Expression.New(
+                                        typeof(NoNullAllowedException).GetConstructor(new[] { typeof(string) }),
+                                        Expression.Constant(notNullableNullValueMessage)
+                                    )
+                                )
                             )
                         )
-                    )
-                );
+                    );
+                }
+                else
+                {
+                    exprs.Add(
+                        Expression.IfThen(
+                            Expression.ReferenceEqual(value, Expression.Constant(null, typeof(object))),
+                            Expression.Throw(
+                                Expression.New(
+                                    typeof(NoNullAllowedException).GetConstructor(new[] { typeof(string) }),
+                                    Expression.Constant(notNullableNullValueMessage)
+                                )
+                            )
+                        )
+                    );
+                }
             }
 
             // var t = (T)value;
@@ -214,9 +256,10 @@ namespace CodeOnlyStoredProcedure.RowFactory
         protected static void AddTransformers(
             Type                          resultType,
             ParameterExpression           value,
-            Expression                    attributes,
+            ConstantExpression            attributes,
             IEnumerable<IDataTransformer> transformers,
-            List<Expression>              expressions)
+            List<Expression>              expressions,
+            CodeSteppingInfo              codeSteppingInfo = null)
         {
             Contract.Requires(resultType   != null);
             Contract.Requires(value        != null);
@@ -227,22 +270,39 @@ namespace CodeOnlyStoredProcedure.RowFactory
             var isNullable = Expression.Constant(GetUnderlyingNullableType(ref resultType));
             var type       = Expression.Constant(resultType);
 
-            foreach (var xf in transformers)
+            if (codeSteppingInfo != null)
             {
-                expressions.Add(Expression.IfThen(
-                    Expression.IsTrue(Expression.Call(Expression.Constant(xf),
-                                                      CanTransform,
-                                                      value,
-                                                      type,
-                                                      isNullable,
-                                                      attributes)),
-                    Expression.Assign(value, Expression.Call(Expression.Constant(xf),
-                                                             Transform,
-                                                             value,
-                                                             type,
-                                                             isNullable,
-                                                             attributes))
-                ));
+                expressions.AddRange(codeSteppingInfo.AddTransformers(
+                    transformers.ToArray(),
+                    CanTransform,
+                    Transform,
+                    value,
+                    isNullable,
+                    resultType,
+                    (Attribute[])attributes.Value,
+                    ""));
+            }
+            else
+            {
+                foreach (var xf in transformers)
+                {
+                    // if (xf.CanTrasform(value, type, isNullable, attributes))
+                    //     value = xf.Transform(value, type, isNullable, attributes);
+                    expressions.Add(Expression.IfThen(
+                        Expression.IsTrue(Expression.Call(Expression.Constant(xf),
+                                                          CanTransform,
+                                                          value,
+                                                          type,
+                                                          isNullable,
+                                                          attributes)),
+                        Expression.Assign(value, Expression.Call(Expression.Constant(xf),
+                                                                 Transform,
+                                                                 value,
+                                                                 type,
+                                                                 isNullable,
+                                                                 attributes))
+                    ));
+                }
             }
         }
 
@@ -285,7 +345,8 @@ namespace CodeOnlyStoredProcedure.RowFactory
             Expression                                index,
             IEnumerable<DataTransformerAttributeBase> xFormers,
             string                                    errorMessage,
-            Type                                      expectedDbType = null)
+            Type                                      expectedDbType = null,
+            CodeSteppingInfo                          codeSteppingInfo = null)
         {
             Contract.Requires(dbReader != null);
             Contract.Requires(index    != null);
@@ -296,9 +357,8 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
             var converted  = xFormers.OfType<IDataTransformerAttribute<T>>().ToArray();
             var type       = typeof(T);
-            var retVal     = Expression.Variable(type);
+            var retVal     = Expression.Variable(type, "retVal");
             var body       = new List<Expression>();
-            var parms      = new List<ParameterExpression> { retVal };
             var dbType     = type;
             var isNullable = GetUnderlyingNullableType(ref dbType);
             var nonNull    = dbType;
@@ -307,43 +367,95 @@ namespace CodeOnlyStoredProcedure.RowFactory
             var switchSign = StripSignForDatabase(ref dbType);
 
             Expression res;
+            string sourceCode;
 
             if (expectedDbType != null)
             {
-                res = CreateCallExpression(reader, dbReader, index, expectedDbType);
+                res = CreateCallExpression(reader, dbReader, index, expectedDbType, out sourceCode);
                 if (res == null)
                     return null;
 
-                if (type == typeof(bool) || type == typeof(bool?))
+                if (nonNull == typeof(bool))
                 {
+                    if (codeSteppingInfo != null)
+                        sourceCode = string.Format("{0} != 0", sourceCode);
                     res = Expression.NotEqual(res, Zero(expectedDbType));
-                    if (type == typeof(bool?))
+                    if (isNullable)
+                    {
+                        if (codeSteppingInfo != null)
+                            sourceCode = string.Format("(bool?)({0})", sourceCode);
                         res = Expression.Convert(res, type);
+                    }
                 }
-                else
+                else if (expectedDbType != dbType)
+                {
+                    if (codeSteppingInfo != null)
+                        sourceCode = string.Format("({0}){1}", dbType.Name, sourceCode);
                     res = Expression.Convert(res, dbType);
+                }
             }
             else
             {
-                res = CreateCallExpression(reader, dbReader, index, dbType);
+                res = CreateCallExpression(reader, dbReader, index, dbType, out sourceCode);
                 if (res == null)
                     return null;
             }
 
             if (switchSign)
+            {
+                if (codeSteppingInfo != null)
+                    sourceCode = string.Format("({0})({1})", unswitched.Name, sourceCode);
                 res = Expression.Convert(res, unswitched);
+            }
             if (isEnum)
+            {
+                if (codeSteppingInfo != null)
+                    sourceCode = string.Format("({0})({1})", nonNull.Name, sourceCode);
                 res = Expression.Convert(res, nonNull);
+            }
 
             if (!converted.Any())
             {
                 if (isNullable)
                 {
-                    return Expression.Condition(
-                            Expression.Call(dbReader, IsDbNullMethod, index),
-                            Expression.Constant(default(T), type),
-                            Expression.Convert(res, type)
+                    var retExpr = Expression.Condition(
+                        Expression.Call(dbReader, IsDbNullMethod, index),
+                        Expression.Constant(null, type),
+                        type.IsClass ? res : Expression.Convert(res, type)
+                    );
+                    if (codeSteppingInfo != null)
+                    {
+                        return Expression.Block(type,
+                            codeSteppingInfo.MarkLine(string.Format("return {0}.IsDBNull({1}) ? default({2}?) : ({2}?){3}", 
+                                                        dbReader.Name, GetIndexName(index), nonNull.Name, sourceCode)),
+                            retExpr
                         );
+                    }
+
+                    return retExpr;
+                }
+
+                if (codeSteppingInfo != null)
+                {
+                    return Expression.Block(type,
+                        codeSteppingInfo.MarkLine(string.Format("if ({0}.IsDBNull({1}))", dbReader.Name, GetIndexName(index))),
+                        Expression.IfThen(
+                            Expression.Call(dbReader, IsDbNullMethod, index),
+                            Expression.Block(
+                                codeSteppingInfo.MarkLine("throw new NoNullAllowedException(\"" + errorMessage + "\");", true),
+                                Expression.Throw(
+                                    Expression.New(
+                                        typeof(NoNullAllowedException).GetConstructor(new[] { typeof(string) }),
+                                        Expression.Constant(errorMessage)
+                                    )
+                                )
+                            )
+                        ),
+                        Expression.Block(type,
+                            codeSteppingInfo.MarkLine(string.Format("return {0}", sourceCode)),
+                            res
+                        )
+                    );
                 }
 
                 return Expression.Block(type,
@@ -361,36 +473,88 @@ namespace CodeOnlyStoredProcedure.RowFactory
             }
             else if (isNullable)
             {
-                res = Expression.Condition(
-                            Expression.Call(dbReader, IsDbNullMethod, index),
-                            Expression.Constant(default(T), type),
-                            Expression.Convert(res, type)
-                        );
-                body.Add(Expression.Assign(retVal, res));
+                if (codeSteppingInfo != null)
+                {
+                    body.Add(codeSteppingInfo.MarkLine(string.Format("{0} retVal;", type.Name)));
+                    body.Add(codeSteppingInfo.MarkLine(string.Format("if (dbReader.IsDBNull({0}))", GetIndexName(index))));
+                    body.Add(Expression.IfThenElse(
+                        Expression.Call(dbReader, IsDbNullMethod, index),
+                        Expression.Block(
+                            codeSteppingInfo.MarkLine("retVal = " + default(T) + ";", true),
+                            Expression.Constant(default(T), type)
+                        ),
+                        Expression.Block(
+                            codeSteppingInfo.MarkLine("else"),
+                            codeSteppingInfo.MarkLine(string.Format("retVal = {0}", sourceCode), true),
+                            Expression.Assign(retVal, res)
+                        )
+                    ));
+                }
+                else
+                {
+                    res = Expression.Condition(
+                        Expression.Call(dbReader, IsDbNullMethod, index),
+                        Expression.Constant(default(T), type),
+                        Expression.Convert(res, type)
+                    );
+                    body.Add(Expression.Assign(retVal, res));
+                }
             }
             else
             {
-                body.Add(
-                    Expression.IfThenElse(
+                if (codeSteppingInfo != null)
+                {
+                    body.Add(codeSteppingInfo.MarkLine(string.Format("{0} retVal;", type.Name)));
+                    body.Add(codeSteppingInfo.MarkLine(string.Format("if (dbReader.IsDBNull({0}))", GetIndexName(index))));
+                    body.Add(Expression.IfThenElse(
                         Expression.Call(dbReader, IsDbNullMethod, index),
-                        Expression.Throw(
-                            Expression.New(
-                                typeof(NoNullAllowedException).GetConstructor(new[] { typeof(string) }),
-                                Expression.Constant(errorMessage)
+                        Expression.Block(
+                            codeSteppingInfo.MarkLine("throw new NoNullAllowedException(\"" + errorMessage + "\");", true),
+                            Expression.Throw(
+                                Expression.New(
+                                    typeof(NoNullAllowedException).GetConstructor(new[] { typeof(string) }),
+                                    Expression.Constant(errorMessage)
+                                )
                             )
                         ),
-                        Expression.Assign(retVal, res)
-                    )
-                );
+                        Expression.Block(
+                            codeSteppingInfo.MarkLine("else"),
+                            codeSteppingInfo.MarkLine(string.Format("retVal = {0}", sourceCode), true),
+                            Expression.Assign(retVal, res)
+                        )
+                    ));
+                }
+                else
+                {
+                    body.Add(
+                        Expression.IfThenElse(
+                            Expression.Call(dbReader, IsDbNullMethod, index),
+                            Expression.Throw(
+                                Expression.New(
+                                    typeof(NoNullAllowedException).GetConstructor(new[] { typeof(string) }),
+                                    Expression.Constant(errorMessage)
+                                )
+                            ),
+                            Expression.Assign(retVal, res)
+                        )
+                    );
+                }
             }
 
             var method = DataTransformerCache<T>.attrTransform;
-            foreach (var xf in converted)
-                body.Add(Expression.Assign(retVal, Expression.Call(Expression.Constant(xf), method, retVal)));
+            if (codeSteppingInfo != null)
+                body.AddRange(codeSteppingInfo.AddTransformers(converted, method, retVal, "typedAttributeTransformers"));
+            else
+            {
+                foreach (var xf in converted)
+                    body.Add(Expression.Assign(retVal, Expression.Call(Expression.Constant(xf), method, retVal)));
+            }
 
+            if (codeSteppingInfo != null)
+                body.Add(codeSteppingInfo.MarkLine(string.Format("return {0};", retVal.Name)));
             body.Add(retVal);
 
-            return Expression.Block(type, parms, body);
+            return Expression.Block(type, new[] { retVal }, body);
         }
 
         protected static Expression Zero(Type dbType, bool isNullable = false)
@@ -431,12 +595,18 @@ namespace CodeOnlyStoredProcedure.RowFactory
                 expr = Expression.Call(Expression.Constant(x), DataTransformerCache<T>.transform, expr, attributeExpression);
         }
 
-        protected static Expression CreateCallExpression(IDataReader reader, Expression dbReader, Expression index, Type type)
+        protected static Expression CreateCallExpression(
+            IDataReader         reader, 
+            ParameterExpression dbReader, 
+            Expression          index, 
+            Type                type,
+            out string          sourceCode)
         {
             Contract.Requires(reader   != null);
             Contract.Requires(dbReader != null);
             Contract.Requires(index    != null);
             Contract.Requires(type     != null);
+            Contract.Ensures(Contract.Result<Expression>() == null ^ Contract.ValueAtReturn(out sourceCode) != null);
 
             var typeCode = Type.GetTypeCode(type);
             var args     = new[] { typeof(int) };
@@ -452,9 +622,11 @@ namespace CodeOnlyStoredProcedure.RowFactory
                 case TypeCode.Int16:
                 case TypeCode.Int32:
                 case TypeCode.Int64:
-                case TypeCode.String: 
+                case TypeCode.String:
+                    sourceCode = string.Format("{0}.Get{1}({2});", dbReader.Name, typeCode, GetIndexName(index));
                     return Expression.Call(dbReader, typeof(IDataRecord).GetMethod("Get" + typeCode, args), index);
                 case TypeCode.Single:
+                    sourceCode = string.Format("{0}.GetFloat({1});", dbReader.Name, GetIndexName(index));
                     return Expression.Call(dbReader, typeof(IDataRecord).GetMethod("GetFloat", args), index);
                 default:
                     // these can be supported by the data reader, but they don't exist
@@ -462,10 +634,26 @@ namespace CodeOnlyStoredProcedure.RowFactory
                     var foundMethod = reader.GetType().GetMethod("Get" + type.Name, args);
 
                     if (foundMethod != null)
+                    {
+                        sourceCode = string.Format("{0}.{1}({2});", dbReader.Name, foundMethod.Name, GetIndexName(index));
                         return Expression.Call(Expression.Convert(dbReader, reader.GetType()), foundMethod, index);
+                    }
                     else
+                    {
+                        sourceCode = null;
                         return null;
+                    }
             }
+        }
+
+        private static string GetIndexName(Expression indexExpression)
+        {
+            if (indexExpression is ConstantExpression)
+                return ((ConstantExpression)indexExpression).Value.ToString();
+            else if (indexExpression is ParameterExpression)
+                return ((ParameterExpression)indexExpression).Name;
+
+            throw new NotSupportedException("Can not extract a name for the index expression of type " + indexExpression.GetType());
         }
 
         private static class DataTransformerCache<T>
@@ -478,7 +666,11 @@ namespace CodeOnlyStoredProcedure.RowFactory
     [ContractClassFor(typeof(AccessorFactoryBase))]
     abstract class AccessorFactoryBaseContract : AccessorFactoryBase
     {
-        public override Expression CreateExpressionToGetValueFromReader(IDataReader reader, IEnumerable<IDataTransformer> xFormers, Type dbColumnType)
+        public override Expression CreateExpressionToGetValueFromReader(
+            IDataReader reader,
+            IEnumerable<IDataTransformer> xFormers,
+            Type dbColumnType,
+            CodeSteppingInfo codeSteppingInfo = null)
         {
             Contract.Requires(reader                        != null);
             Contract.Requires(xFormers                      != null && Contract.ForAll(xFormers, x => x != null));

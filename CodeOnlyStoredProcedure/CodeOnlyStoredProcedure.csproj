@@ -109,6 +109,15 @@
     <CodeContractsReferenceAssembly>Build</CodeContractsReferenceAssembly>
     <CodeContractsAnalysisWarningLevel>0</CodeContractsAnalysisWarningLevel>
     <DocumentationFile>Bin\Release\CodeOnlyStoredProcedure.XML</DocumentationFile>
+    <CodeContractsAssertsToContractsCheckBox>True</CodeContractsAssertsToContractsCheckBox>
+    <CodeContractsRedundantTests>True</CodeContractsRedundantTests>
+    <CodeContractsMissingPublicEnsuresAsWarnings>False</CodeContractsMissingPublicEnsuresAsWarnings>
+    <CodeContractsInferEnsuresAutoProperties>True</CodeContractsInferEnsuresAutoProperties>
+    <CodeContractsSuggestAssumptionsForCallees>False</CodeContractsSuggestAssumptionsForCallees>
+    <CodeContractsNecessaryEnsures>True</CodeContractsNecessaryEnsures>
+    <CodeContractsSuggestReadonly>True</CodeContractsSuggestReadonly>
+    <CodeContractsSkipAnalysisIfCannotConnectToCache>False</CodeContractsSkipAnalysisIfCannotConnectToCache>
+    <CodeContractsBeingOptimisticOnExternal>True</CodeContractsBeingOptimisticOnExternal>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.CSharp" />
@@ -137,6 +146,7 @@
     <Compile Include="IDbConnectionExtensions.cs" />
     <Compile Include="OptionalResultAttribute.cs" />
     <Compile Include="RowFactory\AccessorFactoryBase.cs" />
+    <Compile Include="RowFactory\CodeSteppingInfo.cs" />
     <Compile Include="RowFactory\ComplexTypeRowFactory.cs" />
     <Compile Include="RowFactory\EnumAccessorFactory.cs" />
     <Compile Include="RowFactory\EnumRowFactory.cs" />

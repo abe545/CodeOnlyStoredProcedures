@@ -17,10 +17,12 @@ namespace CodeOnlyStoredProcedure.RowFactory
                readonly ParameterExpression                       dataReaderExpression;
                readonly Expression                                indexExpression;
                readonly Expression                                boxedExpression;
-               readonly Expression                                attributeExpression;
+               readonly ConstantExpression                        attributeExpression;
                readonly string                                    errorMessage;
                readonly string                                    propertyName;
                readonly bool                                      convertNumeric = GlobalSettings.Instance.ConvertAllNumericValues;
+               readonly PropertyInfo                              propertyInfo;
+               readonly string                                    columnName;
                         bool                                      isFirstExecution = true;
                         Expression                                unboxedExpression;
 
@@ -31,6 +33,8 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
             this.dataReaderExpression = dataReaderExpression;
             this.indexExpression      = index;
+            this.propertyInfo         = propertyInfo;
+            this.columnName           = columnName;
             
             boxedExpression = CreateBoxedRetrieval(dataReaderExpression,
                                                    index,
@@ -58,7 +62,11 @@ namespace CodeOnlyStoredProcedure.RowFactory
             }
         }
 
-        public override Expression CreateExpressionToGetValueFromReader(IDataReader reader, IEnumerable<IDataTransformer> xFormers, Type dbColumnType)
+        public override Expression CreateExpressionToGetValueFromReader(
+            IDataReader                   reader,
+            IEnumerable<IDataTransformer> xFormers, 
+            Type                          dbColumnType,
+            CodeSteppingInfo              codeSteppingInfo = null)
         {
             if (isFirstExecution)
             {
@@ -72,31 +80,72 @@ namespace CodeOnlyStoredProcedure.RowFactory
             var        isNullable   = GetUnderlyingNullableType(ref expectedType);
             StripSignForDatabase(ref expectedType);
 
+            if (codeSteppingInfo != null)
+                codeSteppingInfo.StartParseMethod(dataReaderExpression.Name);
+
             if (unboxedExpression != null && xFormers.All(IsTypedTransformer))
             {
-                body = CreateTypedRetrieval<T>(reader,
-                                               dataReaderExpression,
-                                               indexExpression,
-                                               unboxedExpression,
-                                               transformers,
-                                               propertyName,
-                                               errorMessage,
-                                               dbColumnType,
-                                               expectedType,
-                                               convertNumeric);
+                if (codeSteppingInfo != null)
+                {
+                    if (dbColumnType != expectedType)
+                    {
+                        if (!convertNumeric)
+                            throw new StoredProcedureColumnException(typeof(T), dbColumnType, propertyName);
+                    }
 
-                AddTypedTransformers<T>(xFormers, attributeExpression, ref body);
+                    body = CreateUnboxedRetrieval<T>(reader, 
+                                                     dataReaderExpression,
+                                                     indexExpression,
+                                                     transformers,
+                                                     errorMessage,
+                                                     dbColumnType,
+                                                     codeSteppingInfo);
+
+                    body = codeSteppingInfo.AddTransformers(
+                        xFormers.OfType<IDataTransformer<T>>().ToArray(), 
+                        (Attribute[])attributeExpression.Value, 
+                        body, 
+                        "");
+                }
+                else
+                {
+                    body = CreateTypedRetrieval<T>(reader,
+                                                   dataReaderExpression,
+                                                   indexExpression,
+                                                   unboxedExpression,
+                                                   transformers,
+                                                   propertyName,
+                                                   errorMessage,
+                                                   dbColumnType,
+                                                   expectedType,
+                                                   convertNumeric);
+                    
+                    AddTypedTransformers<T>(xFormers, attributeExpression, ref body);
+                }
+
             }
             else if (unboxedExpression == null || xFormers.Any())
             {
                 var exprs = new List<Expression>();
 
-                exprs.Add(boxedExpression);
+                if (codeSteppingInfo != null)
+                {
+                    string err;
+                    exprs.Add(CreateBoxedRetrieval(dataReaderExpression,
+                                                   indexExpression,
+                                                   boxedValueExpression,
+                                                   propertyInfo,
+                                                   columnName,
+                                                   out err,
+                                                   codeSteppingInfo));
+                }
+                else
+                    exprs.Add(boxedExpression);
 
                 if (xFormers.Any())
-                    AddTransformers(type, boxedValueExpression, attributeExpression, xFormers, exprs);
+                    AddTransformers(type, boxedValueExpression, attributeExpression, xFormers, exprs, codeSteppingInfo);
 
-                var res = CreateUnboxingExpression(dbColumnType, isNullable, boxedValueExpression, exprs, errorMessage);
+                var res = CreateUnboxingExpression(dbColumnType, isNullable, boxedValueExpression, exprs, errorMessage, codeSteppingInfo);
 
                 if (dbColumnType != expectedType)
                 {
@@ -124,6 +173,8 @@ namespace CodeOnlyStoredProcedure.RowFactory
                 else if (isNullable)
                     res = Expression.Convert(res, type);
 
+                if (codeSteppingInfo != null)
+                    exprs.Add(codeSteppingInfo.MarkLine(string.Format("return {0};", boxedValueExpression.Name)));
                 exprs.Add(res);
 
                 body = Expression.Block(type, new[] { boxedValueExpression }, exprs);

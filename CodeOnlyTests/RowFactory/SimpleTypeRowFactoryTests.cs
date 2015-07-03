@@ -23,6 +23,13 @@ namespace CodeOnlyTests.RowFactory
         [TestClass]
         public class ParseRows
         {
+            protected virtual IDisposable CreateTestInstance()
+            {
+                var instance = GlobalSettings.UseTestInstance();
+                GlobalSettings.Instance.GenerateDebugSymbols = true;
+                return instance;
+            }
+
             [TestMethod]
             public void ParsesSingleInteger()
             {
@@ -33,12 +40,15 @@ namespace CodeOnlyTests.RowFactory
                    .Returns(true)
                    .Returns(false);
 
-                var toTest = new SimpleTypeRowFactory<int>();
+                using (CreateTestInstance())
+                {
+                    var toTest = new SimpleTypeRowFactory<int>();
 
-                toTest.ParseRows(rdr.Object, Enumerable.Empty<IDataTransformer>(), CancellationToken.None)
-                      .Single().Should().Be(42);
+                    toTest.ParseRows(rdr.Object, Enumerable.Empty<IDataTransformer>(), CancellationToken.None)
+                          .Single().Should().Be(42);
+                }
             }
-            
+
             [TestMethod]
             public void GlobalConvertAll_WillTransformSingleInteger()
             {
@@ -49,7 +59,7 @@ namespace CodeOnlyTests.RowFactory
                    .Returns(true)
                    .Returns(false);
 
-                using (GlobalSettings.UseTestInstance())
+                using (CreateTestInstance())
                 {
                     StoredProcedure.EnableConvertOnAllNumericValues();
                     var toTest = new SimpleTypeRowFactory<double>();
@@ -79,7 +89,7 @@ namespace CodeOnlyTests.RowFactory
                 xf.Setup(x => x.Transform(42.0, typeof(float), false, It.IsAny<IEnumerable<Attribute>>()))
                   .Returns(2f);
 
-                using (GlobalSettings.UseTestInstance())
+                using (CreateTestInstance())
                 {
                     StoredProcedure.EnableConvertOnAllNumericValues();
                     var toTest = new SimpleTypeRowFactory<float>();
@@ -105,10 +115,36 @@ namespace CodeOnlyTests.RowFactory
                 xformer.Setup(x => x.Transform(99, typeof(int), false, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
                        .Returns(42);
 
-                var toTest = new SimpleTypeRowFactory<int>();
+                using (CreateTestInstance())
+                {
+                    var toTest = new SimpleTypeRowFactory<int>();
 
-                toTest.ParseRows(rdr.Object, new[] { xformer.Object }, CancellationToken.None)
-                      .Single().Should().Be(42);
+                    toTest.ParseRows(rdr.Object, new[] { xformer.Object }, CancellationToken.None)
+                          .Single().Should().Be(42);
+                }
+            }
+
+            [TestMethod]
+            public void ParsesThroughTypedDataTransformer()
+            {
+                var rdr = new Mock<IDataReader>();
+                rdr.Setup(r => r.GetFieldType(0)).Returns(typeof(int));
+                rdr.Setup(r => r.GetInt32(0)).Returns(99);
+                rdr.SetupSequence(r => r.Read())
+                   .Returns(true)
+                   .Returns(false);
+
+                var xformer = new Mock<IDataTransformer<int>>();
+                xformer.Setup(x => x.Transform(99, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
+                       .Returns(42);
+
+                using (CreateTestInstance())
+                {
+                    var toTest = new SimpleTypeRowFactory<int>();
+
+                    toTest.ParseRows(rdr.Object, new[] { xformer.Object }, CancellationToken.None)
+                          .Single().Should().Be(42);
+                }
             }
 
             [TestMethod]
@@ -127,7 +163,7 @@ namespace CodeOnlyTests.RowFactory
                 xformer.Setup(x => x.Transform(99, typeof(int), false, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
                        .Returns(42);
 
-                using (GlobalSettings.UseTestInstance())
+                using (CreateTestInstance())
                 {
                     StoredProcedure.AddGlobalTransformer(xformer.Object);
                     var toTest = new SimpleTypeRowFactory<int>();
@@ -147,10 +183,13 @@ namespace CodeOnlyTests.RowFactory
                    .Returns(true)
                    .Returns(false);
 
-                var toTest = RowFactory<double?>.Create();
+                using (CreateTestInstance())
+                {
+                    var toTest = RowFactory<double?>.Create();
 
-                toTest.ParseRows(rdr.Object, Enumerable.Empty<IDataTransformer>(), CancellationToken.None)
-                      .Single().Should().Be(default(Nullable<double>));
+                    toTest.ParseRows(rdr.Object, Enumerable.Empty<IDataTransformer>(), CancellationToken.None)
+                          .Single().Should().Be(default(Nullable<double>));
+                }
             }
 
             [TestMethod]
@@ -171,10 +210,13 @@ namespace CodeOnlyTests.RowFactory
                    .Returns("Foo")
                    .Returns("Bar");
 
-                var toTest = new SimpleTypeRowFactory<string>();
+                using (CreateTestInstance())
+                {
+                    var toTest = new SimpleTypeRowFactory<string>();
 
-                toTest.ParseRows(rdr.Object, Enumerable.Empty<IDataTransformer>(), CancellationToken.None)
-                      .Should().ContainInOrder("Foo", null, "Bar");
+                    toTest.ParseRows(rdr.Object, Enumerable.Empty<IDataTransformer>(), CancellationToken.None)
+                          .Should().ContainInOrder("Foo", null, "Bar");
+                }
             }
 
             [TestMethod]
@@ -192,11 +234,25 @@ namespace CodeOnlyTests.RowFactory
                 reader.Setup(r => r.GetFieldType(0)).Returns(typeof(Decimal));
                 reader.Setup(r => r.GetDecimal(0))  .Returns(42M);
 
-                var toTest = new SimpleTypeRowFactory<int>();
+                using (CreateTestInstance())
+                {
+                    var toTest = new SimpleTypeRowFactory<int>();
 
-                toTest.Invoking(f => f.ParseRows(reader.Object, new IDataTransformer[0], CancellationToken.None))
-                      .ShouldThrow<StoredProcedureColumnException>()
-                      .WithMessage("Error setting [Int32] result. Stored Procedure returns [Decimal].");
+                    toTest.Invoking(f => f.ParseRows(reader.Object, new IDataTransformer[0], CancellationToken.None))
+                          .ShouldThrow<StoredProcedureColumnException>()
+                          .WithMessage("Error setting [Int32] result. Stored Procedure returns [Decimal].");
+                }
+            }
+        }
+        
+        [TestClass]
+        public class ParseRowsWithDebugGeneration : ParseRows
+        {
+            protected override IDisposable CreateTestInstance()
+            {
+                var instance = GlobalSettings.UseTestInstance();
+                GlobalSettings.Instance.GenerateDebugSymbols = true;
+                return instance;
             }
         }
 
@@ -204,6 +260,11 @@ namespace CodeOnlyTests.RowFactory
         [TestClass]
         public class ParseRowsAsync
         {
+            protected virtual IDisposable CreateTestInstance()
+            {
+                return GlobalSettings.UseTestInstance();
+            }
+
             [TestMethod]
             public async Task ParsesSingleInteger()
             {
@@ -214,10 +275,13 @@ namespace CodeOnlyTests.RowFactory
                    .ReturnsAsync(true)
                    .ReturnsAsync(false);
 
-                var toTest = new SimpleTypeRowFactory<int>();
+                using (CreateTestInstance())
+                {
+                    var toTest = new SimpleTypeRowFactory<int>();
 
-                var res = await toTest.ParseRowsAsync(rdr.Object, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
-                res.Single().Should().Be(42);
+                    var res = await toTest.ParseRowsAsync(rdr.Object, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
+                    res.Single().Should().Be(42);
+                }
             }
 
             [TestMethod]
@@ -236,10 +300,13 @@ namespace CodeOnlyTests.RowFactory
                 xformer.Setup(x => x.Transform(99, typeof(int), false, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
                        .Returns(42);
 
-                var toTest = new SimpleTypeRowFactory<int>();
+                using (CreateTestInstance())
+                {
+                    var toTest = new SimpleTypeRowFactory<int>();
 
-                var res = await toTest.ParseRowsAsync(rdr.Object, new[] { xformer.Object }, CancellationToken.None);
-                res.Single().Should().Be(42);
+                    var res = await toTest.ParseRowsAsync(rdr.Object, new[] { xformer.Object }, CancellationToken.None);
+                    res.Single().Should().Be(42);
+                }
             }
 
             [TestMethod]
@@ -258,7 +325,7 @@ namespace CodeOnlyTests.RowFactory
                 xformer.Setup(x => x.Transform(99, typeof(int), false, It.Is<IEnumerable<Attribute>>(attrs => attrs != null)))
                        .Returns(42);
 
-                using (GlobalSettings.UseTestInstance())
+                using (CreateTestInstance())
                 {
                     StoredProcedure.AddGlobalTransformer(xformer.Object);
                     var toTest = new SimpleTypeRowFactory<int>();
@@ -278,10 +345,18 @@ namespace CodeOnlyTests.RowFactory
                    .ReturnsAsync(true)
                    .ReturnsAsync(false);
 
-                var toTest = RowFactory<double?>.Create(); 
+                using (CreateTestInstance())
+                {
+                    var toTest = RowFactory<double?>.Create();
 
-                var res = await toTest.ParseRowsAsync(rdr.Object, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
-                res.Single().Should().Be(default(Nullable<double>));
+                    var res = await toTest.ParseRowsAsync(rdr.Object, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
+
+                    rdr.Verify(r => r.IsDBNull(0), Times.Once());
+                    rdr.Verify(r => r.GetInt32(It.IsAny<int>()), Times.Never());
+                    rdr.Verify(r => r.GetDouble(It.IsAny<int>()), Times.Never());
+
+                    res.Single().Should().Be(default(Nullable<double>));
+                }
             }
 
             [TestMethod]
@@ -300,12 +375,27 @@ namespace CodeOnlyTests.RowFactory
                    .ReturnsAsync(false);
                 rdr.SetupSequence(r => r.GetString(0))
                    .Returns("Foo")
-                   .Returns("Bar");
+                   .Returns("Bar")
+                   .Returns("Baz");
 
-                var toTest = new SimpleTypeRowFactory<string>();
+                using (CreateTestInstance())
+                {
+                    var toTest = new SimpleTypeRowFactory<string>();
 
-                var res = await toTest.ParseRowsAsync(rdr.Object, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
-                res.Should().ContainInOrder("Foo", null, "Bar");
+                    var res = await toTest.ParseRowsAsync(rdr.Object, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
+                    res.Should().ContainInOrder("Foo", null, "Bar");
+                }
+            }
+        }
+
+        [TestClass]
+        public class ParseRowsAsyncWithDebugGeneration : ParseRowsAsync
+        {
+            protected override IDisposable CreateTestInstance()
+            {
+                var instance = GlobalSettings.UseTestInstance();
+                GlobalSettings.Instance.GenerateDebugSymbols = true;
+                return instance;
             }
         }
 #endif

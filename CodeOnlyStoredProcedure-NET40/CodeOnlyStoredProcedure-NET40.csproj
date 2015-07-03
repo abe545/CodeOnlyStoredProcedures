@@ -111,6 +111,15 @@
     <CodeContractsReferenceAssembly>Build</CodeContractsReferenceAssembly>
     <CodeContractsAnalysisWarningLevel>0</CodeContractsAnalysisWarningLevel>
     <DocumentationFile>Bin\Release\CodeOnlyStoredProcedure.XML</DocumentationFile>
+    <CodeContractsAssertsToContractsCheckBox>True</CodeContractsAssertsToContractsCheckBox>
+    <CodeContractsRedundantTests>True</CodeContractsRedundantTests>
+    <CodeContractsMissingPublicEnsuresAsWarnings>False</CodeContractsMissingPublicEnsuresAsWarnings>
+    <CodeContractsInferEnsuresAutoProperties>True</CodeContractsInferEnsuresAutoProperties>
+    <CodeContractsSuggestAssumptionsForCallees>False</CodeContractsSuggestAssumptionsForCallees>
+    <CodeContractsNecessaryEnsures>True</CodeContractsNecessaryEnsures>
+    <CodeContractsSuggestReadonly>True</CodeContractsSuggestReadonly>
+    <CodeContractsSkipAnalysisIfCannotConnectToCache>False</CodeContractsSkipAnalysisIfCannotConnectToCache>
+    <CodeContractsBeingOptimisticOnExternal>True</CodeContractsBeingOptimisticOnExternal>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
@@ -199,6 +208,9 @@
     </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\AccessorFactoryBase.cs">
       <Link>RowFactory\AccessorFactoryBase.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\CodeSteppingInfo.cs">
+      <Link>RowFactory\CodeSteppingInfo.cs</Link>
     </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\ComplexTypeRowFactory.cs">
       <Link>RowFactory\ComplexTypeRowFactory.cs</Link>

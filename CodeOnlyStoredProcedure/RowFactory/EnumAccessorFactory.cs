@@ -23,7 +23,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
                readonly ParameterExpression                       dataReaderExpression;
                readonly Expression                                indexExpression;
                readonly Expression                                boxedExpression;
-               readonly Expression                                attributeExpression;
+               readonly ConstantExpression                        attributeExpression;
                readonly string                                    errorMessage;
                readonly string                                    propertyName;
                readonly bool                                      convertNumeric = GlobalSettings.Instance.ConvertAllNumericValues;
@@ -78,7 +78,11 @@ namespace CodeOnlyStoredProcedure.RowFactory
                                                                      Expression.Constant(errorMessage))));
         }
 
-        public override Expression CreateExpressionToGetValueFromReader(IDataReader reader, IEnumerable<IDataTransformer> xFormers, Type dbColumnType)
+        public override Expression CreateExpressionToGetValueFromReader(
+            IDataReader reader, 
+            IEnumerable<IDataTransformer> xFormers,
+            Type dbColumnType,
+            CodeSteppingInfo codeSteppingInfo = null)
         {
             if (isFirstExecution)
             {

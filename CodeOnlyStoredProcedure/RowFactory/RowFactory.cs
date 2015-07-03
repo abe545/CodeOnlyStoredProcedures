@@ -3,9 +3,13 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Diagnostics.SymbolStore;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
+using System.Reflection.Emit;
 using System.Threading;
 using System.Threading.Tasks;
 using CodeOnlyStoredProcedure.RowFactory;
@@ -15,7 +19,7 @@ namespace CodeOnlyStoredProcedure
     [ContractClass(typeof(RowFactoryContract<>))]
     internal abstract class RowFactory<T> : IRowFactory<T>
     {
-        protected static readonly ParameterExpression dataReaderExpression = Expression.Parameter(typeof(IDataReader));
+        protected static readonly ParameterExpression dataReaderExpression = Expression.Parameter(typeof(IDataReader), "dbReader");
         private Func<IDataReader, T> parser;
 
         public static IRowFactory<T> Create(bool generateHierarchicals = true)
@@ -117,5 +121,4 @@ namespace CodeOnlyStoredProcedure
             return null;
         }
     }
-
 }

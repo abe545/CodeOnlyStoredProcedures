@@ -13,6 +13,7 @@ namespace CodeOnlyStoredProcedure
         public        ConcurrentDictionary<Type, Type> InterfaceMap            { get; private set; }
         public        bool                             IsTestInstance          { get; private set; }
         public        bool                             ConvertAllNumericValues { get; set; }
+        public        bool                             GenerateDebugSymbols    { get; set; }
 
         private GlobalSettings()
         {
