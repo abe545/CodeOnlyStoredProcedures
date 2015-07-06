@@ -281,10 +281,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
                     e = Expression.Call(null, singleExtension.Value.MakeGenericMethod(retType), e);
                 }
 
-                if (e != null)
-                    return new DynamicMetaObject(e, restrict);
-
-                return base.BindConvert(binder);
+                return new DynamicMetaObject(e, restrict);
             }
         }
     }

@@ -215,6 +215,9 @@
     <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\ComplexTypeRowFactory.cs">
       <Link>RowFactory\ComplexTypeRowFactory.cs</Link>
     </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\DataTransformerCache.cs">
+      <Link>RowFactory\DataTransformerCache.cs</Link>
+    </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\EnumAccessorFactory.cs">
       <Link>RowFactory\EnumAccessorFactory.cs</Link>
     </Compile>

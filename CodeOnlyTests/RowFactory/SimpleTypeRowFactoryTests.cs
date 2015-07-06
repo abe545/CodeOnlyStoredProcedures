@@ -69,6 +69,66 @@ namespace CodeOnlyTests.RowFactory
                 }
             }
 
+            [TestMethod]
+            public void GlobalConvertAll_WillTransformSingleInteger_ToBoolean()
+            {
+                var rdr = new Mock<IDataReader>();
+                rdr.Setup(r => r.GetFieldType(0)).Returns(typeof(int));
+                rdr.Setup(r => r.GetInt32(0)).Returns(42);
+                rdr.SetupSequence(r => r.Read())
+                   .Returns(true)
+                   .Returns(false);
+
+                using (CreateTestInstance())
+                {
+                    StoredProcedure.EnableConvertOnAllNumericValues();
+                    var toTest = new SimpleTypeRowFactory<bool>();
+
+                    toTest.ParseRows(rdr.Object, Enumerable.Empty<IDataTransformer>(), CancellationToken.None)
+                          .Single().Should().BeTrue();
+                }
+            }
+
+            [TestMethod]
+            public void GlobalConvertAll_WillTransformSingleInteger_ToNullableBoolean()
+            {
+                var rdr = new Mock<IDataReader>();
+                rdr.Setup(r => r.GetFieldType(0)).Returns(typeof(int));
+                rdr.Setup(r => r.GetInt32(0)).Returns(0);
+                rdr.SetupSequence(r => r.Read())
+                   .Returns(true)
+                   .Returns(false);
+
+                using (CreateTestInstance())
+                {
+                    StoredProcedure.EnableConvertOnAllNumericValues();
+                    var toTest = new SimpleTypeRowFactory<bool?>();
+
+                    toTest.ParseRows(rdr.Object, Enumerable.Empty<IDataTransformer>(), CancellationToken.None)
+                          .Single().Should().BeFalse();
+                }
+            }
+
+            [TestMethod]
+            public void GlobalConvertAll_WillTransformSingleInteger_ToNullableBoolean_WhenNull()
+            {
+                var rdr = new Mock<IDataReader>();
+                rdr.Setup(r => r.GetFieldType(0)).Returns(typeof(int));
+                rdr.Setup(r => r.IsDBNull(0)).Returns(true);
+                rdr.SetupSequence(r => r.Read())
+                   .Returns(true)
+                   .Returns(false);
+
+                using (CreateTestInstance())
+                {
+                    StoredProcedure.EnableConvertOnAllNumericValues();
+                    var toTest = new SimpleTypeRowFactory<bool?>();
+
+                    toTest.ParseRows(rdr.Object, Enumerable.Empty<IDataTransformer>(), CancellationToken.None)
+                          .Single().Should().NotHaveValue();
+                }
+            }
+
             // This test will fail, but I'm not 100% sure if I want to support this.
             // Should values be converted after going through IDataTransformers? If they should,
             // then I'm going to need a lot more tests to cover all the edge cases.

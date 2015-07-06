@@ -15,7 +15,15 @@ namespace CodeOnlyStoredProcedure.RowFactory
             if (GlobalSettings.Instance.IsTestInstance)
                 a = new EnumAccessorFactory<T>(dataReaderExpression, Expression.Constant(0), null, null);
 
-            return Expression.Lambda<Func<IDataReader, T>>(a.CreateExpressionToGetValueFromReader(reader, xFormers, reader.GetFieldType(0)),
+            if (GlobalSettings.Instance.GenerateDebugSymbols)
+            {
+                var stepInfo = new CodeSteppingInfo(typeof(T));
+                return stepInfo.CompileMethod<T>(a.CreateExpressionToGetValueFromReader(reader, xFormers, reader.GetFieldType(0), stepInfo),
+                                                 dataReaderExpression);
+            }
+
+            var expr =a.CreateExpressionToGetValueFromReader(reader, xFormers, reader.GetFieldType(0));
+            return Expression.Lambda<Func<IDataReader, T>>(expr,
                                                            dataReaderExpression)
                              .Compile();
         }

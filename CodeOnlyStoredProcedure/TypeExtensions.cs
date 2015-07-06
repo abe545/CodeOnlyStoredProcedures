@@ -116,37 +116,12 @@ namespace CodeOnlyStoredProcedure
 
             UnwrapNullable(ref type);
 
-            if (type == typeof(Int32))
-                return DbType.Int32;
-            else if (type == typeof(Double))
-                return DbType.Double;
-            else if (type == typeof(Decimal))
-                return DbType.Decimal;
-            else if (type == typeof(Boolean))
-                return DbType.Boolean;
-            else if (type == typeof(String))
-                return DbType.String;
-            else if (type == typeof(DateTime))
-                return DbType.DateTime;
-            else if (type == typeof(Int64))
-                return DbType.Int64;
-            else if (type == typeof(Int16))
-                return DbType.Int16;
-            else if (type == typeof(Byte))
-                return DbType.Byte;
-            else if (type == typeof(Single))
-                return DbType.Single;
-            else if (type == typeof(Guid))
-                return DbType.Guid;
-            else if (type == typeof(UInt16))
-                return DbType.UInt16;
-            else if (type == typeof(UInt32))
-                return DbType.UInt32;
-            else if (type == typeof(UInt64))
-                return DbType.UInt64;
-            else if (type == typeof(SByte))
-                return DbType.SByte;
-            else if (type == typeof(Char))
+            var name = type.Name;
+            DbType dbType;
+            if (Enum.TryParse(name, out dbType))
+                return dbType;
+
+            if (type == typeof(Char))
                 return DbType.StringFixedLength;
 
             return DbType.Object;
@@ -292,7 +267,13 @@ namespace CodeOnlyStoredProcedure
             return type.GetConstructor(new Type[0]) != null;
         }
         
-        internal static IEnumerable<IStoredProcedureParameter> GetParameters(this Type type, object instance)
+        /// <summary>
+        /// Gets the <see cref="IStoredProcedureParameter"/> representations of all public properties from the object.
+        /// </summary>
+        /// <param name="type">The <see cref="Type"/> of the object being reflected upon.</param>
+        /// <param name="instance">The object to read the properties from.</param>
+        /// <returns>A collection of parameters that can be sent to a stored procedure.</returns>
+        public static IEnumerable<IStoredProcedureParameter> GetParameters(this Type type, object instance)
         {
             Contract.Requires(type     != null);
             Contract.Requires(instance != null);
@@ -331,15 +312,6 @@ namespace CodeOnlyStoredProcedure
             }
         }
 
-        private static void UnwrapNullable(ref Type type)
-        {
-            Contract.Requires(type                             != null);
-            Contract.Ensures (Contract.ValueAtReturn(out type) != null);
-
-            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
-                type = type.GetGenericArguments()[0];
-        }
-
         internal static IStoredProcedureParameter CreateTableValuedParameter(this Type itemType, string parmName, object items)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(parmName));
@@ -352,6 +324,95 @@ namespace CodeOnlyStoredProcedure
                 throw new NotSupportedException("You can not use an anonymous type as a Table-Valued Parameter, since you really need to match the type name with something in the database.");
             
             return new TableValuedParameter(parmName, (IEnumerable)items, itemType, itemType.Name);
+        }
+
+        internal static bool GetUnderlyingNullableType(this Type type, out Type innerType)
+        {
+            Contract.Requires(type != null);
+            Contract.Ensures(Contract.ValueAtReturn(out type) != null);
+
+            innerType = type;
+            if (type.IsClass)
+                return true;
+
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+            {
+                innerType = type.GetGenericArguments().Single();
+                return true;
+            }
+
+            return false;
+        }
+
+        internal static string GetCSharpName(this Type type)
+        {
+            Contract.Requires(type != null);
+            Contract.Ensures(!string.IsNullOrEmpty(Contract.Result<string>()));
+
+            var isNullable = type.GetUnderlyingNullableType(out type);
+
+            string name;
+            switch(Type.GetTypeCode(type))
+            {
+                case TypeCode.Int16:
+                    name = "short";
+                    break;
+
+                case TypeCode.Int32:
+                    name = "int";
+                    break;
+
+                case TypeCode.Int64:
+                    name = "long";
+                    break;
+
+                case TypeCode.UInt16:
+                    name = "ushort";
+                    break;
+
+                case TypeCode.UInt32:
+                    name = "uint";
+                    break;
+
+                case TypeCode.UInt64:
+                    name = "ulong";
+                    break;
+
+                case TypeCode.Boolean:
+                    name = "bool";
+                    break;
+
+                case TypeCode.Single:
+                    name = "float";
+                    break;
+
+                case TypeCode.Byte:
+                case TypeCode.Char:
+                case TypeCode.Decimal:
+                case TypeCode.Double:
+                case TypeCode.SByte:
+                case TypeCode.String:
+                    name = type.Name.ToLower();
+                    break;
+
+                default:
+                    name = type.FullName;
+                    break;
+            }
+
+            if (isNullable && !type.IsClass)
+                return name + "?";
+
+            return name;
+        }
+
+        private static void UnwrapNullable(ref Type type)
+        {
+            Contract.Requires(type                             != null);
+            Contract.Ensures (Contract.ValueAtReturn(out type) != null);
+
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+                type = type.GetGenericArguments()[0];
         }
     }
 }

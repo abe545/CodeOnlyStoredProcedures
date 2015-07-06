@@ -23,7 +23,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
                readonly ParameterExpression                       dataReaderExpression;
                readonly Expression                                indexExpression;
                readonly Expression                                boxedExpression;
-               readonly ConstantExpression                        attributeExpression;
+               readonly Attribute[]                               attributes;
                readonly string                                    errorMessage;
                readonly string                                    propertyName;
                readonly bool                                      convertNumeric = GlobalSettings.Instance.ConvertAllNumericValues;
@@ -32,8 +32,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
         static EnumAccessorFactory()
         {
-            dbType     = type;
-            isNullable = GetUnderlyingNullableType(ref dbType);
+            isNullable = type.GetUnderlyingNullableType(out dbType);
 
             if (!dbType.IsEnum)
                 throw new NotSupportedException("Can not use an EnumRowFactory on a type that is not an Enum.");
@@ -57,20 +56,19 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
             if (propertyInfo == null)
             {
+                attributes   = new Attribute[0];
                 propertyName = "result";
                 errorMessage = "Null value is not allowed for single column result set that returns " +
                                 typeof(T) + ", but null was the result from the stored procedure.";
-                attributeExpression = Expression.Constant(new Attribute[0]);
             }
             else
             {
                 propertyName = propertyInfo.Name;
-                var attrs = propertyInfo.GetCustomAttributes(false).Cast<Attribute>().ToArray();
-                transformers = attrs.OfType<DataTransformerAttributeBase>()
-                                    .OrderBy(x => x.Order)
-                                    .ToArray();
-                attributeExpression = Expression.Constant(attrs);
-                convertNumeric |= attrs.OfType<ConvertNumericAttribute>().Any();
+                attributes   = propertyInfo.GetCustomAttributes(false).Cast<Attribute>().ToArray();
+                transformers = attributes  .OfType<DataTransformerAttributeBase>()
+                                           .OrderBy(x => x.Order)
+                                           .ToArray();
+                convertNumeric |= attributes.OfType<ConvertNumericAttribute>().Any();
             }
 
             throwNullException = new Lazy<UnaryExpression>(() => Expression.Throw(Expression.New(
@@ -120,7 +118,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
                     if (xFormers.All(IsTypedTransformer))
                     {
                         Expression expr = stringValueExpression;
-                        AddTypedTransformers<string>(xFormers, attributeExpression, ref expr);
+                        AddTypedTransformers<string>(xFormers, attributes, ref expr);
 
                         if (expr != stringValueExpression)
                             exprs.Add(Expression.Assign(stringValueExpression, expr));
@@ -129,7 +127,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
                     {
                         vars.Add(boxedValueExpression);
                         exprs.Add(Expression.Assign(boxedValueExpression, stringValueExpression));
-                        AddTransformers(type, boxedValueExpression, attributeExpression, xFormers, exprs);
+                        AddTransformers(type, boxedValueExpression, attributes, xFormers, exprs);
                         exprs.Add(Expression.Assign(stringValueExpression, Expression.Convert(boxedValueExpression, typeof(string))));
                     }
 
@@ -160,7 +158,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
                 body = Expression.Block(type, vars, exprs);
 
                 if (xFormers.All(IsTypedTransformer))
-                    AddTypedTransformers<T>(xFormers, attributeExpression, ref body);
+                    AddTypedTransformers<T>(xFormers, attributes, ref body);
             }
             else if (unboxedExpression != null && xFormers.All(IsTypedTransformer))
             {
@@ -175,7 +173,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
                                                expectedType,
                                                convertNumeric);
 
-                AddTypedTransformers<T>(xFormers, attributeExpression, ref body);
+                AddTypedTransformers<T>(xFormers, attributes, ref body);
             }
             else if (unboxedExpression == null || xFormers.Any())
             {
@@ -183,30 +181,18 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
                 exprs.Add(boxedExpression);
 
-                Expression res;
                 if (xFormers.Any())
-                {
-                    AddTransformers(type, boxedValueExpression, attributeExpression, xFormers, exprs);
-                    res = CreateUnboxingExpression(dbType, isNullable, boxedValueExpression, exprs, errorMessage);
-                }
-                else
-                {
-                    res = CreateUnboxingExpression(dbColumnType, isNullable, boxedValueExpression, exprs, errorMessage);
-
-                    if (dbColumnType != expectedType)
-                    {
-                        if (convertNumeric)
-                            res = Expression.Convert(res, expectedType);
-                        else
-                            throw new StoredProcedureColumnException(expectedType, dbColumnType, propertyName);
-                    }
-
-                    if (expectedType != underlying)
-                        res = Expression.Convert(res, underlying);
-                }
-
-                exprs.Add(Expression.Convert(res, type));
-
+                    AddTransformers(type, boxedValueExpression, attributes, xFormers, exprs);
+                    
+                exprs.AddRange(CreateUnboxingExpression<T>(dbColumnType, 
+                                                           expectedType, 
+                                                           underlying,
+                                                           isNullable, 
+                                                           boxedValueExpression,
+                                                           errorMessage,
+                                                           propertyName,
+                                                           convertNumeric,
+                                                           xFormers.Any()));
                 body = Expression.Block(type, new[] { boxedValueExpression }, exprs);
             }
             else

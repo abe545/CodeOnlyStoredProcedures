@@ -11,7 +11,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
     internal class SimpleTypeRowFactory<T> : RowFactory<T>
     {
         static readonly ValueAccessorFactory<T> accessor = new ValueAccessorFactory<T>(dataReaderExpression, Expression.Constant(0), null, null);
-
+        
         protected override Func<IDataReader, T> CreateRowFactory(IDataReader reader, IEnumerable<IDataTransformer> xFormers)
         {
             var a = accessor;

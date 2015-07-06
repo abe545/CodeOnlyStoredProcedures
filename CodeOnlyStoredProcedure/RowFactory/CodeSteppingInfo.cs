@@ -17,16 +17,16 @@ namespace CodeOnlyStoredProcedure.RowFactory
 {
     internal sealed class CodeSteppingInfo
     {
-        private readonly Dictionary<string, Attribute[]> typedTransformerAttributes = new Dictionary<string, Attribute[]>();
-        private readonly Dictionary<string, DataTransformerAttributeBase[]> transformerAttributes = new Dictionary<string, DataTransformerAttributeBase[]>();
-        private readonly Dictionary<string, Attribute[]> allAttributes = new Dictionary<string, Attribute[]>();
-        private readonly Dictionary<string, IDataTransformer[]> untypedTransformers = new Dictionary<string, IDataTransformer[]>();
-        private readonly Dictionary<string, IDataTransformer[]> typedTransformers = new Dictionary<string, IDataTransformer[]>();
+        private readonly Dictionary<string, Attribute[]>                    typedTransformerAttributes = new Dictionary<string, Attribute[]>();
+        private readonly Dictionary<string, DataTransformerAttributeBase[]> transformerAttributes      = new Dictionary<string, DataTransformerAttributeBase[]>();
+        private readonly Dictionary<string, Attribute[]>                    allAttributes              = new Dictionary<string, Attribute[]>();
+        private readonly Dictionary<string, IDataTransformer[]>             untypedTransformers        = new Dictionary<string, IDataTransformer[]>();
+        private readonly Dictionary<string, IDataTransformer[]>             typedTransformers          = new Dictionary<string, IDataTransformer[]>();
         private readonly TypeBuilder typeBuilder;
-        private readonly string typeName;
-        private int line = 8;
+        private int line   = 8;
         private int indent = 3;
         private string filename;
+        private string typeName;
 
         public string               Name               { get; private set; }
         public StringBuilder        SourceCode         { get; private set; }
@@ -58,7 +58,17 @@ namespace CodeOnlyStoredProcedure.RowFactory
             var module  = assemblyBuilder.DefineDynamicModule(Name, true);
             typeBuilder = module.DefineType("StoredProcedureResultsParser", TypeAttributes.Public | TypeAttributes.Class);
 
-            var namespaces = (new [] { "System", "System.Data", "CodeOnlyStoredProcedure", returnType.Namespace }).Distinct();
+            typeName = returnType.GetCSharpName();
+            returnType.GetUnderlyingNullableType(out returnType);
+
+            var namespaces = new [] 
+            {
+                "System", 
+                "System.Data",
+                "CodeOnlyStoredProcedure", 
+                "CodeOnlyStoredProcedure.DataTransformation", 
+                returnType.Namespace
+            }.Distinct();
             var usings = namespaces.Where(ns => ns.StartsWith("System"))
                                    .OrderBy(ns => ns)
                                    .Concat(namespaces.Where(ns => !ns.StartsWith("System"))
@@ -71,13 +81,6 @@ namespace CodeOnlyStoredProcedure.RowFactory
                 ++line;
             }
 
-            typeName = returnType.Name;
-            if (returnType.IsGenericType && returnType.GetGenericTypeDefinition() == typeof(Nullable<>))
-            {
-                returnType = returnType.GetGenericArguments().Single();
-                typeName = returnType.Name + "?";
-            }
-
             SourceCode.AppendLine()
                       .Append("namespace CodeOnlyStoredProcedure.RowFactory_")
                       .AppendLine(id)
@@ -86,11 +89,6 @@ namespace CodeOnlyStoredProcedure.RowFactory
                       .AppendLine("    {")
                       .Append("        public static ")
                       .Append(typeName);
-        }
-
-        ~CodeSteppingInfo()
-        {
-            Dispose(false);
         }
 
         public Func<IDataReader, T> CompileMethod<T>(Expression body, ParameterExpression argument)
@@ -128,7 +126,10 @@ namespace CodeOnlyStoredProcedure.RowFactory
             SetStaticValues(t, untypedTransformers);
             SetStaticValues(t, allAttributes);
 
-            return (Func<IDataReader, T>)Delegate.CreateDelegate(typeof(Func<IDataReader, T>), t.GetMethod("Parse"));
+            var holder = new FunctionDisposer<T>(
+                filename,
+                (Func<IDataReader, T>)Delegate.CreateDelegate(typeof(Func<IDataReader, T>), t.GetMethod("Parse")));
+            return holder.Parse;
         }
 
         public void BeginBlock()
@@ -170,10 +171,16 @@ namespace CodeOnlyStoredProcedure.RowFactory
             return Expression.DebugInfo(SymbolDocument, line, start, line++, start + code.Length);
         }
 
+        public DebugInfoExpression MarkLine(string codeFormat, params object[] formatArguments)
+        {
+            Contract.Requires(!string.IsNullOrEmpty(codeFormat));
+            Contract.Ensures(Contract.Result<DebugInfoExpression>() != null);
+
+            return MarkLine(string.Format(codeFormat, formatArguments));
+        }
+
         public IEnumerable<Expression> AddTransformers(
             IDataTransformer[] transformers, 
-            MethodInfo canTransform, 
-            MethodInfo transform, 
             ParameterExpression value, 
             ConstantExpression isNullable, 
             Type targetType,
@@ -181,15 +188,13 @@ namespace CodeOnlyStoredProcedure.RowFactory
             string propertyName)
         {
             Contract.Requires(transformers != null);
-            Contract.Requires(canTransform != null);
-            Contract.Requires(transform != null);
             Contract.Requires(value != null);
             Contract.Requires(isNullable != null);
             Contract.Requires(attributes != null);
             Contract.Requires(propertyName != null);
             Contract.Ensures(Contract.Result<IEnumerable<Expression>>() != null);
 
-            allAttributes.Add(propertyName + "Attributes", attributes);
+            allAttributes      .Add(propertyName + "Attributes",   attributes);
             untypedTransformers.Add(propertyName + "Transformers", transformers);
 
             var xformerField = DefineField(propertyName + "Transformers", typeof(IDataTransformer[]));
@@ -197,22 +202,22 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
             for (int i = 0; i < transformers.Length; i++)
             {
-                yield return MarkLine(string.Format("if ({0}Transformers[{1}].CanTransform({2}, typeof({3}), {4}, {0}Attributes))",
-                    propertyName, i, value.Name.ToLower(), typeName, isNullable.Value));
+                yield return MarkLine("if ({0}Transformers[{1}].CanTransform({2}, typeof({3}), {4}, {0}Attributes))",
+                    propertyName, i, value.Name.ToLower(), targetType.GetCSharpName(), isNullable.Value);
                 yield return Expression.IfThen(
                     Expression.Call(Expression.ArrayIndex(Expression.Field(null, xformerField), Expression.Constant(i)),
-                        canTransform,
+                        DataTransformerCache.CanTransform,
                         value,
                         Expression.Constant(targetType, typeof(Type)),
                         isNullable,
                         Expression.Field(null, attrField)),
                     Expression.Block(
                         MarkLine(string.Format("{2} = {0}Transformers[{1}].Transform({2}, typeof({3}), {4}, {0}Attributes);",
-                            propertyName, i, value.Name.ToLower(), typeName, isNullable.Value), true),
+                            propertyName, i, value.Name.ToLower(), targetType.GetCSharpName(), isNullable.Value), true),
                         Expression.Assign(
                             value,
                             Expression.Call(Expression.ArrayIndex(Expression.Field(null, xformerField), Expression.Constant(i)),
-                                transform,
+                                DataTransformerCache.Transform,
                                 value,
                                 Expression.Constant(targetType, typeof(Type)),
                                 isNullable,
@@ -224,53 +229,47 @@ namespace CodeOnlyStoredProcedure.RowFactory
             }
         }
 
-        public IEnumerable<Expression> AddTransformers(
+        public Expression AddTransformers(
             DataTransformerAttributeBase[] transformers,
-            MethodInfo method,
             ParameterExpression retVal,
-            Expression target,
-            ConstantExpression isNullable,
+            Type targetType,
+            bool isNullable,
             string name = "attributeTransformers")
         {
             Contract.Requires(transformers != null);
-            Contract.Requires(method != null);
             Contract.Requires(retVal != null);
-            Contract.Requires(isNullable != null);
             Contract.Requires(!string.IsNullOrEmpty(name));
-            Contract.Ensures(Contract.Result<IEnumerable<Expression>>() != null);
+            Contract.Ensures(Contract.Result<Expression>() != null);
 
             transformerAttributes.Add(name, transformers);
-            var field = DefineField(name, typeof(DataTransformerAttributeBase[]));
-
-            for (int i = 0; i < transformers.Length; i++)
-            {
-                yield return MarkLine(string.Format("{0} = {1}[{2}].Transform({0}, {3}, {4});", retVal.Name, name, i, typeName, isNullable.Value));
-                yield return Expression.Assign(retVal,
-                    Expression.Call(Expression.ArrayIndex(Expression.Field(null, field)), method, retVal, target, isNullable));
-            }
+            var args = string.Format(", {0}, {1}", targetType.GetCSharpName(), isNullable);
+            return AddTransformers<DataTransformerAttributeBase>(
+                name,
+                retVal,
+                i => i + args,
+                transformers,
+                DataTransformerCache.AttributeTransform,
+                new Expression[] { retVal, Expression.Constant(targetType), Expression.Constant(isNullable) });
         }
 
-        public IEnumerable<Expression> AddTransformers<T>(
+        public Expression AddTransformers<T>(
             IDataTransformerAttribute<T>[] transformers, 
-            MethodInfo method, 
             ParameterExpression retVal, 
             string name)
         {
             Contract.Requires(transformers != null);
-            Contract.Requires(method != null);
             Contract.Requires(retVal != null);
             Contract.Requires(!string.IsNullOrEmpty(name));
-            Contract.Ensures(Contract.Result<IEnumerable<Expression>>() != null);
+            Contract.Ensures(Contract.Result<Expression>() != null);
 
             typedTransformerAttributes.Add(name, (Attribute[])transformers);
-            var field = DefineField(name, typeof(IDataTransformerAttribute<T>[]));
-            
-            for (int i = 0; i < transformers.Length; i++)
-            {
-                yield return MarkLine(string.Format("{0} = {1}[{2}].Transform({0});", retVal.Name, name, i));
-                yield return Expression.Assign(retVal, 
-                    Expression.Call(Expression.ArrayIndex(Expression.Field(null, field)), method, retVal));
-            }
+            return AddTransformers<IDataTransformerAttribute<T>>(
+                name,
+                retVal,
+                i => i.ToString(),
+                transformers,
+                DataTransformerCache<T>.AttributeTransform,
+                new[] { retVal });
         }
 
         public Expression AddTransformers<T>(
@@ -288,7 +287,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
             if (transformers.Length == 0)
                 return body;
 
-            allAttributes.Add(propertyName + "Attributes", attributes);
+            allAttributes      .Add(propertyName + "Attributes",   attributes);
             untypedTransformers.Add(propertyName + "Transformers", transformers);
 
             var name         = propertyName + "Value";
@@ -304,23 +303,17 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
             for (int i = 0; i < transformers.Length; i++)
             {
-                exprs.Add(MarkLine(string.Format("{0} = {1}[{2}].Transform({0}, {3});", name, xformerField.Name, i, attrField.Name)));
+                exprs.Add(MarkLine("{0} = {1}[{2}].Transform({0}, {3});", name, xformerField.Name, i, attrField.Name));
                 exprs.Add(Expression.Assign(res,
                     Expression.Call(Expression.ArrayIndex(Expression.Field(null, xformerField), Expression.Constant(i)),
-                                    typeof(IDataTransformer<T>).GetMethod("Transform"), 
+                                    DataTransformerCache<T>.Transform, 
                                     res,
                                     Expression.Field(null, attrField))));
             }
 
-            exprs.Add(MarkLine(string.Format("return {0};", name)));
+            exprs.Add(MarkLine("return {0};", name));
             exprs.Add(res);
             return Expression.Block(typeof(T), new[] { res }, exprs.ToArray());
-        }
-
-        public void Dispose()
-        {
-            GC.SuppressFinalize(this);
-            Dispose(true);
         }
 
         private FieldBuilder DefineField(string name, Type fieldType)
@@ -329,6 +322,38 @@ namespace CodeOnlyStoredProcedure.RowFactory
                 name,
                 fieldType,
                 FieldAttributes.Private | FieldAttributes.Static);
+        }
+
+        private Expression AddTransformers<TTransformer>(
+            string              fieldName,
+            ParameterExpression retVal,
+            Func<int, string>   getTransformArguments,
+            TTransformer[]      transformers,
+            MethodInfo          transformMethod,
+            Expression[]        methodArguments)
+        {
+            Contract.Requires(!string.IsNullOrEmpty(fieldName));
+            Contract.Requires(retVal                       != null);
+            Contract.Requires(getTransformArguments        != null);
+            Contract.Requires(transformers                 != null);
+            Contract.Requires(transformMethod              != null);
+            Contract.Requires(methodArguments              != null);
+            Contract.Ensures(Contract.Result<Expression>() != null);
+
+            var field = DefineField(fieldName, typeof(TTransformer[]));
+            var local = Expression.Variable(field.FieldType, "static_" + fieldName);
+            var exprs = new List<Expression>();
+
+            exprs.Add(MarkLine("var static_{0} = {0};", fieldName));
+            exprs.Add(Expression.Assign(local, Expression.Field(null, field)));
+
+            for (int i = 0; i < transformers.Length; i++)
+            {
+                exprs.Add(MarkLine("{0} = static_{1}[{2}].Transform({3});", retVal.Name, fieldName, i, getTransformArguments(i)));
+                exprs.Add(Expression.Assign(retVal, Expression.Call(Expression.ArrayIndex(local), transformMethod, methodArguments)));
+            }
+
+            return Expression.Block(new[] { local }, exprs);
         }
 
         private void AddFields(IEnumerable<string> fieldNames, string fieldTypeName)
@@ -349,19 +374,6 @@ namespace CodeOnlyStoredProcedure.RowFactory
             }
         }
 
-        private void Dispose(bool isDisposing)
-        {
-            if (filename != null)
-            {
-                try
-                {
-                    File.Delete(filename);
-                }
-                catch { }
-                filename = null;
-            }
-        }
-
         private void AppendIndentToSourceCode(bool indentOneMore)
         {
             for (int i = 0; i < indent; i++)
@@ -369,6 +381,48 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
             if (indentOneMore)
                 SourceCode.Append("    ");
+        }
+
+        private class FunctionDisposer<T> : IDisposable
+        {
+            private readonly Func<IDataReader,T> parser;
+            private string filename;
+
+            public FunctionDisposer(string filename, Func<IDataReader, T> parser)
+            {
+                Contract.Requires(!string.IsNullOrEmpty(filename));
+                Contract.Requires(parser != null);
+
+                this.filename = filename;
+                this.parser   = parser;
+            }
+
+            ~FunctionDisposer()
+            {
+                Dispose(false);
+            }
+
+            [DebuggerStepThrough]
+            public T Parse(IDataReader reader) { return parser(reader); }
+
+            public void Dispose()
+            {
+                Dispose(true);
+                GC.SuppressFinalize(this);
+            }
+
+            private void Dispose(bool isDisposing)
+            {
+                if (filename != null)
+                {
+                    try
+                    {
+                        File.Delete(filename);
+                    }
+                    catch { }
+                    filename = null;
+                }
+            }
         }
     }
 }
