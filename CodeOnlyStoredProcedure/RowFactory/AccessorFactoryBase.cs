@@ -166,21 +166,16 @@ namespace CodeOnlyStoredProcedure.RowFactory
             {
                 exprs.Add(MarkIfNecessary(
                     () => string.Format("if ({0} == null)", value.Name),
-                    Expression.IfThen(
-                        Expression.ReferenceEqual(value, Expression.Constant(null, typeof(object))),
-                        MarkIfNecessary(
-                            () => string.Format("throw new NoNullAllowedException(\"{0}\");", notNullableNullValueMessage),
-                            Expression.Throw(
-                                Expression.New(
-                                    typeof(NoNullAllowedException).GetConstructor(new[] { typeof(string) }),
-                                    Expression.Constant(notNullableNullValueMessage)
-                                )
-                            ),
-                            codeSteppingInfo,
-                            true
+                    Expression.ReferenceEqual(value, Expression.Constant(null, typeof(object))),
+                    () => string.Format("throw new NoNullAllowedException(\"{0}\");", notNullableNullValueMessage),
+                    Expression.Throw(
+                        Expression.New(
+                            typeof(NoNullAllowedException).GetConstructor(new[] { typeof(string) }),
+                            Expression.Constant(notNullableNullValueMessage)
                         )
                     ),
-                    codeSteppingInfo));
+                    codeSteppingInfo
+                ));
             }
 
             string ret = null;
@@ -190,7 +185,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
             if (easyConvert)
             {
                 if (hasStepper)
-                    ret = string.Format("Convert.To{0}({1});", underlyingType.Name, value.Name);
+                    ret = string.Format("Convert.To{0}({1})", underlyingType.Name, value.Name);
                 res = Expression.Call(null, typeof(Convert).GetMethod("To" + underlyingType.Name, new[] { typeof(object) }), value);
             }
             else
@@ -458,18 +453,12 @@ namespace CodeOnlyStoredProcedure.RowFactory
                     type,
                     MarkIfNecessary(
                         () => string.Format("if ({0}.IsDBNull({1}))", dbReader.Name, GetIndexName(index)),
-                        Expression.IfThen(
-                            Expression.Call(dbReader, IsDbNullMethod, index),
-                            MarkIfNecessary(
-                                () => "throw new NoNullAllowedException(\"" + errorMessage + "\");",
-                                Expression.Throw(
-                                    Expression.New(
-                                        typeof(NoNullAllowedException).GetConstructor(new[] { typeof(string) }),
-                                        Expression.Constant(errorMessage)
-                                    )
-                                ),
-                                codeSteppingInfo,
-                                true
+                        Expression.Call(dbReader, IsDbNullMethod, index),
+                        () => "throw new NoNullAllowedException(\"" + errorMessage + "\");",
+                        Expression.Throw(
+                            Expression.New(
+                                typeof(NoNullAllowedException).GetConstructor(new[] { typeof(string) }),
+                                Expression.Constant(errorMessage)
                             )
                         ),
                         codeSteppingInfo
@@ -497,37 +486,22 @@ namespace CodeOnlyStoredProcedure.RowFactory
             }
             else
             {
+                if (generateSourceCode)
+                    body.Add(codeSteppingInfo.MarkLine("{0} retVal;", type.GetCSharpName()));
+
                 body.Add(MarkIfNecessary(
-                    () => new[] 
-                    {
-                        string.Format("{0} retVal;", type.GetCSharpName()),
-                        string.Format("if (dbReader.IsDBNull({0}))", GetIndexName(index))
-                    },
-                    Expression.IfThenElse(
-                        Expression.Call(dbReader, IsDbNullMethod, index),
-                        MarkIfNecessary(
-                            () => string.Format("throw new NoNullAllowedException(\"" + errorMessage + "\");"),
-                            Expression.Throw(
-                                Expression.New(
-                                    typeof(NoNullAllowedException).GetConstructor(new[] { typeof(string) }),
-                                    Expression.Constant(errorMessage)
-                                )
-                            ),
-                            codeSteppingInfo,
-                            true
-                        ),
-                        MarkIfNecessary(
-                            () => new[] 
-                            {
-                                "else",
-                                string.Format("retVal = {0};", sourceCode)
-                            },
-                            Expression.Assign(retVal, res),
-                            codeSteppingInfo,
-                            true
+                    () => string.Format("if (dbReader.IsDBNull({0}))", GetIndexName(index)),
+                    Expression.Call(dbReader, IsDbNullMethod, index),
+                    () => string.Format("throw new NoNullAllowedException(\"{0}\");", errorMessage),
+                    Expression.Throw(
+                        Expression.New(
+                            typeof(NoNullAllowedException).GetConstructor(new[] { typeof(string) }),
+                            Expression.Constant(errorMessage)
                         )
                     ),
-                    codeSteppingInfo
+                    codeSteppingInfo,
+                    () => string.Format("retVal = {0};", sourceCode),
+                    Expression.Assign(retVal, res)
                 ));
             }
 
@@ -658,25 +632,38 @@ namespace CodeOnlyStoredProcedure.RowFactory
         }
 
         protected static Expression MarkIfNecessary(
-            Func<string[]> marker,
-            Expression actual,
+            Func<string> ifMarker,
+            Expression condition,
+            Func<string> bodyMarker,
+            Expression body,
             CodeSteppingInfo stepper,
-            bool indentOneMore = false,
+            Func<string> elseMarker = null,
+            Expression elseBody = null,
             Type returnType = null)
         {
-            Contract.Requires(marker != null);
-            Contract.Requires(actual != null);
+            Contract.Requires(ifMarker   != null);
+            Contract.Requires(condition  != null);
+            Contract.Requires(bodyMarker != null);
+            Contract.Requires(body       != null);
 
+            var exprs = new List<Expression>();
             if (stepper != null)
             {
-                var statements = marker().Select(s => stepper.MarkLine(s)).Concat(new[] { actual }).ToArray();
-                if (returnType != null)
-                    return Expression.Block(returnType, statements);
-
-                return Expression.Block(statements);
+                exprs.Add(stepper.MarkLine(ifMarker()));
+                body = Expression.Block(stepper.MarkLine(bodyMarker(), true), body);
+                if (elseBody != null && elseMarker != null)
+                    elseBody = Expression.Block(stepper.MarkLine("else"), stepper.MarkLine(elseMarker(), true), elseBody);
             }
 
-            return actual;
+            if (elseBody != null)
+                exprs.Add(Expression.IfThenElse(condition, body, elseBody));
+            else
+                exprs.Add(Expression.IfThen(condition, body));
+
+            if (exprs.Count == 1)
+                return exprs[0];
+
+            return Expression.Block(exprs);
         }
 
         private static string GetIndexName(Expression indexExpression)
