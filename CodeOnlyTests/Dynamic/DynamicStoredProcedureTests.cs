@@ -72,6 +72,51 @@ namespace CodeOnlyTests.Dynamic
             }
 
             [TestMethod]
+            public void ClosesClonedConnectionWhenDone_WithResults()
+            {
+                var db = new Mock<IDbConnection>();
+                var db2 = CreatePeople("Foo");
+                db.As<ICloneable>().Setup(d => d.Clone()).Returns(db2);
+
+                dynamic toTest = new DynamicStoredProcedure(db.Object, transformers, CancellationToken.None, TEST_TIMEOUT, DynamicExecutionMode.Synchronous);
+
+                IEnumerable<Person> people = toTest.usp_GetPeople();
+
+                Mock.Get(db2).Verify(d => d.Close(), Times.Once());
+                db.Verify(d => d.Close(), Times.Never());
+            }
+
+            [TestMethod]
+            public void ClosesClonedConnectionWhenDone_WithSingleResult()
+            {
+                var db = new Mock<IDbConnection>();
+                var db2 = CreatePeople("Foo");
+                db.As<ICloneable>().Setup(d => d.Clone()).Returns(db2);
+
+                dynamic toTest = new DynamicStoredProcedure(db.Object, transformers, CancellationToken.None, TEST_TIMEOUT, DynamicExecutionMode.Synchronous);
+
+                Person person = toTest.usp_GetPeople();
+
+                Mock.Get(db2).Verify(d => d.Close(), Times.Once());
+                db.Verify(d => d.Close(), Times.Never());
+            }
+
+            [TestMethod]
+            public void ClosesClonedConnectionWhenDone_WithoutResults()
+            {
+                var db = new Mock<IDbConnection>();
+                var db2 = CreatePeople("Foo");
+                db.As<ICloneable>().Setup(d => d.Clone()).Returns(db2);
+
+                dynamic toTest = new DynamicStoredProcedure(db.Object, transformers, CancellationToken.None, TEST_TIMEOUT, DynamicExecutionMode.Synchronous);
+
+                toTest.usp_NoQuery().Dispose();
+
+                Mock.Get(db2).Verify(d => d.Close(), Times.Once());
+                db.Verify(d => d.Close(), Times.Never());
+            }
+
+            [TestMethod]
             public void CanCastExplicitly()
             {
                 var ctx = CreatePeople("Foo");
@@ -184,34 +229,7 @@ namespace CodeOnlyTests.Dynamic
             [TestMethod]
             public void CanGetMultipleResultSets()
             {
-                int resultSet = 0;
-
-                var reader = new Mock<IDataReader>();
-                reader.SetupGet(r => r.FieldCount).Returns(1);
-                reader.Setup(r => r.GetName(0))
-                      .Returns(() => resultSet == 0 ? "FirstName" : "LastName");
-                reader.SetupSequence(r => r.Read())
-                      .Returns(true)
-                      .Returns(false)
-                      .Returns(true)
-                      .Returns(false);
-                reader.Setup(r => r.GetFieldType(It.IsAny<int>())).Returns(typeof(string));
-                reader.Setup(r => r.GetString(0))
-                      .Returns(() => resultSet == 0 ? "Foo" : "Bar");
-                reader.Setup(r => r.NextResult())
-                      .Callback(() => ++resultSet)
-                      .Returns(() => resultSet < 2);
-
-                var parms = new DataParameterCollection();
-                var cmd = new Mock<IDbCommand>();
-                cmd.Setup(c => c.ExecuteReader())
-                   .Returns(reader.Object);
-                cmd.Setup(c => c.Parameters)
-                   .Returns(parms);
-
-                var ctx = new Mock<IDbConnection>();
-                ctx.Setup(c => c.CreateCommand())
-                   .Returns(cmd.Object);
+                var ctx = CreateFamily();
 
                 dynamic toTest = new DynamicStoredProcedure(ctx.Object, transformers, CancellationToken.None, TEST_TIMEOUT, DynamicExecutionMode.Synchronous);
 
@@ -350,6 +368,76 @@ namespace CodeOnlyTests.Dynamic
 
                 var result = GetPeople(toTest).Result;
                 result.Single().FirstName.Should().Be("Foo");
+            }
+
+            [TestMethod]
+            public void ClosesClonedConnectionWhenDone_WithSingleResult()
+            {
+                var db = new Mock<IDbConnection>();
+                var db2 = CreatePeople(_ => { }, "Foo");
+                db.As<ICloneable>().Setup(d => d.Clone()).Returns(db2);
+
+                var toTest = new DynamicStoredProcedure(db.Object, transformers, CancellationToken.None, TEST_TIMEOUT, DynamicExecutionMode.Asynchronous);
+
+                var result = GetPerson(toTest).Result;
+
+                db.Verify(d => d.Open(), Times.Never());
+                db.Verify(d => d.CreateCommand(), Times.Never());
+                db.As<ICloneable>().Verify(d => d.Clone(), Times.Once());
+                Mock.Get(db2).Verify(d => d.Open(), Times.Once());
+                Mock.Get(db2).Verify(d => d.CreateCommand(), Times.Once());
+                Mock.Get(db2).Verify(d => d.Close(), Times.Once());
+                db.Verify(d => d.Close(), Times.Never());
+            }
+
+            [TestMethod]
+            public void ClosesClonedConnectionWhenDone_WithMultipleResults()
+            {
+                var db = new Mock<IDbConnection>();
+                var db2 = CreateFamily();
+                db.As<ICloneable>().Setup(d => d.Clone()).Returns(db2.Object);
+
+                var toTest = new DynamicStoredProcedure(db.Object, transformers, CancellationToken.None, TEST_TIMEOUT, DynamicExecutionMode.Asynchronous);
+
+                var result = GetFamilies(toTest).Result;
+
+                db2.Verify(d => d.Close(), Times.Once());
+                db.Verify(d => d.Close(), Times.Never());
+            }
+
+            [TestMethod]
+            public void ClosesClonedConnectionWhenDone_WithResults()
+            {
+                var db = new Mock<IDbConnection>();
+                var db2 = CreatePeople(_ => { }, "Foo");
+                db.As<ICloneable>().Setup(d => d.Clone()).Returns(() => db2);
+
+                var toTest = new DynamicStoredProcedure(db.Object, transformers, CancellationToken.None, TEST_TIMEOUT, DynamicExecutionMode.Asynchronous);
+
+                var result = GetPeople(toTest).Result;
+
+                db.Verify(d => d.Open(), Times.Never());
+                db.Verify(d => d.CreateCommand(), Times.Never());
+                db.As<ICloneable>().Verify(d => d.Clone(), Times.Once());
+                Mock.Get(db2).Verify(d => d.Open(), Times.Once());
+                Mock.Get(db2).Verify(d => d.CreateCommand(), Times.Once());
+                Mock.Get(db2).Verify(d => d.Close(), Times.Once());
+                db.Verify(d => d.Close(), Times.Never());
+            }
+
+            [TestMethod]
+            public void ClosesClonedConnectionWhenDone_WithoutResults()
+            {
+                var db = new Mock<IDbConnection>();
+                var db2 = CreatePeople("Foo");
+                db.As<ICloneable>().Setup(d => d.Clone()).Returns(db2);
+
+                var toTest = new DynamicStoredProcedure(db.Object, transformers, CancellationToken.None, TEST_TIMEOUT, DynamicExecutionMode.Asynchronous);
+
+                Call(toTest, new { test = "bar" }).Wait();
+
+                Mock.Get(db2).Verify(d => d.Close(), Times.Once());
+                db.Verify(d => d.Close(), Times.Never());
             }
 
             [TestMethod]
@@ -724,7 +812,7 @@ namespace CodeOnlyTests.Dynamic
 
             protected override async Task Call<T>(dynamic toTest, T args)
             {
-                await toTest.usp_StoredProc(args);
+                (await toTest.usp_StoredProc(args)).Dispose();
             }
         }
 
@@ -838,6 +926,39 @@ namespace CodeOnlyTests.Dynamic
                .Returns(cmd.Object);
 
             return ctx.Object;
+        }
+
+        private static Mock<IDbConnection> CreateFamily()
+        {
+            int resultSet = 0;
+
+            var reader = new Mock<IDataReader>();
+            reader.SetupGet(r => r.FieldCount).Returns(1);
+            reader.Setup(r => r.GetName(0))
+                  .Returns(() => resultSet == 0 ? "FirstName" : "LastName");
+            reader.SetupSequence(r => r.Read())
+                  .Returns(true)
+                  .Returns(false)
+                  .Returns(true)
+                  .Returns(false);
+            reader.Setup(r => r.GetFieldType(It.IsAny<int>())).Returns(typeof(string));
+            reader.Setup(r => r.GetString(0))
+                  .Returns(() => resultSet == 0 ? "Foo" : "Bar");
+            reader.Setup(r => r.NextResult())
+                  .Callback(() => ++resultSet)
+                  .Returns(() => resultSet < 2);
+
+            var parms = new DataParameterCollection();
+            var cmd = new Mock<IDbCommand>();
+            cmd.Setup(c => c.ExecuteReader())
+               .Returns(reader.Object);
+            cmd.Setup(c => c.Parameters)
+               .Returns(parms);
+
+            var ctx = new Mock<IDbConnection>();
+            ctx.Setup(c => c.CreateCommand())
+               .Returns(cmd.Object);
+            return ctx;
         }
 
         public class Person
