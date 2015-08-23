@@ -7,8 +7,8 @@ branches:
     - gh-pages
 
 environment:
-  releaseVersion: 2.2.3-pre1
-  packageVersion: 2.2.3
+  releaseVersion: 2.2.3
+  packageVersion: 2.2.3-pre1
 
 assembly_info:
   patch: true
