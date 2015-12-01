@@ -12,7 +12,7 @@ namespace CodeOnlyStoredProcedure
         public InputParameter(string name, object value, DbType? dbType = null)
         {
             Value         = value;
-            ParameterName = name;
+            ParameterName = name.StartsWith("@") ? name.Substring(1) : name;
             DbType        = dbType;
         }
 
