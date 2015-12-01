@@ -53,7 +53,7 @@ namespace CodeOnlyStoredProcedure
 
         public override string ToString()
         {
-            return string.Format("[InOut] @{0} = '{1}'", ParameterName, Value ?? "{null}");
+            return string.Format("[InOut] @{0} = '{1}'", ParameterName.StartsWith("@") ? ParameterName.Substring(1) : ParameterName, Value ?? "{null}");
         }
     }
 }
