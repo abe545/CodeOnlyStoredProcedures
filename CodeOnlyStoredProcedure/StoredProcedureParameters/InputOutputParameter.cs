@@ -20,7 +20,7 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
             Contract.Requires(setter != null);
 
-            ParameterName  = name;
+            ParameterName  = name.StartsWith("@") ? name.Substring(1) : name;
             this.Value     = value;
             this.DbType    = dbType;
             this.setter    = setter;
@@ -53,7 +53,7 @@ namespace CodeOnlyStoredProcedure
 
         public override string ToString()
         {
-            return string.Format("[InOut] @{0} = '{1}'", ParameterName.StartsWith("@") ? ParameterName.Substring(1) : ParameterName, Value ?? "{null}");
+            return string.Format("[InOut] @{0} = '{1}'", ParameterName, Value ?? "{null}");
         }
     }
 }
