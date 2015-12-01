@@ -12,7 +12,7 @@ namespace CodeOnlyStoredProcedure
         public InputParameter(string name, object value, DbType? dbType = null)
         {
             Value         = value;
-            ParameterName = name.StartsWith("@") ? name.Substring(1) : name;
+            ParameterName = name;
             DbType        = dbType;
         }
 
@@ -29,7 +29,7 @@ namespace CodeOnlyStoredProcedure
 
         public override string ToString()
         {
-            return string.Format("@{0} = '{1}'", ParameterName, Value ?? "{null}");
+            return string.Format("@{0} = '{1}'", ParameterName.StartsWith("@") ? ParameterName.Substring(1) : ParameterName, Value ?? "{null}");
         }
 
         private DbType GetDbType()
