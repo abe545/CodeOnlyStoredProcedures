@@ -26,7 +26,7 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(!string.IsNullOrWhiteSpace(tableTypeName));
             Contract.Requires(!string.IsNullOrWhiteSpace(tableTypeSchema));
 
-            ParameterName  = name.StartsWith("@") ? name.Substring(1) : name;
+            ParameterName  = name;
             this.values    = values;
             this.valueType = valueType;
             this.TypeName  = string.Format("[{0}].[{1}]", tableTypeSchema, tableTypeName);

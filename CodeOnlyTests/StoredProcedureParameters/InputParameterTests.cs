@@ -76,11 +76,5 @@ namespace CodeOnlyTests.StoredProcedureParameters
         {
             new InputParameter("Foo", null).ToString().Should().Be("@Foo = '{null}'");
         }
-
-        [TestMethod]
-        public void ToStringDoesNotDisplayExtraAts()
-        {
-            new InputParameter("@Foo", "Bar").ToString().Should().Be("@Foo = 'Bar'");
-        }
     }
 }

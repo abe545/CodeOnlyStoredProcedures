@@ -20,7 +20,7 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
             Contract.Requires(setter != null);
 
-            ParameterName  = name.StartsWith("@") ? name.Substring(1) : name;
+            ParameterName  = name;
             this.Value     = value;
             this.DbType    = dbType;
             this.setter    = setter;

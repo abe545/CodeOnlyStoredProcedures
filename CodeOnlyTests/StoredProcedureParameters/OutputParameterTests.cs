@@ -44,11 +44,5 @@ namespace CodeOnlyTests.StoredProcedureParameters
         {
             new OutputParameter("Foo", o => { }).ToString().Should().Be("[Out] @Foo");
         }
-
-        [TestMethod]
-        public void ToStringDoesNotDisplayExtraAts()
-        {
-            new OutputParameter("@Foo", o => { }).ToString().Should().Be("[Out] @Foo");
-        }
     }
 }
