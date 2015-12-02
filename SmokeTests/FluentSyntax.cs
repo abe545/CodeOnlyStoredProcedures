@@ -796,6 +796,67 @@ namespace SmokeTests
                 return Tuple.Create(true, "");
             });
         }
+        
+        [SmokeTest("Fluent Syntax Single Column Single Row with nullable parameter (Task)")]
+        Task<Tuple<bool, string>> SingleColumnSingleRowTimeSpanTaskWithNullableParameter(IDbConnection db)
+        {
+            var d1 = DateTime.Now.AddHours(-1);
+            DateTime? d2 = null;
+
+            var results = StoredProcedure.Create("usp_TimeDifference")
+                                         .WithParameter("date1", d1)
+                                         .WithParameter("date2", d2)
+                                         .WithResults<TimeSpan>()
+                                         .ExecuteAsync(db, Program.timeout);
+
+
+            return results.ContinueWith(r =>
+            {
+                var res = r.Result.Single();
+                if ((res - System.TimeSpan.FromHours(1)).Duration() > TimeSpan.FromSeconds(1))
+                    return Tuple.Create(false, string.Format("expected {0}, but returned {1}", TimeSpan.FromHours(1), res));
+
+                return Tuple.Create(true, "");
+            });
+        }
+
+        [SmokeTest("Fluent Syntax Single Column Single Row with nullable parameter (Await)")]
+        async Task<Tuple<bool, string>> SingleColumnSingleRowTimeSpanASyncWithNullableParameter(IDbConnection db)
+        {
+            var d1 = DateTime.Now.AddHours(-1);
+            DateTime? d2 = null;
+
+            var results = await StoredProcedure.Create("usp_TimeDifference")
+                                               .WithParameter("date1", d1)
+                                               .WithParameter("date2", d2)
+                                               .WithResults<TimeSpan>()
+                                               .ExecuteAsync(db, Program.timeout);
+
+            var res = results.Single();
+            if ((res - System.TimeSpan.FromHours(1)).Duration() > TimeSpan.FromSeconds(1))
+                return Tuple.Create(false, string.Format("expected {0}, but returned {1}", TimeSpan.FromHours(1), res));
+
+            return Tuple.Create(true, "");
+        }
+
+        [SmokeTest("Fluent Syntax Single Column Single Row with nullable parameter (Await)")]
+        Tuple<bool, string> SingleColumnSingleRowTimeSpanSyncWithNullableParameter(IDbConnection db)
+        {
+            var d1 = DateTime.Now.AddHours(-1);
+            DateTime? d2 = null;
+
+            var results = StoredProcedure.Create("usp_TimeDifference")
+                                         .WithParameter("date1", d1)
+                                         .WithParameter("date2", d2)
+                                         .WithResults<TimeSpan>()
+                                         .Execute(db, Program.timeout);
+
+            var res = results.Single();
+            if ((res - System.TimeSpan.FromHours(1)).Duration() > TimeSpan.FromSeconds(1))
+                return Tuple.Create(false, string.Format("expected {0}, but returned {1}", TimeSpan.FromHours(1), res));
+
+            return Tuple.Create(true, "");
+        }
 
         private class TimespanResult
         {

@@ -56,5 +56,20 @@ namespace CodeOnlyTests
             var param = toTest.Parameters.Should().ContainSingle(p => p.ParameterName == "Foo", "because we added one Parameter").Which;
             param.Should().BeOfType<InputParameter>().Which.Value.Should().Be("Bar", "because it was passed to WithInputParameter");
         }
+
+        [TestMethod]
+        public void TestWithParameter_InfersTheDbType()
+        {
+            var orig = new StoredProcedure("Test");
+
+            var toTest = orig.WithParameter("Foo", "Bar");
+
+            toTest.Should().NotBeSameAs(orig, "because StoredProcedures should be immutable");
+            orig.Parameters.Should().BeEmpty("because StoredProcedures should be immutable");
+
+            var param = toTest.Parameters.Should().ContainSingle(p => p.ParameterName == "Foo", "because we added one Parameter").Which;
+            param.Should().BeOfType<InputParameter>().Which.Value.Should().Be("Bar", "because it was passed to WithInputParameter");
+            param.Should().BeOfType<InputParameter>().Which.DbType.Should().Be(DbType.String, "because the DbType should be inferred if possible");
+        }
     }
 }
