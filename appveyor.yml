@@ -1,6 +1,9 @@
 version: 2.2.4.{build}
 skip_tags: false
 
+# Operating system (build VM template)
+os: Visual Studio 2013
+
 branches:
   # blacklist gh-pages, since the documentation branch shouldn't be built
   except:
