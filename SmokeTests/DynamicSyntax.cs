@@ -402,7 +402,7 @@ namespace SmokeTests
             DateTime? d2 = null;
             TimeSpan result = db.Execute(Program.timeout).usp_TimeDifference(date1: d1, date2: d2);
 
-            if (result < TimeSpan.FromHours(1))
+            if ((result - System.TimeSpan.FromHours(1)).Duration() > TimeSpan.FromSeconds(1))
                 return Tuple.Create(false, string.Format("expected value at least {0}, but returned {1}", TimeSpan.FromHours(1), result));
 
             return Tuple.Create(true, "");
@@ -419,7 +419,7 @@ namespace SmokeTests
                 date2 = d2
             });
 
-            if (result < TimeSpan.FromHours(1))
+            if ((result - System.TimeSpan.FromHours(1)).Duration() > TimeSpan.FromSeconds(1))
                 return Tuple.Create(false, string.Format("expected value at least {0}, but returned {1}", TimeSpan.FromHours(1), result));
 
             return Tuple.Create(true, "");
