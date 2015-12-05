@@ -83,6 +83,13 @@ namespace CodeOnlyTests.StoredProcedureParameters
                 .Should().Be(string.Format("@Foo = IEnumerable<{0}> (1 items)", typeof(TVP)));
         }
 
+        [TestMethod]
+        public void ToStringDoesNotDisplayExtraAts()
+        {
+            new TableValuedParameter("@Foo", new[] { new TVP(42) }, typeof(TVP), "CustomInt", "Schema").ToString()
+                .Should().Be(string.Format("@Foo = IEnumerable<{0}> (1 items)", typeof(TVP)));
+        }
+
         private class TVP
         {
             public int Int { get; set; }

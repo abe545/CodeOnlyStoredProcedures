@@ -393,6 +393,37 @@ namespace SmokeTests
 
             return Tuple.Create(true, "");
         }
+
+        // THIS DOESN'T WORK... Not sure if it can ever be enabled. Maybe if null parameters aren't actually passed to the sproc?
+        //[SmokeTest("Dynamic Syntax Single Column Single Row with nullable parameter")]
+        Tuple<bool, string> SingleColumnSingleRowTimeSpanSyncWithNullableParameter(IDbConnection db)
+        {
+            var d1 = DateTime.Now.AddHours(-1);
+            DateTime? d2 = null;
+            TimeSpan result = db.Execute(Program.timeout).usp_TimeDifference(date1: d1, date2: d2);
+
+            if ((result - System.TimeSpan.FromHours(1)).Duration() > TimeSpan.FromSeconds(1))
+                return Tuple.Create(false, string.Format("expected value at least {0}, but returned {1}", TimeSpan.FromHours(1), result));
+
+            return Tuple.Create(true, "");
+        }
+        
+        [SmokeTest("Dynamic Syntax Single Column Single Row with nullable parameter via anonymous type")]
+        Tuple<bool, string> SingleColumnSingleRowTimeSpanSyncWithNullableParameterViaAnonymousType(IDbConnection db)
+        {
+            var d1 = DateTime.Now.AddHours(-1);
+            DateTime? d2 = null;
+            TimeSpan result = db.Execute(Program.timeout).usp_TimeDifference(new
+            {
+                date1 = d1,
+                date2 = d2
+            });
+
+            if ((result - System.TimeSpan.FromHours(1)).Duration() > TimeSpan.FromSeconds(1))
+                return Tuple.Create(false, string.Format("expected value at least {0}, but returned {1}", TimeSpan.FromHours(1), result));
+
+            return Tuple.Create(true, "");
+        }
         
         [SmokeTest("Dynamic Syntax Single Column Single Row (Await)")]
         async Task<Tuple<bool, string>> SingleColumnSingleRowTimeSpanAsync(IDbConnection db)

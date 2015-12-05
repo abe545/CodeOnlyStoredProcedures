@@ -48,7 +48,7 @@ namespace CodeOnlyStoredProcedure
 
         public override string ToString()
         {
-            return string.Format("[Out] @{0}", ParameterName);
+            return string.Format("[Out] @{0}", ParameterName.StartsWith("@") ? ParameterName.Substring(1) : ParameterName);
         }
     }
 }

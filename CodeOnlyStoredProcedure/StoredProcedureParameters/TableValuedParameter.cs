@@ -49,7 +49,7 @@ namespace CodeOnlyStoredProcedure
 
         public override string ToString()
         {
-            return string.Format("@{0} = IEnumerable<{1}> ({2} items)", ParameterName, valueType, GetValueCount());
+            return string.Format("@{0} = IEnumerable<{1}> ({2} items)", ParameterName.StartsWith("@") ? ParameterName.Substring(1) : ParameterName, valueType, GetValueCount());
         }
 
         private int GetValueCount()
