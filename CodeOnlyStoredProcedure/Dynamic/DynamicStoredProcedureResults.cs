@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace CodeOnlyStoredProcedure.Dynamic
 {
-    internal class DynamicStoredProcedureResults : DynamicObject
+    internal class DynamicStoredProcedureResults : DynamicObject, IDisposable
     {
         private const string tupleName = "System.Tuple`";
         private static readonly Lazy<MethodInfo> getResultsMethod = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod("GetResults", BindingFlags.Instance | BindingFlags.NonPublic));
@@ -115,19 +115,40 @@ namespace CodeOnlyStoredProcedure.Dynamic
             return new Meta(parameter, this);
         }
 
+        public void Dispose()
+        {
+            if (connection != null)
+                connection.Close();
+        }
+
         private IEnumerable<T> GetResults<T>(bool isSingle)
         {
             return RowFactory<T>.Create(isSingle).ParseRows(resultTask.Result, transformers, token);
         }
 
-        private Task<IEnumerable<T>> CreateSingleContinuation<T>(bool isSingle)
+        private Task ContinueNoResults()
         {
-            return resultTask.ContinueWith(_ => GetResults<T>(isSingle), token);
+            return resultTask.ContinueWith(_ => Dispose(), token);
         }
 
-        private Task<T> CreateSingleRowContinuation<T>(bool isSingle)
+        private Task<IEnumerable<T>> CreateSingleContinuation<T>()
         {
-            return resultTask.ContinueWith(_ => GetResults<T>(isSingle).SingleOrDefault(), token);
+            return resultTask.ContinueWith(_ =>
+            {
+                var res = GetResults<T>(true);
+                Dispose();
+                return res;
+            }, token);
+        }
+
+        private Task<T> CreateSingleRowContinuation<T>()
+        {
+            return resultTask.ContinueWith(_ =>
+            {
+                var res = GetResults<T>(true).SingleOrDefault();
+                Dispose();
+                return res;
+            }, token);
         }
 
         private T GetMultipleResults<T>()
@@ -156,7 +177,12 @@ namespace CodeOnlyStoredProcedure.Dynamic
         {
             Contract.Ensures(Contract.Result<Task<T>>() != null);
 
-            return resultTask.ContinueWith(r => GetMultipleResults<T>(), token);
+            return resultTask.ContinueWith(_ =>
+            {
+                var res = GetMultipleResults<T>();
+                Dispose();
+                return res;
+            }, token);
         }
         
         private object InternalConfigureAwait(bool continueOnCapturedContext)
@@ -175,18 +201,20 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
         private class Meta : DynamicMetaObject
         {
-            private static readonly Lazy<MethodInfo> configureAwait  = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod("InternalConfigureAwait", BindingFlags.Instance | BindingFlags.NonPublic));
-            private static readonly Lazy<MethodInfo> getAwaiter      = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod("InternalGetAwaiter", BindingFlags.Instance | BindingFlags.NonPublic));
-            private static readonly Lazy<MethodInfo> continueSingle  = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod("CreateSingleContinuation", BindingFlags.Instance | BindingFlags.NonPublic));
-            private static readonly Lazy<MethodInfo> continueMulti   = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod("CreateMultipleContinuation", BindingFlags.Instance | BindingFlags.NonPublic));
-            private static readonly Lazy<MethodInfo> getMultiResults = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod("GetMultipleResults", BindingFlags.Instance | BindingFlags.NonPublic));
-            private static readonly Lazy<MethodInfo> singleExtension = new Lazy<MethodInfo>(() => typeof(Enumerable).GetMethods().Where(m => m.Name == "SingleOrDefault" && m.GetParameters().Length == 1).Single());
+            private static readonly Lazy<MethodInfo> configureAwait  = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod("InternalConfigureAwait",      BindingFlags.Instance | BindingFlags.NonPublic));
+            private static readonly Lazy<MethodInfo> getAwaiter      = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod("InternalGetAwaiter",          BindingFlags.Instance | BindingFlags.NonPublic));
+            private static readonly Lazy<MethodInfo> continueSingle  = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod("CreateSingleContinuation",    BindingFlags.Instance | BindingFlags.NonPublic));
+            private static readonly Lazy<MethodInfo> continueMulti   = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod("CreateMultipleContinuation",  BindingFlags.Instance | BindingFlags.NonPublic));
+            private static readonly Lazy<MethodInfo> getMultiResults = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod("GetMultipleResults",          BindingFlags.Instance | BindingFlags.NonPublic));
             private static readonly Lazy<MethodInfo> singleRowAsync  = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod("CreateSingleRowContinuation", BindingFlags.Instance | BindingFlags.NonPublic));
+            private static readonly Lazy<MethodInfo> continueNoRes   = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod("ContinueNoResults",           BindingFlags.Instance | BindingFlags.NonPublic));
+            private static readonly Lazy<MethodInfo> dispose         = new Lazy<MethodInfo>(() => typeof(IDisposable)                  .GetMethod("Dispose",                     BindingFlags.Instance | BindingFlags.Public));
+            private static readonly Lazy<MethodInfo> singleExtension = new Lazy<MethodInfo>(() => typeof(Enumerable).GetMethods().Where(m => m.Name == "SingleOrDefault" && m.GetParameters().Length == 1).Single());
 
             private readonly DynamicStoredProcedureResults results;
 
             public Meta(Expression expression, DynamicStoredProcedureResults value)
-                : base(expression, BindingRestrictions.Empty, value)
+                : base(expression, BindingRestrictions.GetInstanceRestriction(expression, value), value)
             {
                 Contract.Requires(expression != null);
                 Contract.Requires(value      != null);
@@ -197,7 +225,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
             public override DynamicMetaObject BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args)
             {
                 var instance = Expression.Convert(Expression, typeof(DynamicStoredProcedureResults));
-                var restrict = BindingRestrictions.GetTypeRestriction(Expression, typeof(DynamicStoredProcedureResults));
+                var restrict = BindingRestrictions.GetInstanceRestriction(Expression, results);
 
                 switch (binder.Name)
                 {
@@ -209,6 +237,10 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
                     case "GetResult":
                         return new DynamicMetaObject(instance, restrict);
+
+                    case "Dispose":
+                        return new DynamicMetaObject(
+                            Expression.Block(Expression.Call(instance, dispose.Value), instance), restrict);
                 }
 
                 return base.BindInvokeMember(binder, args);
@@ -217,68 +249,76 @@ namespace CodeOnlyStoredProcedure.Dynamic
             public override DynamicMetaObject BindConvert(ConvertBinder binder)
             {
                 var instance = Expression.Convert(Expression, typeof(DynamicStoredProcedureResults));
-                var restrict = BindingRestrictions.GetTypeRestriction(Expression, typeof(DynamicStoredProcedureResults));
+                var restrict = BindingRestrictions.GetInstanceRestriction(Expression, results);
                 var retType  = binder.ReturnType;
                 var taskType = typeof(Task);
-                Expression e = null;
+                Expression e;
 
                 if (taskType.IsAssignableFrom(retType))
                 {
                     if (results.executionMode == DynamicExecutionMode.Synchronous)
                         throw new NotSupportedException(DynamicStoredProcedure.asyncParameterDirectionError);
 
+                    // this is just a Task (no results)
                     if (retType == taskType)
-                    {
-                        // this is just a Task (no results). Because of this, we can return a continuation
-                        // from our resultTask that does nothing.
-                        return new DynamicMetaObject(Expression.Constant(results.resultTask.ContinueWith(_ => { })), restrict);
-                    }
+                        return new DynamicMetaObject(Expression.Call(instance, continueNoRes.Value), restrict);
 
                     // we are going to have to return a continuation from our task...
                     // first figure out what the result is.
                     retType = retType.GetGenericArguments().Single();
-                     
+
                     if (retType.IsEnumeratedType())
                     {
                         // there is only one result set. Return it from a continuation.
                         e = Expression.Call(instance,
-                            continueSingle.Value.MakeGenericMethod(retType.GetGenericArguments().Single()),
+                            continueSingle.Value.MakeGenericMethod(retType.GetGenericArguments().Single()));
+                    }
+                    else if (retType.FullName.StartsWith(tupleName) &&
+                             retType.GetGenericArguments().All(t => t.IsEnumeratedType()))
+                    {
+                        // multiple result sets
+                        e = Expression.Call(instance, continueMulti.Value.MakeGenericMethod(retType));
+                    }
+                    else
+                    {
+                        // a single row
+                        e = Expression.Call(instance, singleRowAsync.Value.MakeGenericMethod(retType));
+                    }
+                }
+                else
+                {
+                    // synchronous results
+                    if (retType.IsEnumeratedType())
+                    {
+                        // there is only one result set. Return it
+                        e = Expression.Call(instance,
+                            getResultsMethod.Value.MakeGenericMethod(retType.GetGenericArguments().Single()),
                             Expression.Constant(true));
                     }
                     else if (retType.FullName.StartsWith(tupleName) &&
                              retType.GetGenericArguments().All(t => t.IsEnumeratedType()))
                     {
-                        e = Expression.Call(instance, continueMulti.Value.MakeGenericMethod(retType));
+                        // it is a tuple of enumerables
+                        e = Expression.Call(instance, getMultiResults.Value.MakeGenericMethod(retType));
                     }
                     else
                     {
+                        // there is only one result set (with one item). Return it
                         e = Expression.Call(instance,
-                            singleRowAsync.Value.MakeGenericMethod(retType),
+                            getResultsMethod.Value.MakeGenericMethod(retType),
                             Expression.Constant(true));
-                    }
-                }
-                else if (retType.IsEnumeratedType())
-                {
-                    // there is only one result set. Return it
-                    e = Expression.Call(instance,
-                        getResultsMethod.Value.MakeGenericMethod(retType.GetGenericArguments().Single()),
-                        Expression.Constant(true));
-                }
-                else if (retType.FullName.StartsWith(tupleName) &&
-                         retType.GetGenericArguments().All(t => t.IsEnumeratedType()))
-                {
-                    // it is a tuple of enumerables
-                    e = Expression.Call(instance, getMultiResults.Value.MakeGenericMethod(retType));
-                }
-                else
-                {
-                    // there is only one result set (with one item). Return it from a continuation.
-                    e = Expression.Call(instance,
-                        getResultsMethod.Value.MakeGenericMethod(retType),
-                        Expression.Constant(true));
 
-                    // call Single()
-                    e = Expression.Call(null, singleExtension.Value.MakeGenericMethod(retType), e);
+                        // call Single()
+                        e = Expression.Call(null, singleExtension.Value.MakeGenericMethod(retType), e);
+                    }
+
+                    // make sure to close the connection
+                    var res = Expression.Variable(retType);
+                    e = Expression.Block(retType,
+                        new[] { res },
+                        Expression.Assign(res, e),
+                        Expression.Call(Expression.Constant(results), dispose.Value),
+                        res);
                 }
 
                 return new DynamicMetaObject(e, restrict);

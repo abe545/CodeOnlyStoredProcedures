@@ -28,7 +28,7 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
             Contract.Ensures(Contract.Result<TSP>() != null);
 
-            return (TSP)sp.CloneWith(new InputParameter(name, value));
+            return (TSP)sp.CloneWith(new InputParameter(name, value, typeof(TValue).InferDbType()));
         }
 
         /// <summary>

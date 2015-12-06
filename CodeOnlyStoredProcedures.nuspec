@@ -9,7 +9,14 @@
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>A library for easily calling Stored Procedures in .NET. Works great with Entity Framework Code First models. 
 Code Only Stored Procedures will not create any Stored Procedures on your database. Instead, its aim is to make it easy to call your existing stored procedures by writing simple code.</description>
-        <releaseNotes>2.2.2
+        <releaseNotes>2.2.4
+Fixed bug where calling ToString on a stored procedure could print parameters with a double @.
+Fixed bug where the fluent syntax would not infer the type of its parameters from the compile time generic parameter type.
+
+2.2.3
+Fixed bug where dynamic stored procedures wouldn't close their connections.
+
+2.2.2
 Fixed bug where null values could not be passed in the dynamic syntax.
 Fixed bug where TableValuedParameters would attempt to pass set only properties, resulting in an exception.
 Fixed bug where an exception would be thrown when using a mapped interface, if that interface had an IEnumerable property that was
@@ -50,14 +57,7 @@ Added ability to specify an implementation of an interface, so a StoredProcedure
 Added better exception when a model is missing a public parameterless constructor.
 
 1.2.0
-Added a much cleaner syntax for calling stored procedures, by using dynamic objects.
-
-1.1.0
-Improved exceptions so that it is easier to determine why the data returned doesn't map to your model correctly.
-Now ignores read-only properties, so they don't have to be attributed with [NotMapped]
-
-1.0.1
-Fixed bug where calling a stored procedure within a Task that was executing on the SynchronizationContext could cause a deadlock.</releaseNotes>
+Added a much cleaner syntax for calling stored procedures, by using dynamic objects.</releaseNotes>
         <tags>StoredProcedure EntityFramework EF</tags>
         <dependencies>
             <group targetFramework=".NETFramework4.0">
