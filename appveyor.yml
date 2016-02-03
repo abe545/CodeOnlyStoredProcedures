@@ -1,4 +1,4 @@
-version: 2.2.4.{build}
+version: 2.2.5.{build}
 skip_tags: false
 
 # Operating system (build VM template)
@@ -10,8 +10,8 @@ branches:
     - gh-pages
 
 environment:
-  releaseVersion: 2.2.4
-  packageVersion: 2.2.4
+  releaseVersion: 2.2.5
+  packageVersion: 2.2.5-pre
 
 assembly_info:
   patch: true
