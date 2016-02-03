@@ -157,6 +157,9 @@ namespace CodeOnlyStoredProcedure.Dynamic
         {
             if (binder.Name == "IsCompleted")
             {
+                if (toWait.Status == TaskStatus.Faulted)
+                    throw toWait.Exception;
+
                 result = toWait.IsCompleted;
                 return true;
             }
@@ -168,6 +171,9 @@ namespace CodeOnlyStoredProcedure.Dynamic
         {
             if (binder.Name == "GetResult")
             {
+                if (toWait.Status == TaskStatus.Faulted)
+                    throw toWait.Exception;
+
                 result = results;
                 return true;
             }

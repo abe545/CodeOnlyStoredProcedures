@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Data;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -513,6 +514,90 @@ namespace SmokeTests
 
                 var ts = (TimeSpan)value;
                 return ts + ts;
+            }
+        }
+        #endregion
+
+        #region Non-existant Stored Procedure
+        [SmokeTest("Dynamic Syntax Calling a non-existant stored procedure synchronously, expecitng results")]
+        Tuple<bool, string> NonExistant_WithResults_Synchronously(IDbConnection db)
+        {
+            try
+            {
+                IEnumerable<Item> res = db.Execute(Program.timeout).usp_DoUknownStoredProcedure();
+                return Tuple.Create(false, "Expected exception to be thrown, because the stored procedure doesn't exist, but none was.");
+            }
+            catch (SqlException)
+            {
+                return Tuple.Create(true, "");
+            }
+        }
+
+        [SmokeTest("Dynamic Syntax Calling a non-existant stored procedure synchronously, expecitng no results")]
+        Tuple<bool, string> NonExistant_WithoutResults_Synchronously(IDbConnection db)
+        {
+            try
+            {
+                db.Execute(Program.timeout).usp_DoUknownStoredProcedure();
+                return Tuple.Create(false, "Expected exception to be thrown, because the stored procedure doesn't exist, but none was.");
+            }
+            catch (SqlException)
+            {
+                return Tuple.Create(true, "");
+            }
+        }
+
+        [SmokeTest("Dynamic Syntax Calling a non-existant stored procedure asynchronously, expecitng results (Task)")]
+        Task<Tuple<bool, string>> NonExistant_WithResults_Asynchronously(IDbConnection db)
+        {
+            Task<IEnumerable<Item>> res = db.ExecuteAsync(Program.timeout).usp_DoUknownStoredProcedure();
+            return res.ContinueWith(r =>
+            {
+                if (r.Exception == null)
+                    return Tuple.Create(false, "Expected exception to be thrown, because the stored procedure doesn't exist, but none was.");
+
+                return Tuple.Create(true, "");
+            });
+        }
+
+        [SmokeTest("Dynamic Syntax Calling a non-existant stored procedure asynchronously, expecitng no results (Task)")]
+        Task<Tuple<bool, string>> NonExistant_WithoutResults_Asynchronously(IDbConnection db)
+        {
+            Task res = db.ExecuteAsync(Program.timeout).usp_DoUknownStoredProcedure();
+            return res.ContinueWith(r =>
+            {
+                if (r.Exception == null)
+                    return Tuple.Create(false, "Expected exception to be thrown, because the stored procedure doesn't exist, but none was.");
+
+                return Tuple.Create(true, "");
+            });
+        }
+
+        [SmokeTest("Dynamic Syntax Calling a non-existant stored procedure asynchronously, expecitng results (Await)")]
+        async Task<Tuple<bool, string>> NonExistant_WithResults_Await_Asynchronously(IDbConnection db)
+        {
+            try
+            {
+                IEnumerable<Item> res = await db.ExecuteAsync(Program.timeout).usp_DoUknownStoredProcedure();
+                return Tuple.Create(false, "Expected exception to be thrown, because the stored procedure doesn't exist, but none was.");
+            }
+            catch (AggregateException)
+            {
+                return Tuple.Create(true, "");
+            }
+        }
+
+        [SmokeTest("Dynamic Syntax Calling a non-existant stored procedure asynchronously, expecitng no results (Await)")]
+        async Task<Tuple<bool, string>> NonExistant_WithoutResults_Await_Asynchronously(IDbConnection db)
+        {
+            try
+            {
+                await db.ExecuteAsync(Program.timeout).usp_DoUknownStoredProcedure();
+                return Tuple.Create(false, "Expected exception to be thrown, because the stored procedure doesn't exist, but none was.");
+            }
+            catch (AggregateException)
+            {
+                return Tuple.Create(true, "");
             }
         }
         #endregion

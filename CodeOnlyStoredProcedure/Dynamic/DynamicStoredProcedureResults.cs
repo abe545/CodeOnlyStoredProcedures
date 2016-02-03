@@ -30,7 +30,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
         private readonly IEnumerable<IDataTransformer> transformers;
         private readonly DynamicExecutionMode          executionMode;
         private readonly CancellationToken             token;
-        private          bool                          continueOnCaller = true;
+        private          bool                          continueOnCaller;
 
         public DynamicStoredProcedureResults(
             IDbConnection                   connection,
@@ -48,10 +48,11 @@ namespace CodeOnlyStoredProcedure.Dynamic
             Contract.Requires(parameters != null);
             Contract.Requires(transformers != null);
 
-            this.executionMode = executionMode;
-            this.command       = connection.CreateCommand(schema, name, timeout, out this.connection);
-            this.transformers  = transformers;
-            this.token         = token;
+            this.executionMode    = executionMode;
+            this.command          = connection.CreateCommand(schema, name, timeout, out this.connection);
+            this.transformers     = transformers;
+            this.token            = token;
+            this.continueOnCaller = true;
 
             foreach (var p in parameters)
                 command.Parameters.Add(p.CreateDbDataParameter(command));
@@ -128,7 +129,12 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
         private Task ContinueNoResults()
         {
-            return resultTask.ContinueWith(_ => Dispose(), token);
+            return resultTask.ContinueWith(r =>
+            {
+                Dispose();
+                if (r.Status == TaskStatus.Faulted)
+                    throw r.Exception;
+            }, token);
         }
 
         private Task<IEnumerable<T>> CreateSingleContinuation<T>()
