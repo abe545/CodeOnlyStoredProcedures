@@ -11,7 +11,7 @@ branches:
 
 environment:
   releaseVersion: 2.2.4
-  packageVersion: 2.2.4-pre
+  packageVersion: 2.2.4
 
 assembly_info:
   patch: true
