@@ -14,6 +14,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
     internal class DynamicStoredProcedure : DynamicObject
     {
         internal const string asyncParameterDirectionError = "Can not execute a stored procedure asynchronously if called with a ref or out parameter. You can retrieve output or return values from the stored procedure if you pass in an input class, which the library can parse into the correct properties.";
+        internal const string namedParameterException      = "When using the dynamic syntax, parameters must either be passed by name, or as properties of a class (anonymous types work great).";
         private static readonly Func<CSharpArgumentInfo, string>                  getParameterName;
         private static readonly Func<CSharpArgumentInfo, ParameterDirection>      getParameterDirection;
         private static readonly Func<InvokeMemberBinder, int, CSharpArgumentInfo> getArgumentInfo;
@@ -89,6 +90,9 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
                 if (arg == null || arg == DBNull.Value)
                 {
+                    if (string.IsNullOrWhiteSpace(parmName))
+                        throw new StoredProcedureException(namedParameterException);
+
                     parameters.Add(new InputParameter(parmName, DBNull.Value));
                     continue;
                 }
@@ -105,9 +109,17 @@ namespace CodeOnlyStoredProcedure.Dynamic
                                            .FirstOrDefault();
 
                     if (attr == null)
+                    {
+                        if (string.IsNullOrWhiteSpace(parmName))
+                            throw new StoredProcedureException(namedParameterException);
+
                         parameters.Add(itemType.CreateTableValuedParameter(parmName, arg));
+                    }
                     else
                     {
+                        if (string.IsNullOrWhiteSpace(attr.Name) && string.IsNullOrWhiteSpace(parmName))
+                            throw new StoredProcedureException("When using the dynamic syntax, parameters must be passed by name.\nBecause you're passing a Table Valued Parameter, if the TableValuedParameterAttribute decorating your class has the Name set, it will be used instead.");
+
                         parameters.Add(
                             new TableValuedParameter(attr.Name ?? parmName,
                                                      (IEnumerable)arg,
@@ -120,6 +132,9 @@ namespace CodeOnlyStoredProcedure.Dynamic
                     parameters.AddRange(argType.GetParameters(arg));
                 else if (direction == ParameterDirection.Output)
                 {
+                    if (string.IsNullOrWhiteSpace(parmName))
+                        throw new StoredProcedureException(namedParameterException);
+
                     VerifySynchronousExecutionMode(executionMode);
 
                     if ("returnvalue".Equals(parmName, StringComparison.InvariantCultureIgnoreCase))
@@ -129,10 +144,15 @@ namespace CodeOnlyStoredProcedure.Dynamic
                 }
                 else if (direction == ParameterDirection.InputOutput)
                 {
+                    if (string.IsNullOrWhiteSpace(parmName))
+                        throw new StoredProcedureException(namedParameterException);
+
                     VerifySynchronousExecutionMode(executionMode);
 
                     parameters.Add(new InputOutputParameter(parmName, o => args[idx] = o, arg, argType.InferDbType()));
                 }
+                else if (string.IsNullOrWhiteSpace(parmName))
+                    throw new StoredProcedureException(namedParameterException);
                 else
                     parameters.Add(new InputParameter(parmName, arg, argType.InferDbType()));
             }

@@ -208,6 +208,30 @@ namespace CodeOnlyTests.RowFactory
                 ((string)item.Name).Should().Be("foo", "because it should have been transformed by the string transformer");
                 ((int)item.Age).Should().Be(55, "because it should have been transformed by the int transformer");
             }
+
+            [TestMethod]
+            public void UsesProper_NullableValues_ForNullObject()
+            {
+                var rdr = new Mock<IDataReader>();
+                rdr.Setup(r => r.FieldCount).Returns(1);
+                rdr.Setup(r => r.GetFieldType(0)).Returns(typeof(int));
+                rdr.Setup(r => r.GetName(0)).Returns("Id");
+                rdr.Setup(r => r.IsDBNull(0)).Returns(true);
+                rdr.Setup(r => r.GetValues(It.IsAny<object[]>()))
+                   .Callback<object[]>(os => os[0] = DBNull.Value);
+                rdr.SetupSequence(r => r.Read())
+                   .Returns(true)
+                   .Returns(false);
+
+                var toTest = new ExpandoObjectRowFactory<dynamic>();
+                var res = toTest.ParseRows(rdr.Object,
+                                              new IDataTransformer[0],
+                                              CancellationToken.None);
+
+                var item = res.Should().ContainSingle("because only 1 row should have been returned").Which;
+                int? asNullableInt = item.Id;
+                asNullableInt.Should().NotHaveValue("because the returned item was null");
+            }
         }
 
         [TestClass]

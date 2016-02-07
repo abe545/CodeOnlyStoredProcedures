@@ -347,6 +347,21 @@ namespace CodeOnlyTests.Dynamic
                 dynamic toTest = new DynamicStoredProcedure(ctx, transformers, CancellationToken.None, TEST_TIMEOUT, DynamicExecutionMode.Synchronous);
                 toTest.usp_GetPeople(id: DBNull.Value);
             }
+
+            [TestMethod]
+            public void UnnamedParameters_Throw_Useful_Exception()
+            {
+                var ctx = CreatePeople("Foo");
+                dynamic toTest = new DynamicStoredProcedure(ctx, transformers, CancellationToken.None, TEST_TIMEOUT, DynamicExecutionMode.Synchronous);
+                try
+                {
+                    toTest.usp_GetPeople("foo");
+                }
+                catch (StoredProcedureException ex)
+                {
+                    ex.Message.Should().Be(DynamicStoredProcedure.namedParameterException);
+                }
+            }
         }
 
         [TestClass]
