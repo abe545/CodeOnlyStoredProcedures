@@ -11,6 +11,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
     internal class ExpandoObjectRowFactory<T> : RowFactory<T>
     {
         static MethodInfo          addToDictionaryMethod = typeof(IDictionary<string, object>).GetMethod("Add");
+        static MethodInfo          isDbNull              = typeof(IDataRecord)                .GetMethod("IsDBNull");
         static MethodInfo          getDataValuesMethod   = typeof(IDataRecord)                .GetMethod("GetValues");
         static ParameterExpression readerExpression      = Expression                         .Parameter(typeof(IDataReader));
         static ParameterExpression resultExpression      = Expression                         .Parameter(typeof(ExpandoObject));
@@ -28,7 +29,10 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
             for (int i = 0; i < reader.FieldCount; i++)
             {
-                Expression getValue = Expression.ArrayIndex(valuesExpression, Expression.Constant(i));
+                Expression getValue = Expression.Condition( 
+                    Expression.Call(readerExpression, isDbNull, Expression.Constant(i)),
+                    Expression.Constant(null, typeof(object)),
+                    Expression.ArrayIndex(valuesExpression, Expression.Constant(i)));
 
                 if (xFormers.Any())
                 {
