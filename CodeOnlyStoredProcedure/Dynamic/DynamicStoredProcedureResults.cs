@@ -141,9 +141,8 @@ namespace CodeOnlyStoredProcedure.Dynamic
         {
             return resultTask.ContinueWith(_ =>
             {
-                var res = GetResults<T>(true);
-                Dispose();
-                return res;
+                try { return GetResults<T>(true); }
+                finally { Dispose(); }
             }, token);
         }
 
@@ -151,9 +150,8 @@ namespace CodeOnlyStoredProcedure.Dynamic
         {
             return resultTask.ContinueWith(_ =>
             {
-                var res = GetResults<T>(true).SingleOrDefault();
-                Dispose();
-                return res;
+                try { return GetResults<T>(true).SingleOrDefault(); }
+                finally { Dispose(); }
             }, token);
         }
 
@@ -185,9 +183,8 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
             return resultTask.ContinueWith(_ =>
             {
-                var res = GetMultipleResults<T>();
-                Dispose();
-                return res;
+                try { return GetMultipleResults<T>(); }
+                finally { Dispose(); }
             }, token);
         }
         
