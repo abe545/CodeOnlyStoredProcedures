@@ -1,5 +1,8 @@
 # Code Only Stored Procedures
 [![Build status](https://ci.appveyor.com/api/projects/status/j9beupy3qo611kkc/branch/master?svg=true)](https://ci.appveyor.com/project/abe545/codeonlystoredprocedures/branch/master)
+[![Stable](https://img.shields.io/nuget/v/CodeOnlyStoredProcedures.svg)](https://www.nuget.org/packages/CodeOnlyStoredProcedures/)
+[![Pre](https://img.shields.io/nuget/vpre/CodeOnlyStoredProcedures.svg)](https://www.nuget.org/packages/CodeOnlyStoredProcedures/)
+[![NuGet](https://img.shields.io/nuget/dt/CodeOnlyStoredProcedures.svg)](https://www.nuget.org/packages/CodeOnlyStoredProcedures/)
 
 A library for easily calling Stored Procedures in .NET. Works great with Entity Framework Code First models. 
 Code Only Stored Procedures will not create any Stored Procedures on your database. Instead, its aim is to make it easy to call your existing stored procedures by writing simple code.

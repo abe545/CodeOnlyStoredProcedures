@@ -43,7 +43,7 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(setter                 != null);
             Contract.Ensures (Contract.Result<TSP>() != null);
 
-            return (TSP)sp.CloneWith(new InputOutputParameter(name, o => setter((TValue)o), value, null, size, scale, precision));
+            return sp.WithInputOutputParameter(name, value, setter, typeof(TValue).InferDbType(), size, scale, precision);
         }
 
         /// <summary>

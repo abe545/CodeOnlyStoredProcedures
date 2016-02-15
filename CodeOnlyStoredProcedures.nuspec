@@ -60,7 +60,7 @@ Added ability to specify an implementation of an interface, so a StoredProcedure
 
 1.2.1
 Added better exception when a model is missing a public parameterless constructor.</releaseNotes>
-        <tags>StoredProcedure EntityFramework EF</tags>
+        <tags>StoredProcedure ORM Code Only</tags>
         <dependencies>
             <group targetFramework=".NETFramework4.0">
                 <dependency id="EntityFramework" version="6.1.3" />
@@ -74,6 +74,6 @@ Added better exception when a model is missing a public parameterless constructo
     <files>
       <file src="CodeOnlyStoredProcedure\Bin\Release\**\CodeOnlyStoredProcedure*" exclude="**\*.old" target="lib\net45" />
       <file src="CodeOnlyStoredProcedure-NET40\Bin\Release\**\CodeOnlyStoredProcedure*" exclude="**\*.old" target="lib\net40" />
-      <file src="**\*.cs" exclude="*Test*\**\*;CodeOnlyStoredProcedure\obj\**\*" target="src" />
+      <file src="**\*.cs" exclude="*Test*\**\*;CodeOnlyStoredProcedure*\obj\**\*" target="src" />
     </files>
 </package>
