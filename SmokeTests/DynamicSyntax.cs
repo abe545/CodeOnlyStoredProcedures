@@ -73,6 +73,27 @@ namespace SmokeTests
             Task<IEnumerable<Item>> res = db.ExecuteAsync(Program.timeout).usp_GetItem(ItemId: 0);
             return res.ContinueWith(r => r.Result.TestGetItemResults());
         }
+
+        [SmokeTest("Dynamic Syntax Single ResultSet with custom struct Parameter")]
+        Tuple<bool, string> ExecuteSyncWithCustomStructParameter(IDbConnection db)
+        {
+            IEnumerable<Item> res = db.Execute(Program.timeout).usp_GetItem(new ItemIdInput { itemId = 0 });
+            return res.TestGetItemResults();
+        }
+
+        [SmokeTest("Dynamic Syntax Single ResultSet with custom struct Parameter (Await)")]
+        async Task<Tuple<bool, string>> ExecuteAsyncAwaitWithCustomStructParameter(IDbConnection db)
+        {
+            IEnumerable<Item> res = await db.ExecuteAsync(Program.timeout).usp_GetItem(new ItemIdInput { itemId = 0 });
+            return res.TestGetItemResults();
+        }
+
+        [SmokeTest("Dynamic Syntax Single ResultSet with custom struct Parameter (Task)")]
+        Task<Tuple<bool, string>> ExecuteAsyncWithCustomStructParameter(IDbConnection db)
+        {
+            Task<IEnumerable<Item>> res = db.ExecuteAsync(Program.timeout).usp_GetItem(new ItemIdInput { itemId = 0 });
+            return res.ContinueWith(r => r.Result.TestGetItemResults());
+        }
         #endregion
 
         #region Simple ResultSet

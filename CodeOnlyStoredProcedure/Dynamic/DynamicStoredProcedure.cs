@@ -99,6 +99,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
                 var idx     = i;  // store the value, otherwise when it is lifted to lambdas, i will be the binder.CallInfo.ArgumentCount
                 var argType = arg.GetType();
+                var dbType  = argType.InferDbType();
 
                 if (argType.IsEnumeratedType())
                 {
@@ -128,7 +129,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
                                                      attr.Schema));
                     }
                 }
-                else if (argType.IsClass && argType != typeof(string))
+                else if (dbType == DbType.Object)
                     parameters.AddRange(argType.GetParameters(arg));
                 else if (direction == ParameterDirection.Output)
                 {
@@ -140,7 +141,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
                     if ("returnvalue".Equals(parmName, StringComparison.InvariantCultureIgnoreCase))
                         parameters.Add(new ReturnValueParameter(r => args[idx] = r));
                     else
-                        parameters.Add(new OutputParameter(parmName, o => args[idx] = o, argType.InferDbType()));
+                        parameters.Add(new OutputParameter(parmName, o => args[idx] = o, dbType));
                 }
                 else if (direction == ParameterDirection.InputOutput)
                 {
@@ -149,12 +150,12 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
                     VerifySynchronousExecutionMode(executionMode);
 
-                    parameters.Add(new InputOutputParameter(parmName, o => args[idx] = o, arg, argType.InferDbType()));
+                    parameters.Add(new InputOutputParameter(parmName, o => args[idx] = o, arg, dbType));
                 }
                 else if (string.IsNullOrWhiteSpace(parmName))
                     throw new StoredProcedureException(namedParameterException);
                 else
-                    parameters.Add(new InputParameter(parmName, arg, argType.InferDbType()));
+                    parameters.Add(new InputParameter(parmName, arg, dbType));
             }
 
             result = new DynamicStoredProcedureResults(

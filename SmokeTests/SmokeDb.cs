@@ -80,4 +80,15 @@ namespace SmokeTests
         [TableValuedParameter(TableName = "Person", Name = "people")]
         public IEnumerable<Person> People { get; set; }
     }
+
+    public struct ItemIdInput
+    {
+        private int _itemId;
+
+        public int itemId
+        {
+            get { return _itemId; }
+            set { _itemId = value; }
+        }
+    }
 }

@@ -13,6 +13,9 @@ Code Only Stored Procedures will not create any Stored Procedures on your databa
 Fixed bug where a dynamic stored procedure wouldn't dispose its database connection if the stored procedure threw an exception.
 Fixed bug in the dynamic syntax where asynchronous execution of a stored procedure that has no results would not throw exceptions from sql server.
 Fixed bug where StoredProcedure&lt;dynamic&gt; (both syntaxes) would return DBNull values instead of null.
+Fixed bug where WithInputOutputParameter and WithOutputParameter would not infer DBType when not passed explicitly
+Fixed bug where symbols were not available for .Net 4.0 projects
+Fixed bug where custom structs could not be passed as input parameters to the dynamic syntax
 
 2.2.4
 Fixed bug where calling ToString on a stored procedure could print parameters with a double @.
