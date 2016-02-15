@@ -8,11 +8,11 @@ branches:
   # blacklist gh-pages, since the documentation branch shouldn't be built
   except:
     - gh-pages
-
-environment:
-  releaseVersion: 2.2.5
-  packageVersion: 2.2.5-pre1
-
+	
+init:
+  - ps: $env:releaseVersion = "2.2.5"
+  - ps: $env:packageVersion = if (Test-Path env:\APPVEYOR_REPO_TAG_NAME) { "$env.APPVEYOR_REPO_TAG_NAME" } else { "{0}-aInternalBuild{1:000}" -f $env:releaseVersion, [System.Int32]::Parse($env:APPVEYOR_BUILD_NUMBER) }
+  
 assembly_info:
   patch: true
   file: VersionInfo.cs
