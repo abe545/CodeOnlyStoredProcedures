@@ -16,6 +16,7 @@ Fixed bug where StoredProcedure&lt;dynamic&gt; (both syntaxes) would return DBNu
 Fixed bug where WithInputOutputParameter and WithOutputParameter would not infer DBType when not passed explicitly
 Fixed bug where symbols were not available for .Net 4.0 projects
 Fixed bug where custom structs could not be passed as input parameters to the dynamic syntax
+Fixed bug where enums were being sent as object. Will now send as string
 
 2.2.4
 Fixed bug where calling ToString on a stored procedure could print parameters with a double @.
