@@ -124,7 +124,7 @@ namespace CodeOnlyStoredProcedure
                 return DbType.Decimal;
             else if (type == typeof(Boolean))
                 return DbType.Boolean;
-            else if (type == typeof(String))
+            else if (type == typeof(String) || type.IsEnum)
                 return DbType.String;
             else if (type == typeof(DateTime))
                 return DbType.DateTime;

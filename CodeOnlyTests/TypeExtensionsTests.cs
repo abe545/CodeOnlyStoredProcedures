@@ -6,6 +6,7 @@ using CodeOnlyStoredProcedure;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using FluentAssertions;
 using System.Collections.Generic;
+using System.Data;
 
 #if NET40
 namespace CodeOnlyTests.Net40
@@ -422,6 +423,15 @@ namespace CodeOnlyTests
         }
         #endregion
 
+        #region InferDbType
+        [TestMethod]
+        public void InferDbType_ReturnsString_ForEnum()
+        {
+            var result = typeof(EnumToTest).InferDbType();
+            result.Should().Be(DbType.String, "because an enum should be passed as a string");
+        }
+        #endregion
+
         #region Types To Test With
         private interface IModel
         {
@@ -482,6 +492,11 @@ namespace CodeOnlyTests
             [OptionalResult]
             public string Foo { get; set; }
             public string Bar { get; set; }
+        }
+
+        private enum EnumToTest
+        {
+            One, Two
         }
         #endregion
     }

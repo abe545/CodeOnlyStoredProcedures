@@ -67,13 +67,13 @@ namespace CodeOnlyStoredProcedure.RowFactory
                         types.Enqueue(childType);
 
                         var foreignKeyName = t.Name + "Id";
-                        var fkAttr = (ForeignKeyAttribute)Attribute.GetCustomAttribute(child, typeof(ForeignKeyAttribute));
+                        var fkAttr = child.GetCustomAttributes(typeof(ForeignKeyAttribute), true).OfType<ForeignKeyAttribute>().FirstOrDefault();
                         if (fkAttr != null)
                             foreignKeyName = fkAttr.Name;
                         else if (interfaceProperties != null)
                         {
                             var interfaceProp = interfaceProperties.FirstOrDefault(p => p.Name == child.Name);
-                            fkAttr = (ForeignKeyAttribute)Attribute.GetCustomAttribute(interfaceProp, typeof(ForeignKeyAttribute));
+                            fkAttr = interfaceProp.GetCustomAttributes(typeof(ForeignKeyAttribute), true).OfType<ForeignKeyAttribute>().FirstOrDefault();
                             if (fkAttr != null)
                                 foreignKeyName = fkAttr.Name;
                         }
@@ -148,13 +148,13 @@ namespace CodeOnlyStoredProcedure.RowFactory
             Contract.Requires(!string.IsNullOrWhiteSpace(className));
             Contract.Requires(props != null && Contract.ForAll(props, p => p != null));
 
-            var explicitKey = props.Where(p => p.CanRead && Attribute.GetCustomAttribute(p, typeof(KeyAttribute)) != null).SingleOrDefault();
+            var explicitKey = props.Where(p => p.CanRead && p.GetCustomAttributes(typeof(KeyAttribute), true).Any()).SingleOrDefault();
             if (explicitKey != null)
                 return explicitKey;
 
             if (interfaceProperties != null)
             {
-                explicitKey = interfaceProperties.Where(p => p.CanRead && Attribute.GetCustomAttribute(p, typeof(KeyAttribute)) != null).SingleOrDefault();
+                explicitKey = interfaceProperties.Where(p => p.CanRead && p.GetCustomAttributes(typeof(KeyAttribute), true).Any()).SingleOrDefault();
                 if (explicitKey != null)
                     return explicitKey;
             }
