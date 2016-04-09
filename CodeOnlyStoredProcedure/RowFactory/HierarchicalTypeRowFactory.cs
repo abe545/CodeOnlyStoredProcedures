@@ -54,7 +54,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
                 }
 
                 var props = t.GetMappedProperties();
-                var key   = GetKeyProperty(t.Name, props, interfaceProperties);
+                var key   = GetKeyProperty(t, props, interfaceProperties);
 
                 foreach (var child in props)
                 {
@@ -66,17 +66,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
                         var childType = child.PropertyType.GetEnumeratedType();
                         types.Enqueue(childType);
 
-                        var foreignKeyName = t.Name + "Id";
-                        var fkAttr = child.GetCustomAttributes(typeof(ForeignKeyAttribute), true).OfType<ForeignKeyAttribute>().FirstOrDefault();
-                        if (fkAttr != null)
-                            foreignKeyName = fkAttr.Name;
-                        else if (interfaceProperties != null)
-                        {
-                            var interfaceProp = interfaceProperties.FirstOrDefault(p => p.Name == child.Name);
-                            fkAttr = interfaceProp.GetCustomAttributes(typeof(ForeignKeyAttribute), true).OfType<ForeignKeyAttribute>().FirstOrDefault();
-                            if (fkAttr != null)
-                                foreignKeyName = fkAttr.Name;
-                        }
+                        var foreignKeyName = GetForeignKeyPropertyName(t, interfaceProperties, child);
 
                         implType = null;
                         if (!GlobalSettings.Instance.InterfaceMap.TryGetValue(childType, out implType))
@@ -120,7 +110,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
                             children = Expression.Call(toList.MakeGenericMethod(childType), children);
 
                         var assign = Expression.Assign(Expression.Property(parent, child), children);
-                        assigners.Add(Tuple.Create(t, childType, Expression.Lambda(assign, parent, possible).Compile()));
+                        assigners.Add(Tuple.Create(t, implType, Expression.Lambda(assign, parent, possible).Compile()));
                     }
                 }
 
@@ -143,24 +133,64 @@ namespace CodeOnlyStoredProcedure.RowFactory
             this.resultTypesInOrder = new ReadOnlyCollection<Type>(resultTypesInOrder.ToArray());
         }
 
-        private static PropertyInfo GetKeyProperty(string className, IEnumerable<PropertyInfo> props, IEnumerable<PropertyInfo> interfaceProperties)
+        private static PropertyInfo GetKeyProperty(Type type, IEnumerable<PropertyInfo> props, IEnumerable<PropertyInfo> interfaceProperties)
         {
-            Contract.Requires(!string.IsNullOrWhiteSpace(className));
+            Contract.Requires(type != null);
             Contract.Requires(props != null && Contract.ForAll(props, p => p != null));
 
-            var explicitKey = props.Where(p => p.CanRead && p.GetCustomAttributes(typeof(KeyAttribute), true).Any()).SingleOrDefault();
-            if (explicitKey != null)
-                return explicitKey;
+            var key = props.Where(p => p.CanRead && p.GetCustomAttributes(typeof(KeyAttribute), true).Any()).SingleOrDefault();
+            if (key != null)
+                return key;
 
             if (interfaceProperties != null)
             {
-                explicitKey = interfaceProperties.Where(p => p.CanRead && p.GetCustomAttributes(typeof(KeyAttribute), true).Any()).SingleOrDefault();
-                if (explicitKey != null)
-                    return explicitKey;
+                key = interfaceProperties.Where(p => p.CanRead && p.GetCustomAttributes(typeof(KeyAttribute), true).Any()).SingleOrDefault();
+                if (key != null)
+                    return key;
             }
 
-            var idWithClassName = className + "Id";
-            return props.SingleOrDefault(p => p.CanRead && p.Name == "Id") ?? props.SingleOrDefault(p => p.CanRead && p.Name == idWithClassName);
+            var idWithClassName = type.Name + "Id";
+            key = props.SingleOrDefault(p => p.CanRead && p.Name == "Id") ?? props.SingleOrDefault(p => p.CanRead && p.Name == idWithClassName);
+            if (key != null)
+                return key;
+
+            var allInterfaceProps = type.GetInterfaces()
+                                        .SelectMany(i => i.GetProperties())
+                                        .Where(p => p.CanRead && p.GetCustomAttributes(typeof(KeyAttribute), true).Any())
+                                        .ToArray();
+
+            foreach (var p in allInterfaceProps)
+            {
+                key = props.FirstOrDefault(tp => tp.Name == p.Name && tp.CanRead);
+                if (key != null)
+                    return key;
+            }
+
+            return null;
+        }
+
+        private static string GetForeignKeyPropertyName(Type t, IEnumerable<PropertyInfo> interfaceProperties, PropertyInfo child)
+        {
+            var fkAttr = child.GetCustomAttributes(typeof(ForeignKeyAttribute), true).OfType<ForeignKeyAttribute>().FirstOrDefault();
+            if (fkAttr != null)
+                return fkAttr.Name;
+            else if (interfaceProperties != null)
+            {
+                var interfaceProp = interfaceProperties.FirstOrDefault(p => p.Name == child.Name);
+                fkAttr = interfaceProp.GetCustomAttributes(typeof(ForeignKeyAttribute), true).OfType<ForeignKeyAttribute>().FirstOrDefault();
+                if (fkAttr != null)
+                    return fkAttr.Name;
+            }
+
+            fkAttr = t.GetInterfaces()
+                      .SelectMany(i => i.GetProperties())
+                      .Where(p => p.Name == child.Name && p.PropertyType.IsAssignableFrom(child.PropertyType))
+                      .Select(p => p.GetCustomAttributes(typeof(ForeignKeyAttribute), true).OfType<ForeignKeyAttribute>().FirstOrDefault())
+                      .FirstOrDefault();
+            if (fkAttr != null)
+                return fkAttr.Name;
+
+            return t.Name + "Id";
         }
 
         public override IEnumerable<T> ParseRows(IDataReader reader, IEnumerable<IDataTransformer> dataTransformers, CancellationToken token)
@@ -227,7 +257,9 @@ namespace CodeOnlyStoredProcedure.RowFactory
             token.ThrowIfCancellationRequested();
 
             if (index > 0 && !reader.NextResult())
+            {
                 throw new StoredProcedureResultsException(typeof(T), toRead.Select(f => f.RowType).ToArray());
+            }
 
             token.ThrowIfCancellationRequested();
             

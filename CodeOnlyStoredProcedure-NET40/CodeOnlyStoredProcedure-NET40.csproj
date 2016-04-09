@@ -197,6 +197,9 @@
     <Compile Include="..\CodeOnlyStoredProcedure\Properties\AssemblyInfo.cs">
       <Link>Properties\AssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="..\CodeOnlyStoredProcedure\PropertyInfoExtensions.cs">
+      <Link>PropertyInfoExtensions.cs</Link>
+    </Compile>
     <Compile Include="..\CodeOnlyStoredProcedure\RowFactory\AccessorFactoryBase.cs">
       <Link>RowFactory\AccessorFactoryBase.cs</Link>
     </Compile>
