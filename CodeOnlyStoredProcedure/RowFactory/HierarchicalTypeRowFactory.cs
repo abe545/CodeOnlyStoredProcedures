@@ -17,16 +17,15 @@ namespace CodeOnlyStoredProcedure.RowFactory
 {
     internal class HierarchicalTypeRowFactory<T> : RowFactory<T>
     {
-        private static readonly IEnumerable<IRowFactory> rowFactories;
-        private static readonly IEnumerable<Tuple<Type, Type, Delegate>> childAssigners;
+        private static readonly IRowFactory mainResultFactory = RowFactory<T>.Create(false);
+        private static readonly IEnumerable<HierarchicalRowInfo> rowInfos;
         private        readonly ReadOnlyCollection<Type> resultTypesInOrder;
 
         static HierarchicalTypeRowFactory()
         {
-            var factories = new List<IRowFactory>();
             object falseObj = false;
 
-            var assigners = new List<Tuple<Type, Type, Delegate>>();
+            var infos = new List<HierarchicalRowInfo>();
             var types = new Queue<Type>();
             var added = new HashSet<Type>();
             types.Enqueue(typeof(T));
@@ -38,6 +37,11 @@ namespace CodeOnlyStoredProcedure.RowFactory
             var cast    = typeof(Enumerable).GetMethod("Cast");
             var toArray = typeof(Enumerable).GetMethod("ToArray");
             var toList  = typeof(Enumerable).GetMethod("ToList");
+
+            infos.Add(new HierarchicalRowInfo(
+                childType: typeof(T),
+                rowFactory: RowFactory<T>.Create(false)
+                ));
 
             while (types.Count > 0)
             {
@@ -110,18 +114,25 @@ namespace CodeOnlyStoredProcedure.RowFactory
                             children = Expression.Call(toList.MakeGenericMethod(childType), children);
 
                         var assign = Expression.Assign(Expression.Property(parent, child), children);
-                        assigners.Add(Tuple.Create(t, implType, Expression.Lambda(assign, parent, possible).Compile()));
+
+                        infos.Add(new HierarchicalRowInfo
+                        (
+                            parentType: t,
+                            childType: implType,
+                            childKeyColumnName: key.GetSqlColumnName(),
+                            parentKeyColumnName: foreignKeyName,
+                            isOptional: child.IsOptional(),
+                            isArray: child.PropertyType.IsArray,
+                            assigner: Expression.Lambda(assign, parent, possible).Compile(),
+                            rowFactory: typeof(RowFactory<>).MakeGenericType(implType)
+                                                            .GetMethod("Create", BindingFlags.Public | BindingFlags.Static)
+                                                            .Invoke(null, new[] { falseObj }) as IRowFactory
+                        ));
                     }
                 }
-
-                factories.Add(typeof(RowFactory<>).MakeGenericType(t)
-                                                  .GetMethod("Create", BindingFlags.Public | BindingFlags.Static)
-                                                  .Invoke(null, new [] { falseObj })
-                              as IRowFactory);
             }
 
-            rowFactories   = new ReadOnlyCollection<IRowFactory>(factories);
-            childAssigners = new ReadOnlyCollection<Tuple<Type, Type, Delegate>>(assigners);
+            rowInfos = new ReadOnlyCollection<HierarchicalRowInfo>(infos);
         }
 
         public HierarchicalTypeRowFactory() { }
@@ -195,24 +206,26 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
         public override IEnumerable<T> ParseRows(IDataReader reader, IEnumerable<IDataTransformer> dataTransformers, CancellationToken token)
         {
-            var toRead  = rowFactories.ToList();
+            var toRead  = rowInfos.ToList();
             var results = new Dictionary<Type, IEnumerable>();
             int index   = -1;
 
             while (toRead.Count > 0)
             {
                 index++;
-                var factory = GetNextBestFactory(reader, toRead, token, index);
+                var hri = GetNextBestRowInfo(reader, toRead, token, index);
 
                 // should this throw? I'm leaning toward no, because as long as the hierarchy is built, who cares if there
                 // are extra result sets
-                if (factory == null)
+                if (hri == null)
                     continue;
+                else if (hri == HierarchicalRowInfo.Empty)
+                    break;
 
                 token.ThrowIfCancellationRequested();
 
-                toRead.Remove(factory);
-                results[factory.RowType] = factory.ParseRows(reader, dataTransformers, token);
+                toRead.Remove(hri);
+                results[hri.ChildType] = hri.RowFactory.ParseRows(reader, dataTransformers, token);
             }
 
             BuildHierarchy(results);
@@ -223,24 +236,26 @@ namespace CodeOnlyStoredProcedure.RowFactory
 #if !NET40
         public override async Task<IEnumerable<T>> ParseRowsAsync(DbDataReader reader, IEnumerable<IDataTransformer> dataTransformers, CancellationToken token)
         {
-            var toRead  = rowFactories.ToList();
+            var toRead  = rowInfos.ToList();
             var results = new Dictionary<Type, IEnumerable>();
             int index   = -1;
 
             while (toRead.Count > 0)
             {
                 index++;
-                var factory = GetNextBestFactory(reader, toRead, token, index);
+                var hri = GetNextBestRowInfo(reader, toRead, token, index);
 
                 // should this throw? I'm leaning toward no, because as long as the hierarchy is built, who cares if there
                 // are extra result sets
-                if (factory == null)
+                if (hri == null)
                     continue;
+                else if (hri == HierarchicalRowInfo.Empty)
+                    break;
 
                 token.ThrowIfCancellationRequested();
 
-                toRead.Remove(factory);
-                results[factory.RowType] = await factory.ParseRowsAsync(reader, dataTransformers, token);
+                toRead.Remove(hri);
+                results[hri.ChildType] = await hri.RowFactory.ParseRowsAsync(reader, dataTransformers, token);
             }
 
             BuildHierarchy(results);
@@ -249,16 +264,19 @@ namespace CodeOnlyStoredProcedure.RowFactory
         }
 #endif
 
-        private IRowFactory GetNextBestFactory(IDataReader reader, List<IRowFactory> toRead, CancellationToken token, int index)
+        private HierarchicalRowInfo GetNextBestRowInfo(IDataReader reader, List<HierarchicalRowInfo> toRead, CancellationToken token, int index)
         {
             Contract.Requires(reader != null);
-            Contract.Requires(toRead != null && Contract.ForAll(toRead, f => f != null));
+            Contract.Requires(toRead != null && Contract.ForAll(toRead, t => t != null));
 
             token.ThrowIfCancellationRequested();
 
             if (index > 0 && !reader.NextResult())
             {
-                throw new StoredProcedureResultsException(typeof(T), toRead.Select(f => f.RowType).ToArray());
+                if (toRead.All(f => f.IsOptional))
+                    return HierarchicalRowInfo.Empty;
+
+                throw new StoredProcedureResultsException(typeof(T), toRead.Select(f => f.ChildType).ToArray());
             }
 
             token.ThrowIfCancellationRequested();
@@ -269,38 +287,58 @@ namespace CodeOnlyStoredProcedure.RowFactory
                     return null;
 
                 var type = resultTypesInOrder[index];
-                return toRead.First(f => f.RowType == type);
+                return toRead.First(f => f.ChildType == type);
             }
 
-            IRowFactory factory         = null;
-            var         colNames        = Enumerable.Range(0, reader.FieldCount).Select(i => reader.GetName(i)).ToArray();
-            var         fewestRemaining = Int32.MaxValue;
+            HierarchicalRowInfo result          = null;
+            var                 colNames        = Enumerable.Range(0, reader.FieldCount).Select(i => reader.GetName(i)).ToArray();
+            var                 fewestRemaining = Int32.MaxValue;
 
-            foreach (var f in toRead)
+            foreach (var hri in toRead)
             {
                 int i;
-                if (f.MatchesColumns(colNames, out i))
+                if (hri.MatchesColumns(colNames, out i))
                 {
                     if (i < fewestRemaining)
                     {
                         fewestRemaining = i;
-                        factory         = f;
+                        result          = hri;
                     }
                 }
             }
 
-            return factory;
+            return result;
         }
 
         private static void BuildHierarchy(Dictionary<Type, IEnumerable> results)
         {
-            foreach (var tuple in childAssigners)
+            // the first one is the actual result row, so it won't have the parent/child relationship
+            // defined
+            foreach (var hri in rowInfos.Skip(1))
             {
-                var parents  = results[tuple.Item1];
-                var children = results[tuple.Item2];
+                IEnumerable children;
 
-                foreach (var o in parents)
-                    tuple.Item3.DynamicInvoke(o, children);
+                var parents  = results[hri.ParentType];
+                if (!results.TryGetValue(hri.ChildType, out children))
+                {
+                    if (hri.IsOptional)
+                    {
+                        object empty;
+                        
+                        if (hri.IsArray)
+                            empty = Array.CreateInstance(hri.ChildType, 0);
+                        else // this needs to be an empty generic list
+                            empty = Activator.CreateInstance(typeof(List<>).MakeGenericType(hri.ChildType));
+
+                        foreach (var o in parents)
+                            hri.Assigner.DynamicInvoke(o, empty);
+                    }
+                }
+                else
+                {
+                    foreach (var o in parents)
+                        hri.Assigner.DynamicInvoke(o, children);
+                }
             }
         }
 
@@ -314,6 +352,51 @@ namespace CodeOnlyStoredProcedure.RowFactory
         {
             // this code can only be executed through reflection, since the factory won't call it. 
             throw new NotSupportedException("CreateRowFactory should not be called for an HiearchicalTypeRowFactory.");
+        }
+
+        private class HierarchicalRowInfo
+        {
+            public static readonly HierarchicalRowInfo Empty = new HierarchicalRowInfo();
+
+            public Type        ParentType          { get; }
+            public Type        ChildType           { get; }
+            public string      ParentKeyColumnName { get; }
+            public string      ChildKeyColumnName  { get; }
+            public IRowFactory RowFactory          { get; }
+            public Delegate    Assigner            { get; }
+            public bool        IsOptional          { get; }
+            public bool        IsArray             { get; }
+
+            public HierarchicalRowInfo(
+                Type        parentType          = null,
+                Type        childType           = null,
+                string      parentKeyColumnName = null,
+                string      childKeyColumnName  = null,
+                IRowFactory rowFactory          = null,
+                Delegate    assigner            = null,
+                bool        isOptional          = false,
+                bool        isArray             = false)
+            {
+                ParentType          = parentType;
+                ChildType           = childType;
+                ParentKeyColumnName = parentKeyColumnName;
+                ChildKeyColumnName  = childKeyColumnName;
+                RowFactory          = rowFactory;
+                Assigner            = assigner;
+                IsOptional          = isOptional;
+                IsArray             = isArray;
+            }
+
+            public bool MatchesColumns(IEnumerable<string> columnNames, out int matchedColumnCount)
+            {
+                //matchedColumnCount = 0;
+                //if (!string.IsNullOrEmpty(ParentKeyColumnName) && !columnNames.Contains(ParentKeyColumnName))
+                //    return false;
+                //if (!string.IsNullOrEmpty(ChildKeyColumnName) && !columnNames.Contains(ChildKeyColumnName))
+                //    return false;
+
+                return RowFactory.MatchesColumns(columnNames, out matchedColumnCount);
+            }
         }
     }
 }
