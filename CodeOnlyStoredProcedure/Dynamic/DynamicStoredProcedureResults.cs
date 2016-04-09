@@ -120,6 +120,8 @@ namespace CodeOnlyStoredProcedure.Dynamic
         {
             if (connection != null)
                 connection.Close();
+            if (command != null)
+                command.Dispose();
         }
 
         private IEnumerable<T> GetResults<T>(bool isSingle)
