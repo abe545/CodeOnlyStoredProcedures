@@ -90,6 +90,28 @@ namespace CodeOnlyTests.StoredProcedureParameters
                 .Should().Be(string.Format("@Foo = IEnumerable<{0}> (1 items)", typeof(TVP)));
         }
 
+        [TestMethod]
+        public void SetsNullValueWhenEnumerableIsEmpty()
+        {
+            var cmd = new Mock<IDbCommand>();
+            cmd.Setup(c => c.CreateParameter()).Returns(new SqlParameter());
+
+            var toTest = new TableValuedParameter("Foo", new TVP2[0], typeof(TVP2), "CustomInt", "Schema");
+
+            var res = toTest.CreateDbDataParameter(cmd.Object);
+
+            res.DbType.Should().Be(DbType.Object, "table valued parameters pass DbType.Object");
+            res.ParameterName.Should().Be("Foo", "it was passed in the constructor");
+            res.Direction.Should().Be(ParameterDirection.Input, "it is an input parameter");
+            res.Value.Should().BeNull();
+
+            var typed = res.Should().BeOfType<SqlParameter>().Which;
+
+            typed.SqlDbType.Should().Be(SqlDbType.Structured, "table valued parameters are Structured");
+            typed.TypeName.Should().Be("[Schema].[CustomInt]", "it was passed in the constructor");
+            typed.Value.Should().BeNull();
+        }
+
         private class TVP
         {
             public int Int { get; set; }

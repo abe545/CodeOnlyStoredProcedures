@@ -144,6 +144,17 @@ namespace SmokeTests
             return Tuple.Create(true, "");
         }
 
+        public static Tuple<bool, string> TestEmptyPeopleResults(this IEnumerable<Person> res)
+        {
+            if (res == null)
+                return Tuple.Create(false, "\tNull returned");
+
+            if (res.Any())
+                return Tuple.Create(false, "\tWrong number of results returned");
+
+            return Tuple.Create(true, "");
+        }
+
         public static Tuple<bool, string> TestGetWidgetResultsDynamic(this Tuple<IEnumerable<dynamic>, IEnumerable<dynamic>> items)
         {
             var widget = items.Item1;
