@@ -42,7 +42,9 @@ namespace CodeOnlyStoredProcedure
             parm.ParameterName = ParameterName;
             parm.SqlDbType     = SqlDbType.Structured;
             parm.TypeName      = TypeName;
-            parm.Value         = CrateValuedParameter(values, valueType);
+
+            if (values.Cast<object>().Any())
+                parm.Value = CrateValuedParameter(values, valueType);
 
             return parm;
         }

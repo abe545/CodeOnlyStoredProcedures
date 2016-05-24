@@ -330,6 +330,7 @@ namespace SmokeTests
         #endregion
 
         #region TableValuedParameter Input
+        Person[] etvp = new Person[0];
         Person[] tvp = new[] 
         {
             new Person { FirstName = "John", LastName = "Doe" },
@@ -376,6 +377,48 @@ namespace SmokeTests
         {
             IEnumerable<Person> res = await db.ExecuteAsync(Program.timeout).usp_GetExistingPeople(new PersonInput { People = tvp });
             return res.TestGetExistingPeopleResults();
+        }
+
+        [SmokeTest("Dynamic Syntax empty TVP WithTableValuedParameter")]
+        Tuple<bool, string> EmptyTVP_WithParameter(IDbConnection db)
+        {
+            return ((IEnumerable<Person>)db.Execute(Program.timeout).usp_GetExistingPeople(people: etvp))
+                .TestEmptyPeopleResults();
+        }
+
+        [SmokeTest("Dynamic Syntax async empty TVP WithTableValuedParameter")]
+        async Task<Tuple<bool, string>> EmptyAsyncTVP_WithParameter(IDbConnection db)
+        {
+            IEnumerable<Person> res = await db.ExecuteAsync(Program.timeout).usp_GetExistingPeople(people: etvp);
+            return res.TestEmptyPeopleResults();
+        }
+
+        [SmokeTest("Dynamic Syntax empty TVP WithInput no Attribute")]
+        Tuple<bool, string> EmptyTVP_WithInput_NoAttribute(IDbConnection db)
+        {
+            return ((IEnumerable<Person>)db.Execute(Program.timeout).usp_GetExistingPeople(new { people = etvp }))
+                .TestEmptyPeopleResults();
+        }
+
+        [SmokeTest("Dynamic Syntax async empty TVP WithInput no Attribute")]
+        async Task<Tuple<bool, string>> AsyncEmptyTVP_WithInput_NoAttribute(IDbConnection db)
+        {
+            IEnumerable<Person> res = await db.ExecuteAsync(Program.timeout).usp_GetExistingPeople(new { people = etvp });
+            return res.TestEmptyPeopleResults();
+        }
+
+        [SmokeTest("Dynamic Syntax empty TVP WithInput with Attribute")]
+        Tuple<bool, string> EmptyTVP_WithInput_WithAttribute(IDbConnection db)
+        {
+            return ((IEnumerable<Person>)db.Execute(Program.timeout).usp_GetExistingPeople(new PersonInput { People = etvp }))
+                .TestEmptyPeopleResults();
+        }
+
+        [SmokeTest("Dynamic Syntax async empty TVP WithInput with Attribute")]
+        async Task<Tuple<bool, string>> AsyncEmptyTVP_WithInput_WithAttribute(IDbConnection db)
+        {
+            IEnumerable<Person> res = await db.ExecuteAsync(Program.timeout).usp_GetExistingPeople(new PersonInput { People = etvp });
+            return res.TestEmptyPeopleResults();
         }
         #endregion
 

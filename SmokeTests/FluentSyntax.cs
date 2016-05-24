@@ -608,6 +608,7 @@ namespace SmokeTests
         #endregion
 
         #region TableValuedParameter Input
+        Person[] etvp = new Person[0];
         Person[] tvp = new[] 
         {
             new Person { FirstName = "John", LastName = "Doe" },
@@ -672,6 +673,66 @@ namespace SmokeTests
                                   .WithResults<Person>()
                                   .ExecuteAsync(db, Program.timeout)
                                   .ContinueWith(r => r.Result.TestGetExistingPeopleResults());
+        }
+
+        [SmokeTest("Fluent Syntax empty TVP WithTableValuedParameter")]
+        Tuple<bool, string> EmptyTVP_WithTableValuedParameter(IDbConnection db)
+        {
+            return StoredProcedure.Create("usp_GetExistingPeople")
+                                  .WithTableValuedParameter("people", etvp, "Person")
+                                  .WithResults<Person>()
+                                  .Execute(db, Program.timeout)
+                                  .TestEmptyPeopleResults();
+        }
+
+        [SmokeTest("Fluent Syntax async empty TVP WithTableValuedParameter")]
+        Task<Tuple<bool, string>> AsyncEmptyTVP_WithTableValuedParameter(IDbConnection db)
+        {
+            return StoredProcedure.Create("usp_GetExistingPeople")
+                                  .WithTableValuedParameter("people", etvp, "Person")
+                                  .WithResults<Person>()
+                                  .ExecuteAsync(db, Program.timeout)
+                                  .ContinueWith(r => r.Result.TestEmptyPeopleResults());
+        }
+
+        [SmokeTest("Fluent Syntax empty TVP WithInput no Attribute")]
+        Tuple<bool, string> EmptyTVP_WithInput_NoAttribute(IDbConnection db)
+        {
+            return StoredProcedure.Create("usp_GetExistingPeople")
+                                  .WithInput(new { people = etvp })
+                                  .WithResults<Person>()
+                                  .Execute(db, Program.timeout)
+                                  .TestEmptyPeopleResults();
+        }
+
+        [SmokeTest("Fluent Syntax async empty TVP WithInput no Attribute")]
+        Task<Tuple<bool, string>> AsyncEmptyTVP_WithInput_NoAttribute(IDbConnection db)
+        {
+            return StoredProcedure.Create("usp_GetExistingPeople")
+                                  .WithInput(new { people = etvp })
+                                  .WithResults<Person>()
+                                  .ExecuteAsync(db, Program.timeout)
+                                  .ContinueWith(r => r.Result.TestEmptyPeopleResults());
+        }
+
+        [SmokeTest("Fluent Syntax empty TVP WithInput with Attribute")]
+        Tuple<bool, string> EmptyTVP_WithInput_WithAttribute(IDbConnection db)
+        {
+            return StoredProcedure.Create("usp_GetExistingPeople")
+                                  .WithInput(new PersonInput { People = etvp })
+                                  .WithResults<Person>()
+                                  .Execute(db, Program.timeout)
+                                  .TestEmptyPeopleResults();
+        }
+
+        [SmokeTest("Fluent Syntax async empty TVP WithInput with Attribute")]
+        Task<Tuple<bool, string>> AsyncEmptyTVP_WithInput_WithAttribute(IDbConnection db)
+        {
+            return StoredProcedure.Create("usp_GetExistingPeople")
+                                  .WithInput(new PersonInput { People = etvp })
+                                  .WithResults<Person>()
+                                  .ExecuteAsync(db, Program.timeout)
+                                  .ContinueWith(r => r.Result.TestEmptyPeopleResults());
         }
         #endregion
 
