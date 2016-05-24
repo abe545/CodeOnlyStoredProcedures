@@ -206,27 +206,10 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
         public override IEnumerable<T> ParseRows(IDataReader reader, IEnumerable<IDataTransformer> dataTransformers, CancellationToken token)
         {
-            var toRead  = rowInfos.ToList();
             var results = new Dictionary<Type, IEnumerable>();
-            int index   = -1;
 
-            while (toRead.Count > 0)
-            {
-                index++;
-                var hri = GetNextBestRowInfo(reader, toRead, token, index);
-
-                // should this throw? I'm leaning toward no, because as long as the hierarchy is built, who cares if there
-                // are extra result sets
-                if (hri == null)
-                    continue;
-                else if (hri == HierarchicalRowInfo.Empty)
-                    break;
-
-                token.ThrowIfCancellationRequested();
-
-                toRead.Remove(hri);
-                results[hri.ChildType] = hri.RowFactory.ParseRows(reader, dataTransformers, token);
-            }
+            foreach (var t in ParseRows(reader, token, rf => rf.ParseRows(reader, dataTransformers, token)))
+                results[t.Item1.ChildType] = t.Item2;
 
             BuildHierarchy(results);
 
@@ -236,9 +219,24 @@ namespace CodeOnlyStoredProcedure.RowFactory
 #if !NET40
         public override async Task<IEnumerable<T>> ParseRowsAsync(DbDataReader reader, IEnumerable<IDataTransformer> dataTransformers, CancellationToken token)
         {
-            var toRead  = rowInfos.ToList();
             var results = new Dictionary<Type, IEnumerable>();
-            int index   = -1;
+
+            foreach (var t in ParseRows(reader, token, rf => rf.ParseRowsAsync(reader, dataTransformers, token)))
+                results[t.Item1.ChildType] = await t.Item2;
+
+            BuildHierarchy(results);
+
+            return (IEnumerable<T>)results[typeof(T)];
+        }
+#endif
+
+        private IEnumerable<Tuple<HierarchicalRowInfo, TParseResult>> ParseRows<TParseResult>(
+            IDataReader reader, 
+            CancellationToken token,
+            Func<IRowFactory, TParseResult> parser)
+        {
+            var toRead = rowInfos.ToList();
+            int index = -1;
 
             while (toRead.Count > 0)
             {
@@ -249,20 +247,17 @@ namespace CodeOnlyStoredProcedure.RowFactory
                 // are extra result sets
                 if (hri == null)
                     continue;
-                else if (hri == HierarchicalRowInfo.Empty)
+
+                // this value means that there are no more required result sets
+                if (hri == HierarchicalRowInfo.Empty)
                     break;
 
                 token.ThrowIfCancellationRequested();
 
                 toRead.Remove(hri);
-                results[hri.ChildType] = await hri.RowFactory.ParseRowsAsync(reader, dataTransformers, token);
+                yield return Tuple.Create(hri, parser(hri.RowFactory));
             }
-
-            BuildHierarchy(results);
-
-            return (IEnumerable<T>)results[typeof(T)];
         }
-#endif
 
         private HierarchicalRowInfo GetNextBestRowInfo(IDataReader reader, List<HierarchicalRowInfo> toRead, CancellationToken token, int index)
         {
