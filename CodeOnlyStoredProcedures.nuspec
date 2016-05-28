@@ -11,6 +11,7 @@
 Code Only Stored Procedures will not create any Stored Procedures on your database. Instead, its aim is to make it easy to call your existing stored procedures by writing simple code.</description>
         <releaseNotes>2.2.6
 Fixed bug where dynamic stored procedures wouldn't dispose of the IDbCommand objects they created.
+Fixed bug where empty Table Valued Parameters could not be passed.
 
 2.2.5
 Fixed bug where a dynamic stored procedure wouldn't dispose its database connection if the stored procedure threw an exception.
