@@ -1,9 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <CodeContractsInstallDir Condition="'$(CodeContractsInstallDir)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\packages\DotNet.Contracts.1.10.20606.1\'))</CodeContractsInstallDir>
+    <CodeContractsInstallDir>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\packages\DotNet.Contracts.1.10.20606.1\'))</CodeContractsInstallDir>
   </PropertyGroup>
-  <Import Condition="'$(CodeContractsImported)' != 'true' AND '$(DontImportCodeContracts)' != 'true'" Project="$(CodeContractsInstallDir)\MsBuild\v$(VisualStudioVersion)\Microsoft.CodeContracts.targets"/>
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -229,6 +228,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
+  <Import Condition="'$(CodeContractsImported)' != 'true' AND '$(DontImportCodeContracts)' != 'true'" Project="$(CodeContractsInstallDir)\MsBuild\v$(VisualStudioVersion)\Microsoft.CodeContracts.targets"/>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
