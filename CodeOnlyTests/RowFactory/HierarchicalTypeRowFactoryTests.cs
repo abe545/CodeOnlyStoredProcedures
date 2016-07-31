@@ -602,7 +602,7 @@ namespace CodeOnlyTests.RowFactory
                         { "Id", 42 }
                     });
 
-                var toTest = new HierarchicalTypeRowFactory<OptionalChildren>();
+                var toTest = new HierarchicalTypeRowFactory<BothOptionalAndNonOptionalChildren>();
                 toTest.Invoking(f => f.ParseRows(reader, new IDataTransformer[0], CancellationToken.None))
                       .ShouldThrow<StoredProcedureException>("because a required result set was missing");
             }
@@ -913,6 +913,16 @@ namespace CodeOnlyTests.RowFactory
             public int Id { get; set; }
             [OptionalResult, ForeignKey("ParentId")]
             public IEnumerable<Level4> Children { get; set; }
+        }
+
+        public class BothOptionalAndNonOptionalChildren
+        {
+            [Key]
+            public int Id { get; set; }
+            [OptionalResult, ForeignKey("ParentId")]
+            public IEnumerable<Level4> Children { get; set; }
+            [ForeignKey("Level2Id")]
+            public IEnumerable<Level3> Children2 { get; set; }
         }
 
         public class Relative

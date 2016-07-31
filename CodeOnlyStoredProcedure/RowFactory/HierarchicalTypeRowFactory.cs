@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
@@ -26,9 +27,8 @@ namespace CodeOnlyStoredProcedure.RowFactory
             object falseObj = false;
 
             var infos = new List<HierarchicalRowInfo>();
-            var types = new Queue<Type>();
+            var types = new Queue<Tuple<Type, HierarchicalRowInfo>>();
             var added = new HashSet<Type>();
-            types.Enqueue(typeof(T));
 
             var whereMethod = typeof(Enumerable).GetMethods()
                                                 .Where(mi => mi.Name == "Where" && 
@@ -38,14 +38,19 @@ namespace CodeOnlyStoredProcedure.RowFactory
             var toArray = typeof(Enumerable).GetMethod("ToArray");
             var toList  = typeof(Enumerable).GetMethod("ToList");
 
-            infos.Add(new HierarchicalRowInfo(
+            var info = new HierarchicalRowInfo(
                 childType: typeof(T),
                 rowFactory: RowFactory<T>.Create(false)
-                ));
+                );
+            types.Enqueue(Tuple.Create(typeof(T), info));
+            infos.Add(info);
 
             while (types.Count > 0)
             {
-                var t = types.Dequeue();
+                var tuple = types.Dequeue();
+                var t = tuple.Item1;
+                info = tuple.Item2;
+
                 if (!added.Add(t))
                     continue;
 
@@ -68,8 +73,6 @@ namespace CodeOnlyStoredProcedure.RowFactory
                             throw new NotSupportedException("Can not generate a hierarchy for children of type " + t.Name + " because a key could not be determined. You should decorate a property with a Key attribute to designate it as such, or mark the properties that are IEnumerables as NotMapped, to prevent this error.");
 
                         var childType = child.PropertyType.GetEnumeratedType();
-                        types.Enqueue(childType);
-
                         var foreignKeyName = GetForeignKeyPropertyName(t, interfaceProperties, child);
 
                         implType = null;
@@ -115,8 +118,10 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
                         var assign = Expression.Assign(Expression.Property(parent, child), children);
 
-                        infos.Add(new HierarchicalRowInfo
+
+                        var childInfo = new HierarchicalRowInfo
                         (
+                            parent: info,
                             parentType: t,
                             childType: implType,
                             childKeyColumnName: key.GetSqlColumnName(),
@@ -127,7 +132,9 @@ namespace CodeOnlyStoredProcedure.RowFactory
                             rowFactory: typeof(RowFactory<>).MakeGenericType(implType)
                                                             .GetMethod("Create", BindingFlags.Public | BindingFlags.Static)
                                                             .Invoke(null, new[] { falseObj }) as IRowFactory
-                        ));
+                        );
+                        types.Enqueue(Tuple.Create(childType, childInfo));
+                        infos.Add(childInfo);
                     }
                 }
             }
@@ -206,10 +213,10 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
         public override IEnumerable<T> ParseRows(IDataReader reader, IEnumerable<IDataTransformer> dataTransformers, CancellationToken token)
         {
-            var results = new Dictionary<Type, IEnumerable>();
+            var results = new ResultHolder();
 
             foreach (var t in ParseRows(reader, token, rf => rf.ParseRows(reader, dataTransformers, token)))
-                results[t.Item1.ChildType] = t.Item2;
+                results.AddResults(t.Item1.ChildType, t.Item2);
 
             BuildHierarchy(results);
 
@@ -219,10 +226,10 @@ namespace CodeOnlyStoredProcedure.RowFactory
 #if !NET40
         public override async Task<IEnumerable<T>> ParseRowsAsync(DbDataReader reader, IEnumerable<IDataTransformer> dataTransformers, CancellationToken token)
         {
-            var results = new Dictionary<Type, IEnumerable>();
+            var results = new ResultHolder();
 
             foreach (var t in ParseRows(reader, token, rf => rf.ParseRowsAsync(reader, dataTransformers, token)))
-                results[t.Item1.ChildType] = await t.Item2;
+                results.AddResults(t.Item1.ChildType, await t.Item2);
 
             BuildHierarchy(results);
 
@@ -253,7 +260,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
                     break;
 
                 token.ThrowIfCancellationRequested();
-
+                
                 toRead.Remove(hri);
                 yield return Tuple.Create(hri, parser(hri.RowFactory));
             }
@@ -268,10 +275,10 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
             if (index > 0 && !reader.NextResult())
             {
-                if (toRead.All(f => f.IsOptional))
-                    return HierarchicalRowInfo.Empty;
+                if (toRead.Any(f => f.ShouldThrowIfNotFound(toRead)))
+                    throw new StoredProcedureResultsException(typeof(T), toRead.Select(f => f.ChildType).ToArray());
 
-                throw new StoredProcedureResultsException(typeof(T), toRead.Select(f => f.ChildType).ToArray());
+                return HierarchicalRowInfo.Empty;
             }
 
             token.ThrowIfCancellationRequested();
@@ -305,34 +312,40 @@ namespace CodeOnlyStoredProcedure.RowFactory
             return result;
         }
 
-        private static void BuildHierarchy(Dictionary<Type, IEnumerable> results)
+        private static void BuildHierarchy(ResultHolder results)
         {
             // the first one is the actual result row, so it won't have the parent/child relationship
             // defined
             foreach (var hri in rowInfos.Skip(1))
             {
-                IEnumerable children;
+                IEnumerable children, parents;
 
-                var parents  = results[hri.ParentType];
-                if (!results.TryGetValue(hri.ChildType, out children))
+                if (results.TryGetValue(hri.ParentType, out parents))
                 {
-                    if (hri.IsOptional)
+                    if (!results.TryGetValue(hri.ChildType, out children))
                     {
-                        object empty;
-                        
-                        if (hri.IsArray)
-                            empty = Array.CreateInstance(hri.ChildType, 0);
-                        else // this needs to be an empty generic list
-                            empty = Activator.CreateInstance(typeof(List<>).MakeGenericType(hri.ChildType));
+                        if (hri.IsOptional)
+                        {
+                            object empty;
 
-                        foreach (var o in parents)
-                            hri.Assigner.DynamicInvoke(o, empty);
+                            if (hri.IsArray)
+                                empty = Array.CreateInstance(hri.ChildType, 0);
+                            else // this needs to be an empty generic list
+                                empty = Activator.CreateInstance(typeof(List<>).MakeGenericType(hri.ChildType));
+
+                            foreach (var o in parents)
+                                hri.Assigner.DynamicInvoke(o, empty);
+                        }
+                        else
+                        {
+
+                        }
                     }
-                }
-                else
-                {
-                    foreach (var o in parents)
-                        hri.Assigner.DynamicInvoke(o, children);
+                    else
+                    {
+                        foreach (var o in parents)
+                            hri.Assigner.DynamicInvoke(o, children);
+                    }
                 }
             }
         }
@@ -352,26 +365,29 @@ namespace CodeOnlyStoredProcedure.RowFactory
         private class HierarchicalRowInfo
         {
             public static readonly HierarchicalRowInfo Empty = new HierarchicalRowInfo();
-
+            private       readonly HierarchicalRowInfo parent;
+            
             public Type        ParentType          { get; }
             public Type        ChildType           { get; }
             public string      ParentKeyColumnName { get; }
             public string      ChildKeyColumnName  { get; }
             public IRowFactory RowFactory          { get; }
             public Delegate    Assigner            { get; }
-            public bool        IsOptional          { get; }
             public bool        IsArray             { get; }
+            public bool        IsOptional          { get; }
 
             public HierarchicalRowInfo(
-                Type        parentType          = null,
-                Type        childType           = null,
-                string      parentKeyColumnName = null,
-                string      childKeyColumnName  = null,
-                IRowFactory rowFactory          = null,
-                Delegate    assigner            = null,
-                bool        isOptional          = false,
-                bool        isArray             = false)
+                HierarchicalRowInfo parent              = null,
+                Type                parentType          = null,
+                Type                childType           = null,
+                string              parentKeyColumnName = null,
+                string              childKeyColumnName  = null,
+                IRowFactory         rowFactory          = null,
+                Delegate            assigner            = null,
+                bool                isOptional          = false,
+                bool                isArray             = false)
             {
+                this.parent         = parent;
                 ParentType          = parentType;
                 ChildType           = childType;
                 ParentKeyColumnName = parentKeyColumnName;
@@ -382,15 +398,75 @@ namespace CodeOnlyStoredProcedure.RowFactory
                 IsArray             = isArray;
             }
 
-            public bool MatchesColumns(IEnumerable<string> columnNames, out int matchedColumnCount)
+            public bool MatchesColumns(IEnumerable<string> columnNames, out int unMatchedColumnCount)
             {
-                //matchedColumnCount = 0;
-                //if (!string.IsNullOrEmpty(ParentKeyColumnName) && !columnNames.Contains(ParentKeyColumnName))
-                //    return false;
-                //if (!string.IsNullOrEmpty(ChildKeyColumnName) && !columnNames.Contains(ChildKeyColumnName))
-                //    return false;
+                var success = RowFactory.MatchesColumns(columnNames, out unMatchedColumnCount);
 
-                return RowFactory.MatchesColumns(columnNames, out matchedColumnCount);
+                if (!string.IsNullOrEmpty(ParentKeyColumnName) && columnNames.Contains(ParentKeyColumnName))
+                    --unMatchedColumnCount;
+                if (!string.IsNullOrEmpty(ChildKeyColumnName) && columnNames.Contains(ChildKeyColumnName))
+                    --unMatchedColumnCount;
+
+                return success;
+            }
+
+            public bool ShouldThrowIfNotFound(IEnumerable<HierarchicalRowInfo> remaining)
+            {
+                if (IsOptional)
+                    return false;
+
+                if (parent != null && parent.IsOptional)
+                    return !remaining.Contains(parent);
+
+                return true;
+            }
+        }
+
+        private class ResultHolder
+        {
+            private readonly ConcurrentDictionary<Type, List<IEnumerable>> resultMap = new ConcurrentDictionary<Type, List<IEnumerable>>();
+            private readonly MethodInfo yielder = typeof(ResultHolder).GetMethod(nameof(ResultHolder.YieldResults), BindingFlags.NonPublic | BindingFlags.Instance);
+
+            public void AddResults(Type t, IEnumerable results)
+            {
+                resultMap.GetOrAdd(t, _ => new List<IEnumerable>())
+                         .Add(results);
+            }
+
+            public IEnumerable this[Type t]
+            {
+                get
+                {
+                    var res = resultMap[t];
+                    if (res.Count == 1)
+                        return res[0];
+
+                    return (IEnumerable)yielder.MakeGenericMethod(t).Invoke(this, new[] { res });
+                }
+            }
+
+            public bool TryGetValue(Type t, out IEnumerable results)
+            {
+                List<IEnumerable> res;
+                if (resultMap.TryGetValue(t, out res))
+                {
+                    if (res.Count == 1)
+                        results = res[0];
+                    else
+                        results = (IEnumerable)yielder.MakeGenericMethod(t).Invoke(this, new[] { res });
+
+                    return true;
+                }
+
+                results = null;
+                return false;
+            }
+
+            private IEnumerable<TRes> YieldResults<TRes>(List<IEnumerable> res)
+            {
+                foreach (IEnumerable<TRes> i in res)
+                    foreach (TRes j in i)
+                        yield return j;
             }
         }
     }
