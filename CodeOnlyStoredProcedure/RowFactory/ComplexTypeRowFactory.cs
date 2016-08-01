@@ -23,7 +23,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
             var props             = implType.GetResultPropertiesBySqlName();
             dbColumnNames         = props.Keys.ToArray();
-            requiredColumnNames   = props.Where(kv => !kv.Value.GetCustomAttributes(false).OfType<OptionalResultAttribute>().Any())
+            requiredColumnNames   = props.Where(kv => !kv.Value.IsOptional())
                                          .Where(kv => !kv.Value.PropertyType.IsEnumeratedType()) // child collections can't be required
                                          .Select(kv => kv.Key)
                                          .ToArray();
@@ -40,7 +40,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
                                                  {
                                                      Name            = kv.Key,
                                                      Property        = kv.Value,
-                                                     IsOptional      = kv.Value.GetCustomAttributes(false).OfType<OptionalResultAttribute>().Any(),
+                                                     IsOptional      = kv.Value.IsOptional(),
                                                      AccessorFactory = (AccessorFactoryBase)Activator.CreateInstance(typeof(EnumAccessorFactory<>).MakeGenericType(kv.Value.PropertyType), dataReaderExpression, indexExpression, kv.Value, kv.Key)
                                                  };
                                              }
@@ -49,7 +49,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
                                              {
                                                  Name            = kv.Key,
                                                  Property        = kv.Value,
-                                                 IsOptional      = kv.Value.GetCustomAttributes(false).OfType<OptionalResultAttribute>().Any(),
+                                                 IsOptional      = kv.Value.IsOptional(),
                                                  AccessorFactory = (AccessorFactoryBase)Activator.CreateInstance(typeof(ValueAccessorFactory<>).MakeGenericType(kv.Value.PropertyType), dataReaderExpression, indexExpression, kv.Value, kv.Key)
                                              };
                                          })

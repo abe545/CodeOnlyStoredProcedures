@@ -86,28 +86,9 @@ namespace CodeOnlyStoredProcedure
         {
             Contract.Requires(t != null);
             Contract.Ensures (Contract.Result<IDictionary<string, PropertyInfo>>() != null);
-
-            var mappedProperties = new Dictionary<string, PropertyInfo>();
-
-            foreach (var pi in t.GetMappedProperties(requireWritable: true))
-            {
-                var name = pi.Name;
-                var col = pi.GetCustomAttributes(typeof(ColumnAttribute), false)
-                            .OfType<ColumnAttribute>()
-                            .FirstOrDefault();
-                var attr = pi.GetCustomAttributes(typeof(StoredProcedureParameterAttribute), false)
-                             .OfType<StoredProcedureParameterAttribute>()
-                             .FirstOrDefault();
-
-                if (col != null && !string.IsNullOrWhiteSpace(col.Name))
-                    name = col.Name;
-                else if (attr != null && !string.IsNullOrWhiteSpace(attr.Name))
-                    name = attr.Name;
-
-                mappedProperties.Add(name, pi);
-            }
-
-            return mappedProperties;
+            
+            return t.GetMappedProperties(requireWritable: true)
+                    .ToDictionary(pi => pi.GetSqlColumnName());
         }
 
         internal static DbType InferDbType(this Type type)

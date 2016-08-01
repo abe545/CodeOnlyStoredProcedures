@@ -458,6 +458,254 @@ namespace CodeOnlyTests.RowFactory
                             }
                         });
             }
+
+            [TestMethod]
+            public void OptionalChildren_AreAdded_When_They_Are_Returned()
+            {
+                var reader = SetupDataReader(
+                    new Dictionary<string, object>
+                    {
+                        { "Id", 42 }
+                    },
+                    new Dictionary<string, object>
+                    {
+                        { "ParentId", 42 },
+                        { "Value", "Foo" }
+                    });
+
+                var toTest = new HierarchicalTypeRowFactory<OptionalChildren>();
+                var res = toTest.ParseRows(reader, new IDataTransformer[0], CancellationToken.None);
+
+                res.Should().ContainSingle("because only one row was setup").Which
+                    .ShouldBeEquivalentTo(
+                        new OptionalChildren
+                        {
+                            Id = 42,
+                            Children = new[]
+                            {
+                                new Level4
+                                {
+                                    ParentId = 42,
+                                    Value = "Foo"
+                                }
+                            }
+                        });
+            }
+
+            [TestMethod]
+            public void OptionalChildren_IsSetToEmptySet_When_They_Are_Not_Returned()
+            {
+                var reader = SetupDataReader(
+                    new Dictionary<string, object>
+                    {
+                        { "Id", 42 }
+                    });
+
+                var toTest = new HierarchicalTypeRowFactory<OptionalChildren>();
+                var res = toTest.ParseRows(reader, new IDataTransformer[0], CancellationToken.None);
+
+                res.Should().ContainSingle("because only one row was setup").Which
+                    .ShouldBeEquivalentTo(
+                        new OptionalChildren
+                        {
+                            Id = 42,
+                            Children = new Level4[0]
+                        });
+            }
+
+            [TestMethod]
+            public void OptionalChildren_With_Same_Type_As_Required_Children_But_Different_Keys_Are_Both_Returned()
+            {
+                var reader = SetupDataReader(
+                    new Dictionary<string, object>
+                    {
+                        { "Id", 42 }
+                    },
+                    new Dictionary<string, object>
+                    {
+                        { "ParentId", 42 },
+                        { "Value", "Foo" }
+                    },
+                    new Dictionary<string, object>
+                    {
+                        { "CousinId", 42 },
+                        { "Value", "Bar" }
+                    });
+
+                var toTest = new HierarchicalTypeRowFactory<OptionalCousins>();
+                var res = toTest.ParseRows(reader, new IDataTransformer[0], CancellationToken.None);
+
+                res.Should().ContainSingle("because only one row was setup").Which
+                    .ShouldBeEquivalentTo(
+                        new OptionalCousins
+                        {
+                            Id = 42,
+                            Children = new[]
+                            {
+                                new Relative
+                                {
+                                    ParentId = 42,
+                                    Value = "Foo"
+                                }
+                            },
+                            Cousins = new[]
+                            {
+                                new Relative
+                                {
+                                    CousinId = 42,
+                                    Value = "Bar"
+                                }
+                            }
+                        });
+            }
+
+            [TestMethod]
+            public void OptionalChildren_AreNot_Chosen_Over_Required_Children()
+            {
+                var reader = SetupDataReader(
+                    new Dictionary<string, object>
+                    {
+                        { "Id", 42 }
+                    },
+                    new Dictionary<string, object>
+                    {
+                        { "ParentId", 42 },
+                        { "Value", "Foo" }
+                    });
+
+                var toTest = new HierarchicalTypeRowFactory<OptionalCousins>();
+                var res = toTest.ParseRows(reader, new IDataTransformer[0], CancellationToken.None);
+
+                res.Should().ContainSingle("because only one row was setup").Which
+                    .ShouldBeEquivalentTo(
+                        new OptionalCousins
+                        {
+                            Id = 42,
+                            Children = new[]
+                            {
+                                new Relative
+                                {
+                                    ParentId = 42,
+                                    Value = "Foo"
+                                }
+                            },
+                            Cousins = new Relative[0]
+                        });
+            }
+
+            [TestMethod]
+            public void OptionalChildren_Still_Throws_When_Required_Children_Are_Not_Returned()
+            {
+                var reader = SetupDataReader(
+                    new Dictionary<string, object>
+                    {
+                        { "Id", 42 }
+                    });
+
+                var toTest = new HierarchicalTypeRowFactory<BothOptionalAndNonOptionalChildren>();
+                toTest.Invoking(f => f.ParseRows(reader, new IDataTransformer[0], CancellationToken.None))
+                      .ShouldThrow<StoredProcedureException>("because a required result set was missing");
+            }
+
+            [TestMethod]
+            public void RequiredChildren_Of_OptionalChildren_Set_If_All_Result_Sets_Returned()
+            {
+                using (GlobalSettings.UseTestInstance())
+                {
+                    GlobalSettings.Instance.InterfaceMap.TryAdd(typeof(ILevel4), typeof(Level4));
+
+                    var reader = SetupDataReader(
+                    new Dictionary<string, object>
+                    {
+                        { "Id", 42 }
+                    },
+                    new Dictionary<string, object>
+                    {
+                        { "Level2Id", 42 },
+                        { "Name", 15 }
+                    },
+                    new Dictionary<string, object>
+                    {
+                        { "ParentId", 15 },
+                        { "Value", "Bar" }
+                    });
+
+                    var toTest = new HierarchicalTypeRowFactory<OptionalRequired>();
+                    var res = toTest.ParseRows(reader, new IDataTransformer[0], CancellationToken.None);
+
+                    res.Should().ContainSingle("because only one row was setup").Which
+                        .ShouldBeEquivalentTo(
+                            new OptionalRequired
+                            {
+                                Id = 42,
+                                Children = new List<Level3>
+                                {
+                                new Level3
+                                {
+                                    Level2Id = 42,
+                                    Name = 15,
+                                    Level4s = new[]
+                                    {
+                                        new Level4
+                                        {
+                                            ParentId = 15,
+                                            Value = "Bar"
+                                        }
+                                    }
+                                }
+                                }
+                            });
+                }
+            }
+
+            [TestMethod]
+            public void DoesNotThrow_If_OptionalChildren_And_RequiredChildren_Of_OptionalChildren_NotReturned()
+            {
+                using (GlobalSettings.UseTestInstance())
+                {
+                    GlobalSettings.Instance.InterfaceMap.TryAdd(typeof(ILevel4), typeof(Level4));
+                    var reader = SetupDataReader(
+                    new Dictionary<string, object>
+                    {
+                        { "Id", 42 }
+                    });
+
+                    var toTest = new HierarchicalTypeRowFactory<OptionalRequired>();
+                    var res = toTest.ParseRows(reader, new IDataTransformer[0], CancellationToken.None);
+
+                    res.Should().ContainSingle("because only one row was setup").Which
+                        .ShouldBeEquivalentTo(
+                            new OptionalRequired
+                            {
+                                Id = 42,
+                                Children = new List<Level3>()
+                            });
+                }
+            }
+
+            [TestMethod]
+            public void Throws_If_OptionalChildren_Returned_But_RequiredChildren_Of_OptionalChildren_AreNot()
+            {
+                using (GlobalSettings.UseTestInstance())
+                {
+                    GlobalSettings.Instance.InterfaceMap.TryAdd(typeof(ILevel4), typeof(Level4));
+
+                    var reader = SetupDataReader(
+                    new Dictionary<string, object>
+                    {
+                        { "Id", 42 }
+                    },
+                    new Dictionary<string, object>
+                    {
+                        { "Level2Id", 42 },
+                        { "Name", 15 }
+                    });
+
+                    var toTest = new HierarchicalTypeRowFactory<OptionalRequired>();
+                    toTest.Invoking(t => t.ParseRows(reader, new IDataTransformer[0], CancellationToken.None))
+                          .ShouldThrow<StoredProcedureException>("because a required result set was missing");
+                }
+            }
         }
 
         private static IDataReader SetupDataReader(params Dictionary<string, object>[] values)
@@ -657,6 +905,51 @@ namespace CodeOnlyTests.RowFactory
         {
             public int ParentId { get; set; }
             public string Value { get; set; }
+        }
+
+        public class OptionalChildren
+        {
+            [Key]
+            public int Id { get; set; }
+            [OptionalResult, ForeignKey("ParentId")]
+            public IEnumerable<Level4> Children { get; set; }
+        }
+
+        public class BothOptionalAndNonOptionalChildren
+        {
+            [Key]
+            public int Id { get; set; }
+            [OptionalResult, ForeignKey("ParentId")]
+            public IEnumerable<Level4> Children { get; set; }
+            [ForeignKey("Level2Id")]
+            public IEnumerable<Level3> Children2 { get; set; }
+        }
+
+        public class Relative
+        {
+            [OptionalResult]
+            public int CousinId { get; set; }
+            [OptionalResult]
+            public int ParentId { get; set; }
+            public string Value { get; set; }
+        }
+
+        public class OptionalCousins
+        {
+            [Key]
+            public int Id { get; set; }
+            [OptionalResult, ForeignKey("CousinId")]
+            public IEnumerable<Relative> Cousins { get; set; }
+            [ForeignKey("ParentId")]
+            public IEnumerable<Relative> Children { get; set; }
+        }
+
+        public class OptionalRequired
+        {
+            [Key]
+            public int Id { get; set; }
+            [OptionalResult, ForeignKey("Level2Id")]
+            public List<Level3> Children { get; set; }
         }
     }
 }
