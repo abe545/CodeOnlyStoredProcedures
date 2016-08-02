@@ -706,6 +706,45 @@ namespace CodeOnlyTests.RowFactory
                           .ShouldThrow<StoredProcedureException>("because a required result set was missing");
                 }
             }
+
+            [TestMethod]
+            public void Builds_Hierarchy_When_All_Items_Retrieved_By_Interface()
+            {
+                using (GlobalSettings.UseTestInstance())
+                {
+                    GlobalSettings.Instance.InterfaceMap.TryAdd(typeof(IParent), typeof(Parent));
+                    GlobalSettings.Instance.InterfaceMap.TryAdd(typeof(IChild), typeof(Child));
+
+                    var reader = SetupDataReader(
+                    new Dictionary<string, object>
+                    {
+                        { "ParentId", 42 }
+                    },
+                    new Dictionary<string, object>
+                    {
+                        { "ParentId", 42 },
+                        { "Name", "Foo" }
+                    });
+
+                    var toTest = new HierarchicalTypeRowFactory<IParent>();
+                    var res = toTest.ParseRows(reader, new IDataTransformer[0], CancellationToken.None);
+
+                    res.Should().ContainSingle("because only one row was setup").Which
+                        .ShouldBeEquivalentTo(
+                            new Parent
+                            {
+                                ParentId = 42,
+                                Children = new List<IChild>
+                                {
+                                    new Child
+                                    {
+                                        ParentId = 42,
+                                        Name = "Foo"
+                                    }
+                                }
+                            });
+                }
+            }
         }
 
         private static IDataReader SetupDataReader(params Dictionary<string, object>[] values)
@@ -950,6 +989,30 @@ namespace CodeOnlyTests.RowFactory
             public int Id { get; set; }
             [OptionalResult, ForeignKey("Level2Id")]
             public List<Level3> Children { get; set; }
+        }
+
+        public interface IParent
+        {
+            int ParentId { get; }
+            IEnumerable<IChild> Children { get; }
+        }
+
+        public class Parent : IParent
+        {
+            public int ParentId { get; set; }
+            public IEnumerable<IChild> Children { get; set; }
+        }
+
+        public interface IChild
+        {
+            int ParentId { get; }
+            string Name { get; }
+        }
+
+        public class Child : IChild
+        {
+            public int ParentId { get; set; }
+            public string Name { get; set; }
         }
     }
 }
