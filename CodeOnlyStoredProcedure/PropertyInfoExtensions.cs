@@ -1,5 +1,7 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 
 namespace CodeOnlyStoredProcedure
@@ -28,6 +30,12 @@ namespace CodeOnlyStoredProcedure
                 return attr.Name;
 
             return pi.Name;
+        }
+
+        public static Func<TItem, TProp> CompileGetter<TItem, TProp>(this PropertyInfo prop)
+        {
+            var i = Expression.Parameter(typeof(TItem), "i");
+            return Expression.Lambda<Func<TItem, TProp>>(Expression.Property(i, prop), i).Compile();
         }
     }
 }

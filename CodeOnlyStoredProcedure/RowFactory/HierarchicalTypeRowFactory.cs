@@ -18,30 +18,25 @@ namespace CodeOnlyStoredProcedure.RowFactory
 {
     internal class HierarchicalTypeRowFactory<T> : RowFactory<T>
     {
+        private static readonly MethodInfo toArray = typeof(Enumerable).GetMethod(nameof(Enumerable.ToArray));
+        private static readonly MethodInfo toList  = typeof(Enumerable).GetMethod(nameof(Enumerable.ToList));
         private static readonly IRowFactory mainResultFactory = RowFactory<T>.Create(false);
         private static readonly IEnumerable<HierarchicalRowInfo> rowInfos;
+        private static readonly Type resultType;
         private        readonly ReadOnlyCollection<Type> resultTypesInOrder;
 
         static HierarchicalTypeRowFactory()
         {
             object falseObj = false;
 
+            if (!GlobalSettings.Instance.InterfaceMap.TryGetValue(typeof(T), out resultType))
+                resultType = typeof(T);
+
             var infos = new List<HierarchicalRowInfo>();
             var types = new Queue<Tuple<Type, HierarchicalRowInfo>>();
             var added = new HashSet<Type>();
+            var info  = Activator.CreateInstance(typeof(RootHierarchicalRowInfo<>).MakeGenericType(typeof(T), resultType)) as HierarchicalRowInfo;
 
-            var whereMethod = typeof(Enumerable).GetMethods()
-                                                .Where(mi => mi.Name == "Where" && 
-                                                             mi.GetParameters()[1].ParameterType.GetGenericTypeDefinition() == typeof(Func<,>))
-                                                .Single();
-            var cast    = typeof(Enumerable).GetMethod("Cast");
-            var toArray = typeof(Enumerable).GetMethod("ToArray");
-            var toList  = typeof(Enumerable).GetMethod("ToList");
-
-            var info = new HierarchicalRowInfo(
-                childType: typeof(T),
-                rowFactory: RowFactory<T>.Create(false)
-                );
             types.Enqueue(Tuple.Create(typeof(T), info));
             infos.Add(info);
 
@@ -54,14 +49,15 @@ namespace CodeOnlyStoredProcedure.RowFactory
                 if (!added.Add(t))
                     continue;
 
-                Type implType;
                 IEnumerable<PropertyInfo> interfaceProperties = null;
+                Type implType;
                 if (GlobalSettings.Instance.InterfaceMap.TryGetValue(t, out implType))
                 {
                     interfaceProperties = t.GetMappedProperties();
                     t = implType;
                 }
 
+                // get all the properties, not just the writeable ones, that way the key property can be a calculated key
                 var props = t.GetMappedProperties();
                 var key   = GetKeyProperty(t, props, interfaceProperties);
 
@@ -85,54 +81,8 @@ namespace CodeOnlyStoredProcedure.RowFactory
                         else if (fk.PropertyType != key.PropertyType)
                             throw new NotSupportedException("Key types are not matched for " + implType.Name + ". Key on parent type: " + key.PropertyType + ".\nForeign key type on child: " + fk.PropertyType);
 
-                        var childEnumerable = typeof(IEnumerable<>).MakeGenericType(childType);
-                        var parent = Expression.Parameter(t);
-                        var possible = Expression.Parameter(childEnumerable);
-                        var keyExpr = Expression.Property(parent, key);
-
-                        Expression children;
-                        if (implType == childType)
-                        {
-                            // possible.Where(c => c.ParentKey == key)
-                            var c = Expression.Parameter(childType);
-                            var funcType = typeof(Func<,>).MakeGenericType(childType, typeof(bool));
-                            children = Expression.Call(whereMethod.MakeGenericMethod(childType),
-                                                       possible,
-                                                       Expression.Lambda(funcType, Expression.Equal(keyExpr, Expression.Property(c, fk)), c));
-                        }
-                        else
-                        {
-                            // possible.Cast<TImpl>().Where(c => c.ParentKey == key)
-                            var c = Expression.Parameter(implType);
-                            var funcType = typeof(Func<,>).MakeGenericType(implType, typeof(bool));
-                            children = Expression.Call(cast.MakeGenericMethod(implType), possible);
-                            children = Expression.Call(whereMethod.MakeGenericMethod(implType),
-                                                       children,
-                                                       Expression.Lambda(funcType, Expression.Equal(keyExpr, Expression.Property(c, fk)), c));
-                        }
-
-                        if (child.PropertyType.IsArray) // .ToArray()
-                            children = Expression.Call(toArray.MakeGenericMethod(childType), children);
-                        else // .ToList()
-                            children = Expression.Call(toList.MakeGenericMethod(childType), children);
-
-                        var assign = Expression.Assign(Expression.Property(parent, child), children);
-
-
-                        var childInfo = new HierarchicalRowInfo
-                        (
-                            parent: info,
-                            parentType: t,
-                            childType: implType,
-                            childKeyColumnName: key.GetSqlColumnName(),
-                            parentKeyColumnName: foreignKeyName,
-                            isOptional: child.IsOptional(),
-                            isArray: child.PropertyType.IsArray,
-                            assigner: Expression.Lambda(assign, parent, possible).Compile(),
-                            rowFactory: typeof(RowFactory<>).MakeGenericType(implType)
-                                                            .GetMethod("Create", BindingFlags.Public | BindingFlags.Static)
-                                                            .Invoke(null, new[] { falseObj }) as IRowFactory
-                        );
+                        var hriType = typeof(HierarchicalRowInfo<,,>).MakeGenericType(typeof(T), t, implType, key.PropertyType);
+                        var childInfo = Activator.CreateInstance(hriType, key, fk, child, info) as HierarchicalRowInfo;
                         types.Enqueue(Tuple.Create(childType, childInfo));
                         infos.Add(childInfo);
                     }
@@ -216,11 +166,9 @@ namespace CodeOnlyStoredProcedure.RowFactory
             var results = new ResultHolder();
 
             foreach (var t in ParseRows(reader, token, rf => rf.ParseRows(reader, dataTransformers, token)))
-                results.AddResults(t.Item1.ChildType, t.Item2);
+                results.AddResults(t.Item1.ItemType, t.Item2);
 
-            BuildHierarchy(results);
-
-            return (IEnumerable<T>)results[typeof(T)];
+            return BuildHierarchy(results);
         }
 
 #if !NET40
@@ -229,11 +177,9 @@ namespace CodeOnlyStoredProcedure.RowFactory
             var results = new ResultHolder();
 
             foreach (var t in ParseRows(reader, token, rf => rf.ParseRowsAsync(reader, dataTransformers, token)))
-                results.AddResults(t.Item1.ChildType, await t.Item2);
+                results.AddResults(t.Item1.ItemType, await t.Item2);
 
-            BuildHierarchy(results);
-
-            return (IEnumerable<T>)results[typeof(T)];
+            return BuildHierarchy(results);
         }
 #endif
 
@@ -276,7 +222,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
             if (index > 0 && !reader.NextResult())
             {
                 if (toRead.Any(f => f.ShouldThrowIfNotFound(toRead)))
-                    throw new StoredProcedureResultsException(typeof(T), toRead.Select(f => f.ChildType).ToArray());
+                    throw new StoredProcedureResultsException(typeof(T), toRead.Select(f => f.ItemType).ToArray());
 
                 return HierarchicalRowInfo.Empty;
             }
@@ -289,7 +235,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
                     return null;
 
                 var type = resultTypesInOrder[index];
-                return toRead.First(f => f.ChildType == type);
+                return toRead.First(f => f.ItemType == type);
             }
 
             HierarchicalRowInfo result          = null;
@@ -312,42 +258,21 @@ namespace CodeOnlyStoredProcedure.RowFactory
             return result;
         }
 
-        private static void BuildHierarchy(ResultHolder results)
+        private static IEnumerable<T> BuildHierarchy(ResultHolder results)
         {
+            Contract.Requires(results != null);
+            Contract.Ensures(Contract.Result<IEnumerable<T>>() != null);
+
             // the first one is the actual result row, so it won't have the parent/child relationship
             // defined
             foreach (var hri in rowInfos.Skip(1))
-            {
-                IEnumerable children, parents;
+                hri.AssignItemsToParents(results);
 
-                if (results.TryGetValue(hri.ParentType, out parents))
-                {
-                    if (!results.TryGetValue(hri.ChildType, out children))
-                    {
-                        if (hri.IsOptional)
-                        {
-                            object empty;
+            IEnumerable<T> res;
+            if (!results.TryGetValue(out res, resultType))
+                throw new StoredProcedureException("Unexpected error trying to retrieve the results for the hierarchy with root type " + typeof(T));
 
-                            if (hri.IsArray)
-                                empty = Array.CreateInstance(hri.ChildType, 0);
-                            else // this needs to be an empty generic list
-                                empty = Activator.CreateInstance(typeof(List<>).MakeGenericType(hri.ChildType));
-
-                            foreach (var o in parents)
-                                hri.Assigner.DynamicInvoke(o, empty);
-                        }
-                        else
-                        {
-
-                        }
-                    }
-                    else
-                    {
-                        foreach (var o in parents)
-                            hri.Assigner.DynamicInvoke(o, children);
-                    }
-                }
-            }
+            return res;
         }
 
         public override bool MatchesColumns(IEnumerable<string> columnNames, out int leftoverColumns)
@@ -367,33 +292,27 @@ namespace CodeOnlyStoredProcedure.RowFactory
             public static readonly HierarchicalRowInfo Empty = new HierarchicalRowInfo();
             private       readonly HierarchicalRowInfo parent;
             
-            public Type        ParentType          { get; }
-            public Type        ChildType           { get; }
+            public Type        ItemType            { get; }
             public string      ParentKeyColumnName { get; }
-            public string      ChildKeyColumnName  { get; }
+            public string      ItemKeyColumnName   { get; }
             public IRowFactory RowFactory          { get; }
-            public Delegate    Assigner            { get; }
             public bool        IsArray             { get; }
             public bool        IsOptional          { get; }
 
             public HierarchicalRowInfo(
                 HierarchicalRowInfo parent              = null,
-                Type                parentType          = null,
-                Type                childType           = null,
+                Type                itemType            = null,
                 string              parentKeyColumnName = null,
-                string              childKeyColumnName  = null,
+                string              itemKeyColumnName   = null,
                 IRowFactory         rowFactory          = null,
-                Delegate            assigner            = null,
                 bool                isOptional          = false,
                 bool                isArray             = false)
             {
                 this.parent         = parent;
-                ParentType          = parentType;
-                ChildType           = childType;
+                ItemType            = itemType;
                 ParentKeyColumnName = parentKeyColumnName;
-                ChildKeyColumnName  = childKeyColumnName;
+                ItemKeyColumnName   = itemKeyColumnName;
                 RowFactory          = rowFactory;
-                Assigner            = assigner;
                 IsOptional          = isOptional;
                 IsArray             = isArray;
             }
@@ -404,7 +323,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
                 if (!string.IsNullOrEmpty(ParentKeyColumnName) && columnNames.Contains(ParentKeyColumnName))
                     --unMatchedColumnCount;
-                if (!string.IsNullOrEmpty(ChildKeyColumnName) && columnNames.Contains(ChildKeyColumnName))
+                if (!string.IsNullOrEmpty(ItemKeyColumnName) && columnNames.Contains(ItemKeyColumnName))
                     --unMatchedColumnCount;
 
                 return success;
@@ -420,40 +339,113 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
                 return true;
             }
+
+            public virtual void AssignItemsToParents(ResultHolder results)
+            {
+                // the base class shouldn't be called, as only the top level item uses the non-generic type,
+                // and it is skipped when assigning the hierarchies
+            }
+        }
+
+        private class RootHierarchicalRowInfo<TItem> : HierarchicalRowInfo
+        {
+            public RootHierarchicalRowInfo() : base(itemType: typeof(TItem), rowFactory: RowFactory<TItem>.Create(false)) { }
+        }
+
+        private class HierarchicalRowInfo<TParent, TItem, TKey> : HierarchicalRowInfo
+        {
+            private readonly Action<TParent, IEnumerable<TItem>> assigner;
+            private readonly Func<TItem, TKey>                   keyFunc;
+            private readonly Func<TParent, TKey>                 foreignKeyFunc;
+
+            public HierarchicalRowInfo(
+                PropertyInfo        parentKeyProperty,
+                PropertyInfo        childParentKeyProperty,
+                PropertyInfo        parentChildrenProperty,
+                HierarchicalRowInfo parent)
+                : base(parent:              parent,
+                       itemType:            typeof(TItem),
+                       parentKeyColumnName: parentKeyProperty.GetSqlColumnName(),
+                       itemKeyColumnName:   childParentKeyProperty.GetSqlColumnName(),
+                       rowFactory:          RowFactory<TItem>.Create(false),
+                       isOptional:          parentChildrenProperty.IsOptional(),
+                       isArray:             parentChildrenProperty.PropertyType.IsArray)
+            {
+                keyFunc        = childParentKeyProperty.CompileGetter<TItem,   TKey>();
+                foreignKeyFunc = parentKeyProperty     .CompileGetter<TParent, TKey>();
+
+                var value = Expression.Parameter(typeof(IEnumerable<TItem>), "value");
+                Expression toSet = value;
+
+                if (parentChildrenProperty.PropertyType.IsArray)
+                    toSet = Expression.Call(toArray.MakeGenericMethod(typeof(TItem)), toSet);
+                else
+                    toSet = Expression.Call(toList.MakeGenericMethod(typeof(TItem)), toSet);
+
+                var p = Expression.Parameter(typeof(TParent), "p");
+                var assign = Expression.Assign(Expression.Property(p, parentChildrenProperty), toSet);
+                assigner = Expression.Lambda<Action<TParent, IEnumerable<TItem>>>(assign, p, value).Compile();
+            }
+
+            public override void AssignItemsToParents(ResultHolder results)
+            {
+                IEnumerable<TParent> parents;
+                IEnumerable<TItem> toSet = null;
+
+                if (results.TryGetValue(out parents))
+                {
+                    if (!results.TryGetValue(out toSet))
+                    {
+                        if (IsOptional)
+                        {
+                            if (IsArray)
+                                toSet = new TItem[0];
+                            else // this needs to be an empty generic list
+                                toSet = new List<TItem>();
+                        }
+                    }
+                }
+
+                if (toSet != null)
+                {
+                    if (toSet.Any())
+                    {
+                        var lookup = toSet.ToLookup(keyFunc);
+                        foreach (TParent p in parents)
+                        {
+                            var key = foreignKeyFunc(p);
+                            var items = lookup[key];
+                            assigner(p, items);
+                        }
+                    }
+                    else
+                    {
+                        foreach (TParent p in parents)
+                            assigner(p, toSet);
+                    }
+                }
+            }
         }
 
         private class ResultHolder
         {
             private readonly ConcurrentDictionary<Type, List<IEnumerable>> resultMap = new ConcurrentDictionary<Type, List<IEnumerable>>();
-            private readonly MethodInfo yielder = typeof(ResultHolder).GetMethod(nameof(ResultHolder.YieldResults), BindingFlags.NonPublic | BindingFlags.Instance);
-
+            
             public void AddResults(Type t, IEnumerable results)
             {
                 resultMap.GetOrAdd(t, _ => new List<IEnumerable>())
                          .Add(results);
             }
 
-            public IEnumerable this[Type t]
-            {
-                get
-                {
-                    var res = resultMap[t];
-                    if (res.Count == 1)
-                        return res[0];
-
-                    return (IEnumerable)yielder.MakeGenericMethod(t).Invoke(this, new[] { res });
-                }
-            }
-
-            public bool TryGetValue(Type t, out IEnumerable results)
+            public bool TryGetValue<TRes>(out IEnumerable<TRes> results, Type keyType = null)
             {
                 List<IEnumerable> res;
-                if (resultMap.TryGetValue(t, out res))
+                if (resultMap.TryGetValue(keyType ?? typeof(TRes), out res))
                 {
                     if (res.Count == 1)
-                        results = res[0];
+                        results = (IEnumerable<TRes>)res[0];
                     else
-                        results = (IEnumerable)yielder.MakeGenericMethod(t).Invoke(this, new[] { res });
+                        results = YieldResults<TRes>(res);
 
                     return true;
                 }
