@@ -11,6 +11,7 @@
 Code Only Stored Procedures will not create any Stored Procedures on your database. Instead, its aim is to make it easy to call your existing stored procedures by writing simple code.</description>
         <releaseNotes>2.3.0
 Fixed bug where hierarchical result sets could not be marked as optional
+Hierarchies are now much faster to build, especially with large data sets.
      
 2.2.6
 Fixed bug where dynamic stored procedures wouldn't dispose of the IDbCommand objects they created.
