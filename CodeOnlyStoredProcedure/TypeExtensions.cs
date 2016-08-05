@@ -109,6 +109,8 @@ namespace CodeOnlyStoredProcedure
                 return DbType.String;
             else if (type == typeof(DateTime))
                 return DbType.DateTime;
+            else if (type == typeof(DateTimeOffset))
+                return DbType.DateTimeOffset;
             else if (type == typeof(Int64))
                 return DbType.Int64;
             else if (type == typeof(Int16))
@@ -131,6 +133,42 @@ namespace CodeOnlyStoredProcedure
                 return DbType.StringFixedLength;
 
             return DbType.Object;
+        }
+
+        internal static SqlDbType? TryInferSqlDbType(this Type type)
+        {
+            Contract.Requires(type != null);
+
+            UnwrapNullable(ref type);
+
+            if (type == typeof(Int32) || type == typeof(UInt32))
+                return SqlDbType.Int;
+            else if (type == typeof(Double))
+                return SqlDbType.Float;
+            else if (type == typeof(Decimal))
+                return SqlDbType.Decimal;
+            else if (type == typeof(Boolean))
+                return SqlDbType.Bit;
+            else if (type == typeof(String) || type.IsEnum)
+                return SqlDbType.NVarChar;
+            else if (type == typeof(DateTime))
+                return SqlDbType.DateTime;
+            else if (type == typeof(DateTimeOffset))
+                return SqlDbType.DateTimeOffset;
+            else if (type == typeof(Int64) || type == typeof(UInt64))
+                return SqlDbType.BigInt;
+            else if (type == typeof(Int16) || type == typeof(UInt16))
+                return SqlDbType.SmallInt;
+            else if (type == typeof(Byte) || type == typeof(SByte))
+                return SqlDbType.TinyInt;
+            else if (type == typeof(Guid))
+                return SqlDbType.UniqueIdentifier;
+            else if (type == typeof(Char))
+                return SqlDbType.NChar;
+            else if (type == typeof(Single))
+                return SqlDbType.Real;
+
+            return null;
         }
 
         internal static void SetTypePrecisionAndScale(this Type        type, 
@@ -186,38 +224,13 @@ namespace CodeOnlyStoredProcedure
 
             if (!specifiedSqlDbType.HasValue)
             {
-                UnwrapNullable(ref type);
-
-                if (type == typeof(string))
-                    specifiedSqlDbType = SqlDbType.NVarChar;
-                else if (type == typeof(char))
-                {
-                    specifiedSqlDbType = SqlDbType.NChar;
-                    specifiedSize = specifiedSize ?? 1;
-                }
-                else if (type == typeof(Decimal))
-                    specifiedSqlDbType = SqlDbType.Decimal;
-                else if (type == typeof(Int32))
-                    specifiedSqlDbType = SqlDbType.Int;
-                else if (type == typeof(Double))
-                    specifiedSqlDbType = SqlDbType.Float;
-                else if (type == typeof(Boolean))
-                    specifiedSqlDbType = SqlDbType.Bit;
-                else if (type == typeof(DateTime))
-                    specifiedSqlDbType = SqlDbType.DateTime;
-                else if (type == typeof(Int64))
-                    specifiedSqlDbType = SqlDbType.BigInt;
-                else if (type == typeof(Int16))
-                    specifiedSqlDbType = SqlDbType.SmallInt;
-                else if (type == typeof(Byte))
-                    specifiedSqlDbType = SqlDbType.TinyInt;
-                else if (type == typeof(Single))
-                    specifiedSqlDbType = SqlDbType.Real;
-                else if (type == typeof(Guid))
-                    specifiedSqlDbType = SqlDbType.UniqueIdentifier;
-                else
-                    throw new NotSupportedException("Could not determine the type of " + columnName + " for the Table Valued Parameter. You can specify the desired type by decorating the property of your model with a SqlServerStoredProcedureParameter attribute.");
+                specifiedSqlDbType = type.TryInferSqlDbType();
+                if (specifiedSize == null && type == typeof(Char))
+                    specifiedSize = 1;
             }
+
+            if (!specifiedSqlDbType.HasValue)
+                throw new NotSupportedException("Could not determine the type of " + columnName + " for the Table Valued Parameter. You can specify the desired type by decorating the property of your model with a SqlServerStoredProcedureParameter attribute.");
 
             switch (specifiedSqlDbType.Value)
             {
