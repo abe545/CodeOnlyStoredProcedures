@@ -119,6 +119,18 @@ namespace SmokeTests
             return Tuple.Create(true, "");
         }
 
+        [SmokeTest("Dynamic Syntax DateTimeOffset parameter and result")]
+        Tuple<bool, string> DateTimeOffset_Result_And_Parameter(IDbConnection db)
+        {
+            DateTimeOffset res, dt = DateTimeOffset.Now;
+            res = db.Execute(Program.timeout).usp_GetAsUtc(dateTime: dt);
+
+            if (res != dt.ToUniversalTime())
+                return Tuple.Create(false, $"\texpected {dt.ToUniversalTime()}, but returned {res}");
+
+            return Tuple.Create(true, "");
+        }
+
         [SmokeTest("Dynamic Syntax async Simple ResultSet")]
         async Task<Tuple<bool, string>> AsyncSimpleResultSet(IDbConnection db)
         {
@@ -137,6 +149,18 @@ namespace SmokeTests
 
             if (!res.SequenceEqual(new[] { 16 }))
                 return Tuple.Create(false, "\treturned the wrong data");
+
+            return Tuple.Create(true, "");
+        }
+
+        [SmokeTest("Dynamic Syntax async DateTimeOffset parameter and result")]
+        async Task<Tuple<bool, string>> AsyncDateTimeOffset_Result_And_Parameter(IDbConnection db)
+        {
+            DateTimeOffset res, dt = DateTimeOffset.Now;
+            res = await db.ExecuteAsync(Program.timeout).usp_GetAsUtc(dateTime: dt);
+
+            if (res != dt.ToUniversalTime())
+                return Tuple.Create(false, $"\texpected {dt.ToUniversalTime()}, but returned {res}");
 
             return Tuple.Create(true, "");
         }

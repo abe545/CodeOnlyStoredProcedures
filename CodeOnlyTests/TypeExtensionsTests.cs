@@ -430,6 +430,21 @@ namespace CodeOnlyTests
             var result = typeof(EnumToTest).InferDbType();
             result.Should().Be(DbType.String, "because an enum should be passed as a string");
         }
+
+        [TestMethod]
+        public void InferDbType_ReturnsDateTimeOffset()
+        {
+            typeof(DateTimeOffset).InferDbType().Should().Be(DbType.DateTimeOffset);
+        }
+        #endregion
+
+        #region CreateSqlMetaData
+        [TestMethod]
+        public void CreateSqlMetaData_ReturnsSqlMetaData_ThatRepresents_DateTimeOffset()
+        {
+            var result = typeof(DateTimeOffset).CreateSqlMetaData("Foo", null, null, null, null);
+            result.SqlDbType.Should().Be(SqlDbType.DateTimeOffset);
+        }
         #endregion
 
         #region Types To Test With
