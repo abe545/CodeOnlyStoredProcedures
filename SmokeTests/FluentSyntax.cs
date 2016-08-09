@@ -201,6 +201,22 @@ namespace SmokeTests
             return Tuple.Create(true, "");
         }
 
+        [SmokeTest("Fluent Syntax DateTimeOffset parameter and result")]
+        Tuple<bool, string> DateTimeOffset_Result_And_Parameter(IDbConnection db)
+        {
+            var dt = DateTimeOffset.Now;
+            var res = StoredProcedure.Create("usp_GetAsUtc")
+                                     .WithResults<DateTimeOffset>()
+                                     .WithParameter("dateTime", dt)
+                                     .Execute(db, Program.timeout)
+                                     .Single();
+
+            if (res != dt.ToUniversalTime())
+                return Tuple.Create(false, $"\texpected {dt.ToUniversalTime()}, but returned {res}");
+
+            return Tuple.Create(true, "");
+        }
+
         [SmokeTest("Fluent Syntax Simple ResultSet WithInput")]
         Tuple<bool, string> SimpleResultSet_WithInput(IDbConnection db)
         {
@@ -252,6 +268,27 @@ namespace SmokeTests
 
             if (!res.SequenceEqual(new[] { 16 }))
                 return Tuple.Create(false, "\treturned the wrong data");
+
+            return Tuple.Create(true, "");
+        }
+
+        [SmokeTest("Fluent Syntax async DateTimeOffset parameter and result")]
+        async Task<Tuple<bool, string>> AsyncDateTimeOffset_Result_And_Parameter(IDbConnection db)
+        {
+            var dt = DateTimeOffset.Now;
+            var res = (await StoredProcedure.Create("usp_GetAsUtc")
+                                            .WithResults<DateTimeOffset>()
+                                            .WithParameter("dateTime", dt)
+                                            .ExecuteAsync(db, Program.timeout))
+                                            .Single();
+
+            if (res != dt.ToUniversalTime())
+                return Tuple.Create(false, $"\texpected {dt.ToUniversalTime()}, but returned {res}");
+
+            return Tuple.Create(true, "");
+
+            if (res != dt.ToUniversalTime())
+                return Tuple.Create(false, $"\texpected {dt.ToUniversalTime()}, but returned {res}");
 
             return Tuple.Create(true, "");
         }
