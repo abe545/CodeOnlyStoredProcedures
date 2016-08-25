@@ -14,12 +14,12 @@ namespace CodeOnlyStoredProcedure
         /// <summary>
         /// Gets the names of the properties that were not found in the result set.
         /// </summary>
-        public IEnumerable<string> MissingProperties { get; private set; }
+        public IEnumerable<string> MissingProperties { get; }
 
         /// <summary>
         /// Gets the types that were missing from the results.
         /// </summary>
-        public IEnumerable<Type> MissingChildTypes { get; private set; }
+        public IEnumerable<Type> MissingChildTypes { get; }
 
         /// <summary>
         /// Creates a new StoredProcedureResultsException
@@ -115,11 +115,7 @@ namespace CodeOnlyStoredProcedure
                 types = sb.ToString();
             }
 
-            return string.Format(
-                "No result sets were found that match the {0} {1} when parsing {2}. If the child collection is not returned for this model, you should mark it with the NotMapped attribute.",
-                ts,
-                types,
-                resultType.Name);
+            return $"No result sets were found that match the {ts} {types} when parsing {resultType.Name}. If the child collection is not returned for this model, you should mark it with the NotMapped attribute.";
         }
     }
 }

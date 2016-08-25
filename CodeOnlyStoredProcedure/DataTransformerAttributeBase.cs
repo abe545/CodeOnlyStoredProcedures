@@ -17,7 +17,7 @@ namespace CodeOnlyStoredProcedure
         /// a property, we must force the programmer to pass the order in which these 
         /// transformations should be applied.
         /// </remarks>
-        public int Order { get; private set; }
+        public int Order { get; }
 
         /// <summary>
         /// Creates a new DataTransformer attribute.

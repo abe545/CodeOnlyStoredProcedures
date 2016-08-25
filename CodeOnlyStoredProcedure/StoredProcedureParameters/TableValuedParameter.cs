@@ -14,9 +14,11 @@ namespace CodeOnlyStoredProcedure
         private readonly IEnumerable values;
         private readonly Type        valueType;
 
-        public   string ParameterName { get; private set; }
+        public   string ParameterName { get; }
         public   object Value         { get { return values; } }
-        internal string TypeName      { get; private set; }
+        internal string TypeName      { get; }
+
+        string FormattedParameterName => ParameterName.StartsWith("@") ? ParameterName.Substring(1) : ParameterName;
 
         public TableValuedParameter(string name, IEnumerable values, Type valueType, string tableTypeName, string tableTypeSchema = "dbo")
         {
@@ -51,7 +53,7 @@ namespace CodeOnlyStoredProcedure
 
         public override string ToString()
         {
-            return string.Format("@{0} = IEnumerable<{1}> ({2} items)", ParameterName.StartsWith("@") ? ParameterName.Substring(1) : ParameterName, valueType, GetValueCount());
+            return $"@{FormattedParameterName} = IEnumerable<{valueType}> ({GetValueCount()} items)";
         }
 
         private int GetValueCount()

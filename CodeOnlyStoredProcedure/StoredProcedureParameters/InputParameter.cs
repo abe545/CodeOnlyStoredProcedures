@@ -5,9 +5,9 @@ namespace CodeOnlyStoredProcedure
 {
     internal class InputParameter : IInputStoredProcedureParameter
     {
-        public string  ParameterName { get; private set; }
-        public DbType? DbType        { get; private set; }
-        public object  Value         { get; private set; }
+        public string  ParameterName { get; }
+        public DbType? DbType        { get; }
+        public object  Value         { get; }
 
         public InputParameter(string name, object value, DbType? dbType = null)
         {

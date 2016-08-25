@@ -59,10 +59,7 @@ namespace CodeOnlyStoredProcedure.DataTransformation
         /// <param name="isNullable">If the target property is a nullable of type <paramref name="targetType"/></param>
         /// <param name="propertyAttributes">All attributes applied to the property</param>
         /// <returns>The interned string</returns>
-        public object Transform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes)
-        {
-            return string.Intern((string)value);
-        }
+        public object Transform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes) => string.Intern((string)value);
 
         /// <summary>
         /// Interns the input string
@@ -70,12 +67,6 @@ namespace CodeOnlyStoredProcedure.DataTransformation
         /// <param name="value">The string to intern</param>
         /// <param name="propertyAttributes">All attributes applied to the property</param>
         /// <returns>The interned string</returns>
-        public string Transform(string value, IEnumerable<Attribute> propertyAttributes)
-        {
-            if (value == null)
-                return value;
-
-            return string.Intern(value);
-        }
+        public string Transform(string value, IEnumerable<Attribute> propertyAttributes) => value == null ? null : string.Intern(value);
     }
 }

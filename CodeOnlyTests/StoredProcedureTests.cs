@@ -458,7 +458,7 @@ namespace CodeOnlyTests
 
         private class NoDefaultCtor
         {
-            public string Id { get; private set; }
+            public string Id { get; }
 
             public NoDefaultCtor(string id)
             {
