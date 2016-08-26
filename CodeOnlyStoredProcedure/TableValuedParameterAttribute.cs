@@ -49,7 +49,7 @@ namespace CodeOnlyStoredProcedure
                 throw new NotSupportedException("Can only add a TableValued Parameter to a SQL Server Stored Procedure.");
 
             param.SqlDbType = SqlDbType.Structured;
-            param.TypeName  = string.Format("[{0}].[{1}]", Schema, TableName ?? propertyName);
+            param.TypeName  = $"[{Schema}].[{TableName ?? propertyName}]";
 
             return param;
         }

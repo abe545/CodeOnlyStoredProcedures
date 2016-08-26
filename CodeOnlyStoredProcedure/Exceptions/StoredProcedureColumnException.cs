@@ -48,7 +48,7 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(dbType       != null);
             Contract.Ensures(!string.IsNullOrEmpty(Contract.Result<string>()));
 
-            return "Error setting [" + propertyType.Name + "] " + propertyName + ". Stored Procedure returns [" + dbType.Name + "].";
+            return $"Error setting [{propertyType.Name}] {propertyName}. Stored Procedure returns [{dbType.Name}].";
         }
     }
 }

@@ -46,14 +46,7 @@ namespace CodeOnlyStoredProcedure
             return parm;
         }
 
-        public void TransferOutputValue(object value)
-        {
-            setter(value);
-        }
-
-        public override string ToString()
-        {
-            return string.Format("[InOut] @{0} = '{1}'", ParameterName.StartsWith("@") ? ParameterName.Substring(1) : ParameterName, Value ?? "{null}");
-        }
+        public void TransferOutputValue(object value) => setter(value);
+        public override string ToString() => $"[InOut] @{ParameterName.FormatParameterName()} = {Value.FormatParameterValue()}";
     }
 }

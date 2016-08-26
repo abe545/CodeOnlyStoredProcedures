@@ -249,7 +249,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
             var excep   = Expression.Throw(
                               Expression.New(typeof(NotSupportedException).GetConstructor(new[] { typeof(string) }),
                                   Expression.Call(typeof(string).GetMethod("Format", new[] { typeof(string), typeof(object) }),
-                                      Expression.Constant("Could not parse the string \"{0}\" into an enum of type " + dbType + "."),
+                                      Expression.Constant($"Could not parse the string \"{0}\" into an enum of type {dbType}."),
                                       str
                                   )
                               ), underlying);

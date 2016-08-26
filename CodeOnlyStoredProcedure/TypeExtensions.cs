@@ -230,7 +230,7 @@ namespace CodeOnlyStoredProcedure
             }
 
             if (!specifiedSqlDbType.HasValue)
-                throw new NotSupportedException("Could not determine the type of " + columnName + " for the Table Valued Parameter. You can specify the desired type by decorating the property of your model with a SqlServerStoredProcedureParameter attribute.");
+                throw new NotSupportedException($"Could not determine the type of {columnName} for the Table Valued Parameter. You can specify the desired type by decorating the property of your model with a SqlServerStoredProcedureParameter attribute.");
 
             switch (specifiedSqlDbType.Value)
             {

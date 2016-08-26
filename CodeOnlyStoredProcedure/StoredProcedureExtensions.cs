@@ -24,5 +24,8 @@ namespace CodeOnlyStoredProcedure
 
             return parameter;
         }
+
+        internal static string FormatParameterName(this string parameterName) => parameterName.StartsWith("@") ? parameterName.Substring(1) : parameterName;
+        internal static string FormatParameterValue(this object parameterValue) => parameterValue != null ? $"'{parameterValue}'" : "NULL";
     }
 }

@@ -203,7 +203,7 @@ namespace CodeOnlyStoredProcedure
                 closeAfterExecute = null;
 
             var cmd            = connection.CreateCommand();
-            cmd.CommandText    = string.Format("[{0}].[{1}]", schema, name);
+            cmd.CommandText    = $"[{schema}].[{name}]";
             cmd.CommandType    = CommandType.StoredProcedure;
             cmd.CommandTimeout = timeout;
 

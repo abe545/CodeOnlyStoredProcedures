@@ -88,7 +88,7 @@ namespace CodeOnlyTests.StoredProcedureParameters
         [TestMethod]
         public void NullValueToStringReturnsCorrectString()
         {
-            new InputOutputParameter("Foo", o => { }, null).ToString().Should().Be("[InOut] @Foo = '{null}'");
+            new InputOutputParameter("Foo", o => { }, null).ToString().Should().Be("[InOut] @Foo = NULL");
         }
 
         [TestMethod]

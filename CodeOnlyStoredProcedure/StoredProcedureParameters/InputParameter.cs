@@ -9,8 +9,6 @@ namespace CodeOnlyStoredProcedure
         public DbType? DbType        { get; }
         public object  Value         { get; }
 
-        string FormattedParameterName => ParameterName.StartsWith("@") ? ParameterName.Substring(1) : ParameterName;
-
         public InputParameter(string name, object value, DbType? dbType = null)
         {
             Value         = value;
@@ -29,6 +27,6 @@ namespace CodeOnlyStoredProcedure
             return parm;
         }
 
-        public override string ToString() => $"@{FormattedParameterName} = '{Value ?? "{null}"}'";
+        public override string ToString() => $"@{ParameterName.FormatParameterName()} = {Value.FormatParameterValue()}";
     }
 }

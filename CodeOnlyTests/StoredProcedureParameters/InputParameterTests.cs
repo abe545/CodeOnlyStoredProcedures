@@ -74,7 +74,7 @@ namespace CodeOnlyTests.StoredProcedureParameters
         [TestMethod]
         public void NullValueToStringReturnsCorrectString()
         {
-            new InputParameter("Foo", null).ToString().Should().Be("@Foo = '{null}'");
+            new InputParameter("Foo", null).ToString().Should().Be("@Foo = NULL");
         }
 
         [TestMethod]

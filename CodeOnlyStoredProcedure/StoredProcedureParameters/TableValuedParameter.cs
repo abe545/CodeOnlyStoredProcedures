@@ -18,8 +18,6 @@ namespace CodeOnlyStoredProcedure
         public   object Value         { get { return values; } }
         internal string TypeName      { get; }
 
-        string FormattedParameterName => ParameterName.StartsWith("@") ? ParameterName.Substring(1) : ParameterName;
-
         public TableValuedParameter(string name, IEnumerable values, Type valueType, string tableTypeName, string tableTypeSchema = "dbo")
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
@@ -31,7 +29,7 @@ namespace CodeOnlyStoredProcedure
             ParameterName  = name;
             this.values    = values;
             this.valueType = valueType;
-            this.TypeName  = string.Format("[{0}].[{1}]", tableTypeSchema, tableTypeName);
+            this.TypeName  = $"[{tableTypeSchema}].[{tableTypeName}]";
         }
 
         public IDbDataParameter CreateDbDataParameter(IDbCommand command)
@@ -53,7 +51,7 @@ namespace CodeOnlyStoredProcedure
 
         public override string ToString()
         {
-            return $"@{FormattedParameterName} = IEnumerable<{valueType}> ({GetValueCount()} items)";
+            return $"@{ParameterName.FormatParameterName()} = IEnumerable<{valueType}> ({GetValueCount()} items)";
         }
 
         private int GetValueCount()

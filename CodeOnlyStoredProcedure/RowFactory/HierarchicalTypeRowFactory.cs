@@ -77,7 +77,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
                         var fk = implType.GetMappedProperties(requireReadable: true).FirstOrDefault(p => p.Name == foreignKeyName);
                         if (fk == null)
-                            throw new NotSupportedException($"Could not find the foreign key property on {implType.Name}. Expected property named " + foreignKeyName + ", but was not found.");
+                            throw new NotSupportedException($"Could not find the foreign key property on {implType.Name}. Expected property named {foreignKeyName}, but was not found.");
                         else if (fk.PropertyType != key.PropertyType)
                             throw new NotSupportedException($"Key types are not matched for {implType.Name}. Key on parent type: {key.PropertyType}.\nForeign key type on child: {fk.PropertyType}");
 
@@ -258,7 +258,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
             IEnumerable<T> res;
             if (!results.TryGetValue(out res, resultType))
-                throw new StoredProcedureException("Unexpected error trying to retrieve the results for the hierarchy with root type " + typeof(T));
+                throw new StoredProcedureException($"Unexpected error trying to retrieve the results for the hierarchy with root type {typeof(T)}");
 
             return res;
         }

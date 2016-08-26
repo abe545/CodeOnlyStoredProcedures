@@ -453,13 +453,13 @@ namespace CodeOnlyStoredProcedure.RowFactory
                 case TypeCode.Int32:
                 case TypeCode.Int64:
                 case TypeCode.String: 
-                    return Expression.Call(dbReader, typeof(IDataRecord).GetMethod("Get" + typeCode, args), index);
+                    return Expression.Call(dbReader, typeof(IDataRecord).GetMethod($"Get{typeCode}", args), index);
                 case TypeCode.Single:
                     return Expression.Call(dbReader, typeof(IDataRecord).GetMethod("GetFloat", args), index);
                 default:
                     // these can be supported by the data reader, but they don't exist
                     // on the interface. So, we have to handle them once we actually have the reader
-                    var foundMethod = reader.GetType().GetMethod("Get" + type.Name, args);
+                    var foundMethod = reader.GetType().GetMethod($"Get{type.Name}", args);
 
                     if (foundMethod != null)
                         return Expression.Call(Expression.Convert(dbReader, reader.GetType()), foundMethod, index);
