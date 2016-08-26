@@ -69,10 +69,9 @@ namespace CodeOnlyStoredProcedure.Dynamic
                 {
                     if (p.Direction != ParameterDirection.Input)
                     {
-                        var x = parameters.OfType<IOutputStoredProcedureParameter>()
-                                          .FirstOrDefault(sp => sp.ParameterName == p.ParameterName);
-                        if (x != null)
-                            x.TransferOutputValue(p.Value);
+                        parameters.OfType<IOutputStoredProcedureParameter>()
+                                  .FirstOrDefault(sp => sp.ParameterName == p.ParameterName)
+                                 ?.TransferOutputValue(p.Value);
                     }
                 }
 
@@ -99,10 +98,9 @@ namespace CodeOnlyStoredProcedure.Dynamic
                                            {
                                                if (p.Direction != ParameterDirection.Input)
                                                {
-                                                   var x = parameters.OfType<IOutputStoredProcedureParameter>()
-                                                                     .FirstOrDefault(sp => sp.ParameterName == p.ParameterName);
-                                                   if (x != null)
-                                                       x.TransferOutputValue(p.Value);
+                                                   parameters.OfType<IOutputStoredProcedureParameter>()
+                                                             .FirstOrDefault(sp => sp.ParameterName == p.ParameterName)
+                                                            ?.TransferOutputValue(p.Value);
                                                }
                                            }
                                        
@@ -115,10 +113,8 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
         public void Dispose()
         {
-            if (connection != null)
-                connection.Close();
-            if (command != null)
-                command.Dispose();
+            connection?.Close();
+            command?.Dispose();
         }
 
         private IEnumerable<T> GetResults<T>(bool isSingle) => RowFactory<T>.Create(isSingle).ParseRows(resultTask.Result, transformers, token);

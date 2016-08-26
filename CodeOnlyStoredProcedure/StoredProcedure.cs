@@ -282,8 +282,7 @@ namespace CodeOnlyStoredProcedure
                 TransferOutputParameters(CancellationToken.None, dbParameters);
             }
 
-            if (connection != null)
-                connection.Close();
+            connection?.Close();
         }
         #endregion
 
@@ -332,22 +331,20 @@ namespace CodeOnlyStoredProcedure
             if (baseClass != null)
             {
                 IDbConnection toClose;
-                using (var cmd = connection.CreateCommand(schema, name, timeout, out toClose))
+                using (var cmd = connection.CreateCommand(schema, name, timeout, out toClose) as DbCommand)
                 {
                     var dbParameters = AddParameters(cmd);
-                    var asyncCapable = cmd as DbCommand;
-                    return asyncCapable.ExecuteNonQueryAsync(token)
-                                        .ContinueWith(r =>
-                                        {
-                                            if (r.Status == TaskStatus.RanToCompletion)
-                                                TransferOutputParameters(token, dbParameters);
+                    return cmd.ExecuteNonQueryAsync(token)
+                              .ContinueWith(r =>
+                              {
+                                  if (r.Status == TaskStatus.RanToCompletion)
+                                      TransferOutputParameters(token, dbParameters);
 
-                                            if (toClose != null)
-                                                toClose.Close();
+                                  toClose?.Close();
 
-                                            if (!r.IsCanceled && r.IsFaulted)
-                                                throw r.Exception;
-                                        }, token);
+                                  if (!r.IsCanceled && r.IsFaulted)
+                                      throw r.Exception;
+                              }, token);
                 }
             }
 #endif
@@ -450,10 +447,9 @@ namespace CodeOnlyStoredProcedure
             {
                 token.ThrowIfCancellationRequested();
 
-                var spParm = parameters.OfType<IOutputStoredProcedureParameter>()
-                                       .FirstOrDefault(p => p.ParameterName == parm.ParameterName);
-                if (spParm != null)
-                    spParm.TransferOutputValue(parm.Value);
+                parameters.OfType<IOutputStoredProcedureParameter>()
+                          .FirstOrDefault(p => p.ParameterName == parm.ParameterName)
+                         ?.TransferOutputValue(parm.Value);
             }
         }
 

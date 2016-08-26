@@ -9,6 +9,8 @@ namespace CodeOnlyStoredProcedure
         public DbType? DbType        { get; }
         public object  Value         { get; }
 
+        string FormattedParameterName => ParameterName.StartsWith("@") ? ParameterName.Substring(1) : ParameterName;
+
         public InputParameter(string name, object value, DbType? dbType = null)
         {
             Value         = value;
@@ -21,26 +23,12 @@ namespace CodeOnlyStoredProcedure
             var parm           = command.CreateParameter();
             parm.ParameterName = ParameterName;
             parm.Value         = Value ?? DBNull.Value;
-            parm.DbType        = GetDbType();
+            parm.DbType        = DbType ?? Value?.GetType().InferDbType() ?? System.Data.DbType.Object;
             parm.Direction     = ParameterDirection.Input;
 
             return parm;
         }
 
-        public override string ToString()
-        {
-            return string.Format("@{0} = '{1}'", ParameterName.StartsWith("@") ? ParameterName.Substring(1) : ParameterName, Value ?? "{null}");
-        }
-
-        private DbType GetDbType()
-        {
-            if (DbType.HasValue)
-                return DbType.Value;
-
-            if (Value != null)
-                return Value.GetType().InferDbType();
-
-            return System.Data.DbType.Object;
-        }
+        public override string ToString() => $"@{FormattedParameterName} = '{Value ?? "{null}"}'";
     }
 }

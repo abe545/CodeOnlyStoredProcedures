@@ -145,7 +145,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
             if (propertyInfo != null)
             {
-                exBody = propertyInfo.Name + " is not nullable, but null was returned from the database for column " + columnName + ".";
+                exBody = $"{propertyInfo.Name} is not nullable, but null was returned from the database for column {columnName}.";
 
                 var xformers = propertyInfo.GetCustomAttributes(false)
                                            .OfType<DataTransformerAttributeBase>()
@@ -155,7 +155,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
                 if (xformers.Length > 0)
                 {
                     if (propertyInfo != null && columnName != null)
-                        exBody = propertyInfo.Name + " is not nullable, but null was the value for column " + columnName + " after data transformation.";
+                        exBody = $"{propertyInfo.Name} is not nullable, but null was the value for column {columnName} after data transformation.";
 
                     var type = propertyInfo.PropertyType;
                     var isNullable = GetUnderlyingNullableType(ref type);
