@@ -25,10 +25,7 @@ namespace CodeOnlyStoredProcedure.DataTransformation
         /// Creates a TrimAttribute, with the given application order.
         /// </summary>
         /// <param name="order">The order in which to apply the attribute. Defaults to 0.</param>
-        public TrimAttribute(int order = 0)
-            : base(order)
-        {
-        }
+        public TrimAttribute(int order = 0) : base(order) { }
 
         /// <summary>
         /// Removes all whitespace from the input

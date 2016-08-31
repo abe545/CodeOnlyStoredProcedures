@@ -477,7 +477,7 @@ namespace CodeOnlyTests
         private class ModelPrivateSetter
         {
             public string Foo { get; set; }
-            public double Bar { get; private set; }
+            public double Bar { get; }
         }
 
         private class ModelWriteOnlyProperty

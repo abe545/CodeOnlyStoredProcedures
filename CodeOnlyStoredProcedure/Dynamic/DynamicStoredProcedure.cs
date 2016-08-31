@@ -70,7 +70,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
         public override bool TryGetMember(GetMemberBinder binder, out object result)
         {
             if (!string.IsNullOrEmpty(schema))
-                throw new StoredProcedureException(string.Format("Schema already specified once. \n\tExisting schema: {0}\n\tAdditional schema: {1}", schema, binder.Name));
+                throw new StoredProcedureException($"Schema already specified once. \n\tExisting schema: {schema}\n\tAdditional schema: {binder.Name}");
 
             result = new DynamicStoredProcedure(connection, transformers, token, timeout, binder.Name, executionMode);
             return true;

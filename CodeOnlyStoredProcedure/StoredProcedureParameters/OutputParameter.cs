@@ -8,11 +8,11 @@ namespace CodeOnlyStoredProcedure
     {
         private readonly Action<object> setter;
 
-        public   string  ParameterName { get; private set; }
-        public   DbType? DbType        { get; private set; }
-        internal int?    Size          { get; private set; }
-        internal byte?   Scale         { get; private set; }
-        internal byte?   Precision     { get; private set; }
+        public   string  ParameterName { get; }
+        public   DbType? DbType        { get; }
+        internal int?    Size          { get; }
+        internal byte?   Scale         { get; }
+        internal byte?   Precision     { get; }
 
         public OutputParameter(string name, Action<object> setter, DbType? dbType = null, int? size = null, byte? scale = null, byte? precision = null)
         {
@@ -41,14 +41,8 @@ namespace CodeOnlyStoredProcedure
             return parm;
         }
 
-        public void TransferOutputValue(object value)
-        {
-            setter(value);
-        }
+        public void TransferOutputValue(object value) => setter(value);
 
-        public override string ToString()
-        {
-            return string.Format("[Out] @{0}", ParameterName.StartsWith("@") ? ParameterName.Substring(1) : ParameterName);
-        }
+        public override string ToString() => $"[Out] @{ParameterName.FormatParameterName()}";
     }
 }

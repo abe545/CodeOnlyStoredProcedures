@@ -14,12 +14,12 @@ namespace CodeOnlyStoredProcedure
         /// <summary>
         /// Gets the names of the properties that were not found in the result set.
         /// </summary>
-        public IEnumerable<string> MissingProperties { get; private set; }
+        public IEnumerable<string> MissingProperties { get; }
 
         /// <summary>
         /// Gets the types that were missing from the results.
         /// </summary>
-        public IEnumerable<Type> MissingChildTypes { get; private set; }
+        public IEnumerable<Type> MissingChildTypes { get; }
 
         /// <summary>
         /// Creates a new StoredProcedureResultsException
@@ -64,7 +64,7 @@ namespace CodeOnlyStoredProcedure
                 props = propertyNames[0];
             }
             else if (propertyNames.Length == 2)
-                props = propertyNames[0] + " or " + propertyNames[1];
+                props = $"{propertyNames[0]} or {propertyNames[1]}";
             else
             {
                 var sb = new StringBuilder();
@@ -79,12 +79,7 @@ namespace CodeOnlyStoredProcedure
                 props = sb.ToString();
             }
 
-            return string.Format(
-                "No {0} with name {1} {2} found in the result set for type {3}.\nThis property will be ignored if it is decorated with a NotMappedAttribute.\nYou can also map the property to a different column in the result set with the ColumnAttribute.\nIf the stored procedure can sometimes return the column, decorate the column with the OptionalAttribute.",
-                cols,
-                props,
-                were,
-                resultType.Name);
+            return $"No {cols} with name {props} {were} found in the result set for type {resultType.Name}.\nThis property will be ignored if it is decorated with a NotMappedAttribute.\nYou can also map the property to a different column in the result set with the ColumnAttribute.\nIf the stored procedure can sometimes return the column, decorate the column with the OptionalAttribute.";
         }
 
         private static string BuildMessage(Type resultType, Type[] missingTypes)
@@ -100,7 +95,7 @@ namespace CodeOnlyStoredProcedure
                 types = missingTypes[0].Name;
             }
             else if (missingTypes.Length == 2)
-                types = missingTypes[0].Name + " or " + missingTypes[1].Name;
+                types = $"{missingTypes[0].Name} or {missingTypes[1].Name}";
             else
             {
                 var sb = new StringBuilder();
@@ -115,11 +110,7 @@ namespace CodeOnlyStoredProcedure
                 types = sb.ToString();
             }
 
-            return string.Format(
-                "No result sets were found that match the {0} {1} when parsing {2}. If the child collection is not returned for this model, you should mark it with the NotMapped attribute.",
-                ts,
-                types,
-                resultType.Name);
+            return $"No result sets were found that match the {ts} {types} when parsing {resultType.Name}. If the child collection is not returned for this model, you should mark it with the NotMapped attribute.";
         }
     }
 }

@@ -12,7 +12,7 @@ namespace SmokeTests
     [MetadataAttribute, AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
     public class SmokeTestAttribute : ExportAttribute, ISmokeTest
     {
-        public string Name { get; private set; }
+        public string Name { get; }
 
         public SmokeTestAttribute(string name)
         {

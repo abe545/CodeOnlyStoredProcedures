@@ -26,8 +26,6 @@ namespace CodeOnlyStoredProcedure
         internal const int defaultTimeout = 30;
 
         #region Private Fields
-        private readonly string                      schema;
-        private readonly string                      name;
         private readonly IStoredProcedureParameter[] parameters;
         private readonly IDataTransformer[]          dataTransformers;
         #endregion
@@ -38,42 +36,18 @@ namespace CodeOnlyStoredProcedure
         /// </summary>
         /// <remarks>This property is readonly, but the value is passed in the 
         /// <see cref="StoredProcedure(string, string)"/> constructor.</remarks>
-        public string Schema
-        {
-            get
-            {
-                Contract.Ensures(!string.IsNullOrWhiteSpace(Contract.Result<string>())); 
-
-                return schema;
-            }
-        }
+        public string Schema { get; }
 
         /// <summary>
         /// Gets the name of the stored procedure in the database.
         /// </summary>
         /// <remarks>This property is readonly, but the value is passed in either constructor.</remarks>
-        public string Name
-        {
-            get
-            {
-                Contract.Ensures(!string.IsNullOrWhiteSpace(Contract.Result<string>())); 
-
-                return name;
-            }
-        }
+        public string Name { get; }
 
         /// <summary>
         /// Gets the schema qualified name of the stored procedure.
         /// </summary>
-        internal string FullName 
-        {
-            get
-            {
-                Contract.Ensures(!string.IsNullOrWhiteSpace(Contract.Result<string>()));
-
-                return string.Format("[{0}].[{1}]", schema, name); 
-            }
-        }
+        internal string FullName => $"[{Schema}].[{Name}]";
 
         /// <summary>
         /// Gets the string representation of the arguments that will be passed to the StoredProcedure.
@@ -85,36 +59,20 @@ namespace CodeOnlyStoredProcedure
                 if (parameters.Length == 0)
                     return string.Empty;
 
-                return Parameters.Aggregate("", (s, p) => s == "" ? p.ToString() : s + ", " + p.ToString());
+                return string.Join(", ", parameters.Select(p => p.ToString()));
             }
         }
 
         /// <summary>
         /// Gets the <see cref="IStoredProcedureParameter"/>s to pass to the stored procedure.
         /// </summary>
-        protected internal IEnumerable<IStoredProcedureParameter> Parameters
-        {
-            get
-            {
-                Contract.Ensures(Contract.Result<IEnumerable<IStoredProcedureParameter>>() != null);
-
-                return parameters;
-            }
-        }
+        protected internal IEnumerable<IStoredProcedureParameter> Parameters => parameters;
 
         /// <summary>
         /// Gets the <see cref="IDataTransformer"/>s that will be used to transform the results.
         /// </summary>
         /// <remarks>These are only used in one of the StoredProcedure classes that return results.</remarks>
-        protected internal IEnumerable<IDataTransformer> DataTransformers
-        {
-            get
-            {
-                Contract.Ensures(Contract.Result<IEnumerable<IDataTransformer>>() != null);
-
-                return dataTransformers;
-            }
-        }
+        protected internal IEnumerable<IDataTransformer> DataTransformers => dataTransformers;
         #endregion
 
         #region ctors
@@ -163,8 +121,8 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(parameters             != null);
             Contract.Requires(dataTransformers       != null);
 
-            this.schema                 = schema;
-            this.name                   = name;
+            this.Schema                 = schema;
+            this.Name                   = name;
             this.parameters             = parameters      .ToArray();
             this.dataTransformers       = dataTransformers.ToArray();
         } 
@@ -215,7 +173,7 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(dataTransformers                  != null);
             Contract.Ensures(Contract.Result<StoredProcedure>() != null);
 
-            return new StoredProcedure(schema, name, parameters, dataTransformers);
+            return new StoredProcedure(Schema, Name, parameters, dataTransformers);
         }
 
         /// <summary>
@@ -271,7 +229,7 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(connection != null);
 
             token.ThrowIfCancellationRequested();
-            using (var cmd = connection.CreateCommand(schema, name, timeout, out connection))
+            using (var cmd = connection.CreateCommand(Schema, Name, timeout, out connection))
             {
                 var dbParameters = AddParameters(cmd);
 
@@ -282,8 +240,7 @@ namespace CodeOnlyStoredProcedure
                 TransferOutputParameters(CancellationToken.None, dbParameters);
             }
 
-            if (connection != null)
-                connection.Close();
+            connection?.Close();
         }
         #endregion
 
@@ -332,22 +289,20 @@ namespace CodeOnlyStoredProcedure
             if (baseClass != null)
             {
                 IDbConnection toClose;
-                using (var cmd = connection.CreateCommand(schema, name, timeout, out toClose))
+                using (var cmd = connection.CreateCommand(Schema, Name, timeout, out toClose) as DbCommand)
                 {
                     var dbParameters = AddParameters(cmd);
-                    var asyncCapable = cmd as DbCommand;
-                    return asyncCapable.ExecuteNonQueryAsync(token)
-                                        .ContinueWith(r =>
-                                        {
-                                            if (r.Status == TaskStatus.RanToCompletion)
-                                                TransferOutputParameters(token, dbParameters);
+                    return cmd.ExecuteNonQueryAsync(token)
+                              .ContinueWith(r =>
+                              {
+                                  if (r.Status == TaskStatus.RanToCompletion)
+                                      TransferOutputParameters(token, dbParameters);
 
-                                            if (toClose != null)
-                                                toClose.Close();
+                                  toClose?.Close();
 
-                                            if (!r.IsCanceled && r.IsFaulted)
-                                                throw r.Exception;
-                                        }, token);
+                                  if (!r.IsCanceled && r.IsFaulted)
+                                      throw r.Exception;
+                              }, token);
                 }
             }
 #endif
@@ -403,7 +358,7 @@ namespace CodeOnlyStoredProcedure
             if (parameters.Length == 0)
                 return FullName;
 
-            return string.Format("{0}({1})", FullName, Arguments);
+            return $"{FullName} {Arguments}";
         }
 
         /// <summary>
@@ -450,20 +405,10 @@ namespace CodeOnlyStoredProcedure
             {
                 token.ThrowIfCancellationRequested();
 
-                var spParm = parameters.OfType<IOutputStoredProcedureParameter>()
-                                       .FirstOrDefault(p => p.ParameterName == parm.ParameterName);
-                if (spParm != null)
-                    spParm.TransferOutputValue(parm.Value);
+                parameters.OfType<IOutputStoredProcedureParameter>()
+                          .FirstOrDefault(p => p.ParameterName == parm.ParameterName)
+                         ?.TransferOutputValue(parm.Value);
             }
-        }
-
-        [ContractInvariantMethod]
-        private void Invariants()
-        {
-            Contract.Invariant(!string.IsNullOrWhiteSpace(schema));
-            Contract.Invariant(!string.IsNullOrWhiteSpace(name));
-            Contract.Invariant(parameters       != null);
-            Contract.Invariant(dataTransformers != null);
         }
     }
 }

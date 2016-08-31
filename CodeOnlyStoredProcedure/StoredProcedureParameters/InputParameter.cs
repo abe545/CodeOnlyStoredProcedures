@@ -5,9 +5,9 @@ namespace CodeOnlyStoredProcedure
 {
     internal class InputParameter : IInputStoredProcedureParameter
     {
-        public string  ParameterName { get; private set; }
-        public DbType? DbType        { get; private set; }
-        public object  Value         { get; private set; }
+        public string  ParameterName { get; }
+        public DbType? DbType        { get; }
+        public object  Value         { get; }
 
         public InputParameter(string name, object value, DbType? dbType = null)
         {
@@ -21,26 +21,12 @@ namespace CodeOnlyStoredProcedure
             var parm           = command.CreateParameter();
             parm.ParameterName = ParameterName;
             parm.Value         = Value ?? DBNull.Value;
-            parm.DbType        = GetDbType();
+            parm.DbType        = DbType ?? Value?.GetType().InferDbType() ?? System.Data.DbType.Object;
             parm.Direction     = ParameterDirection.Input;
 
             return parm;
         }
 
-        public override string ToString()
-        {
-            return string.Format("@{0} = '{1}'", ParameterName.StartsWith("@") ? ParameterName.Substring(1) : ParameterName, Value ?? "{null}");
-        }
-
-        private DbType GetDbType()
-        {
-            if (DbType.HasValue)
-                return DbType.Value;
-
-            if (Value != null)
-                return Value.GetType().InferDbType();
-
-            return System.Data.DbType.Object;
-        }
+        public override string ToString() => $"@{ParameterName.FormatParameterName()} = {Value.FormatParameterValue()}";
     }
 }

@@ -14,9 +14,9 @@ namespace CodeOnlyStoredProcedure
         private readonly IEnumerable values;
         private readonly Type        valueType;
 
-        public   string ParameterName { get; private set; }
+        public   string ParameterName { get; }
         public   object Value         { get { return values; } }
-        internal string TypeName      { get; private set; }
+        internal string TypeName      { get; }
 
         public TableValuedParameter(string name, IEnumerable values, Type valueType, string tableTypeName, string tableTypeSchema = "dbo")
         {
@@ -29,7 +29,7 @@ namespace CodeOnlyStoredProcedure
             ParameterName  = name;
             this.values    = values;
             this.valueType = valueType;
-            this.TypeName  = string.Format("[{0}].[{1}]", tableTypeSchema, tableTypeName);
+            this.TypeName  = $"[{tableTypeSchema}].[{tableTypeName}]";
         }
 
         public IDbDataParameter CreateDbDataParameter(IDbCommand command)
@@ -51,7 +51,7 @@ namespace CodeOnlyStoredProcedure
 
         public override string ToString()
         {
-            return string.Format("@{0} = IEnumerable<{1}> ({2} items)", ParameterName.StartsWith("@") ? ParameterName.Substring(1) : ParameterName, valueType, GetValueCount());
+            return $"@{ParameterName.FormatParameterName()} = IEnumerable<{valueType}> ({GetValueCount()} items)";
         }
 
         private int GetValueCount()

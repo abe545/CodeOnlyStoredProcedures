@@ -69,10 +69,9 @@ namespace CodeOnlyStoredProcedure.Dynamic
                 {
                     if (p.Direction != ParameterDirection.Input)
                     {
-                        var x = parameters.OfType<IOutputStoredProcedureParameter>()
-                                          .FirstOrDefault(sp => sp.ParameterName == p.ParameterName);
-                        if (x != null)
-                            x.TransferOutputValue(p.Value);
+                        parameters.OfType<IOutputStoredProcedureParameter>()
+                                  .FirstOrDefault(sp => sp.ParameterName == p.ParameterName)
+                                 ?.TransferOutputValue(p.Value);
                     }
                 }
 
@@ -99,10 +98,9 @@ namespace CodeOnlyStoredProcedure.Dynamic
                                            {
                                                if (p.Direction != ParameterDirection.Input)
                                                {
-                                                   var x = parameters.OfType<IOutputStoredProcedureParameter>()
-                                                                     .FirstOrDefault(sp => sp.ParameterName == p.ParameterName);
-                                                   if (x != null)
-                                                       x.TransferOutputValue(p.Value);
+                                                   parameters.OfType<IOutputStoredProcedureParameter>()
+                                                             .FirstOrDefault(sp => sp.ParameterName == p.ParameterName)
+                                                            ?.TransferOutputValue(p.Value);
                                                }
                                            }
                                        
@@ -111,24 +109,16 @@ namespace CodeOnlyStoredProcedure.Dynamic
             }
         }
 
-        public override DynamicMetaObject GetMetaObject(Expression parameter)
-        {
-            return new Meta(parameter, this);
-        }
+        public override DynamicMetaObject GetMetaObject(Expression parameter) => new Meta(parameter, this);
 
         public void Dispose()
         {
-            if (connection != null)
-                connection.Close();
-            if (command != null)
-                command.Dispose();
+            connection?.Close();
+            command?.Dispose();
         }
 
-        private IEnumerable<T> GetResults<T>(bool isSingle)
-        {
-            return RowFactory<T>.Create(isSingle).ParseRows(resultTask.Result, transformers, token);
-        }
-
+        private IEnumerable<T> GetResults<T>(bool isSingle) => RowFactory<T>.Create(isSingle).ParseRows(resultTask.Result, transformers, token);
+        
         private Task ContinueNoResults()
         {
             return resultTask.ContinueWith(r =>
@@ -206,17 +196,18 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
         private class Meta : DynamicMetaObject
         {
-            private static readonly Lazy<MethodInfo> configureAwait  = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod("InternalConfigureAwait",      BindingFlags.Instance | BindingFlags.NonPublic));
-            private static readonly Lazy<MethodInfo> getAwaiter      = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod("InternalGetAwaiter",          BindingFlags.Instance | BindingFlags.NonPublic));
-            private static readonly Lazy<MethodInfo> continueSingle  = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod("CreateSingleContinuation",    BindingFlags.Instance | BindingFlags.NonPublic));
-            private static readonly Lazy<MethodInfo> continueMulti   = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod("CreateMultipleContinuation",  BindingFlags.Instance | BindingFlags.NonPublic));
-            private static readonly Lazy<MethodInfo> getMultiResults = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod("GetMultipleResults",          BindingFlags.Instance | BindingFlags.NonPublic));
-            private static readonly Lazy<MethodInfo> singleRowAsync  = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod("CreateSingleRowContinuation", BindingFlags.Instance | BindingFlags.NonPublic));
-            private static readonly Lazy<MethodInfo> continueNoRes   = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod("ContinueNoResults",           BindingFlags.Instance | BindingFlags.NonPublic));
-            private static readonly Lazy<MethodInfo> dispose         = new Lazy<MethodInfo>(() => typeof(IDisposable)                  .GetMethod("Dispose",                     BindingFlags.Instance | BindingFlags.Public));
-            private static readonly Lazy<MethodInfo> singleExtension = new Lazy<MethodInfo>(() => typeof(Enumerable).GetMethods().Where(m => m.Name == "SingleOrDefault" && m.GetParameters().Length == 1).Single());
+            private static readonly Lazy<MethodInfo> configureAwait  = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod(nameof(InternalConfigureAwait),      BindingFlags.Instance | BindingFlags.NonPublic));
+            private static readonly Lazy<MethodInfo> getAwaiter      = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod(nameof(InternalGetAwaiter),          BindingFlags.Instance | BindingFlags.NonPublic));
+            private static readonly Lazy<MethodInfo> continueSingle  = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod(nameof(CreateSingleContinuation),    BindingFlags.Instance | BindingFlags.NonPublic));
+            private static readonly Lazy<MethodInfo> continueMulti   = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod(nameof(CreateMultipleContinuation),  BindingFlags.Instance | BindingFlags.NonPublic));
+            private static readonly Lazy<MethodInfo> getMultiResults = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod(nameof(GetMultipleResults),          BindingFlags.Instance | BindingFlags.NonPublic));
+            private static readonly Lazy<MethodInfo> singleRowAsync  = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod(nameof(CreateSingleRowContinuation), BindingFlags.Instance | BindingFlags.NonPublic));
+            private static readonly Lazy<MethodInfo> continueNoRes   = new Lazy<MethodInfo>(() => typeof(DynamicStoredProcedureResults).GetMethod(nameof(ContinueNoResults),           BindingFlags.Instance | BindingFlags.NonPublic));
+            private static readonly Lazy<MethodInfo> dispose         = new Lazy<MethodInfo>(() => typeof(IDisposable)                  .GetMethod(nameof(Dispose),                     BindingFlags.Instance | BindingFlags.Public));
+            private static readonly Lazy<MethodInfo> singleExtension = new Lazy<MethodInfo>(() => typeof(Enumerable).GetMethods().Where(m => m.Name == nameof(Enumerable.SingleOrDefault) && m.GetParameters().Length == 1).Single());
 
             private readonly DynamicStoredProcedureResults results;
+            private readonly BindingRestrictions restrict;
 
             public Meta(Expression expression, DynamicStoredProcedureResults value)
                 : base(expression, BindingRestrictions.GetInstanceRestriction(expression, value), value)
@@ -224,14 +215,14 @@ namespace CodeOnlyStoredProcedure.Dynamic
                 Contract.Requires(expression != null);
                 Contract.Requires(value      != null);
 
-                this.results = value;
+                results = value;
+                restrict = BindingRestrictions.GetInstanceRestriction(expression, results);
             }
 
             public override DynamicMetaObject BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args)
             {
                 var instance = Expression.Convert(Expression, typeof(DynamicStoredProcedureResults));
-                var restrict = BindingRestrictions.GetInstanceRestriction(Expression, results);
-
+                
                 switch (binder.Name)
                 {
                     case "ConfigureAwait":

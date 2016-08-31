@@ -184,15 +184,8 @@ namespace CodeOnlyStoredProcedure.Dynamic
         // These methods are not defined for .NET 4.0, since the awaiter isn't going to be available, either.
         // Therefore, they have to be implemented on the dynamically constructed type.
 #if !NET40
-        public void OnCompleted(Action continuation)
-        {
-            awaiter.OnCompleted(continuation);
-        }
-
-        public void UnsafeOnCompleted(Action continuation)
-        {
-            awaiter.UnsafeOnCompleted(continuation);
-        }
+        public void OnCompleted(Action continuation) => awaiter.OnCompleted(continuation);
+        public void UnsafeOnCompleted(Action continuation) => awaiter.UnsafeOnCompleted(continuation);
 #endif
     }
 }

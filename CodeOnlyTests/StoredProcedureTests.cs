@@ -419,7 +419,7 @@ namespace CodeOnlyTests
         {
             var sp = new StoredProcedure("foo", "blah").WithInput(new { foo = "Bar" });
 
-            Assert.AreEqual("[foo].[blah](@foo = 'Bar')", sp.ToString());
+            Assert.AreEqual("[foo].[blah] @foo = 'Bar'", sp.ToString());
         }
 
         [TestMethod]
@@ -427,7 +427,7 @@ namespace CodeOnlyTests
         {
             var sp = new StoredProcedure("foo", "blah").WithInput(new { foo = "Bar", date = DateTime.Today });
 
-            Assert.AreEqual("[foo].[blah](@foo = 'Bar', @date = '" + DateTime.Today.ToString() + "')", sp.ToString());
+            Assert.AreEqual("[foo].[blah] @foo = 'Bar', @date = '" + DateTime.Today.ToString() + "'", sp.ToString());
         }
         #endregion
 
@@ -458,7 +458,7 @@ namespace CodeOnlyTests
 
         private class NoDefaultCtor
         {
-            public string Id { get; private set; }
+            public string Id { get; }
 
             public NoDefaultCtor(string id)
             {

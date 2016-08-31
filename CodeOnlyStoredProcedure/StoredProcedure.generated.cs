@@ -117,8 +117,7 @@ namespace CodeOnlyStoredProcedure
 				results = T1Factory.ParseRows(reader, DataTransformers, token);
             }
 
-            if (connection != null)
-                connection.Close();
+            connection?.Close();
 			
 			return results;
 		}
@@ -167,9 +166,8 @@ namespace CodeOnlyStoredProcedure
             if (baseClass != null)
             {
                 IDbConnection toClose;
-                var cmd = connection.CreateCommand(Schema, Name, timeout, out toClose);
-                var asyncCapable = cmd as DbCommand;
-                return ExecuteAsync(asyncCapable, toClose, token);
+                var cmd = connection.CreateCommand(Schema, Name, timeout, out toClose) as DbCommand;
+                return ExecuteAsync(cmd, toClose, token);
             }
 #endif
 
@@ -196,9 +194,7 @@ namespace CodeOnlyStoredProcedure
             token.ThrowIfCancellationRequested();
 			TransferOutputParameters(token, dbParameters);
 
-			if (toClose != null)
-				toClose.Close();
-
+			toClose?.Close();
 			cmd.Dispose();
 
 			return results;
@@ -353,8 +349,7 @@ namespace CodeOnlyStoredProcedure
 				TransferOutputParameters(CancellationToken.None, dbParameters);
             }
 
-            if (connection != null)
-                connection.Close();
+            connection?.Close();
 			
 			return results;
 		}
@@ -403,9 +398,8 @@ namespace CodeOnlyStoredProcedure
             if (baseClass != null)
             {
                 IDbConnection toClose;
-                var cmd = connection.CreateCommand(Schema, Name, timeout, out toClose);
-                var asyncCapable = cmd as DbCommand;
-                return ExecuteAsync(asyncCapable, toClose, token);
+                var cmd = connection.CreateCommand(Schema, Name, timeout, out toClose) as DbCommand;
+                return ExecuteAsync(cmd, toClose, token);
             }
 #endif
 
@@ -435,9 +429,7 @@ namespace CodeOnlyStoredProcedure
             token.ThrowIfCancellationRequested();
 			TransferOutputParameters(token, dbParameters);
 
-			if (toClose != null)
-				toClose.Close();
-
+			toClose?.Close();
 			cmd.Dispose();
 
 			return results;
@@ -613,8 +605,7 @@ namespace CodeOnlyStoredProcedure
 				TransferOutputParameters(CancellationToken.None, dbParameters);
             }
 
-            if (connection != null)
-                connection.Close();
+            connection?.Close();
 			
 			return results;
 		}
@@ -663,9 +654,8 @@ namespace CodeOnlyStoredProcedure
             if (baseClass != null)
             {
                 IDbConnection toClose;
-                var cmd = connection.CreateCommand(Schema, Name, timeout, out toClose);
-                var asyncCapable = cmd as DbCommand;
-                return ExecuteAsync(asyncCapable, toClose, token);
+                var cmd = connection.CreateCommand(Schema, Name, timeout, out toClose) as DbCommand;
+                return ExecuteAsync(cmd, toClose, token);
             }
 #endif
 
@@ -697,9 +687,7 @@ namespace CodeOnlyStoredProcedure
             token.ThrowIfCancellationRequested();
 			TransferOutputParameters(token, dbParameters);
 
-			if (toClose != null)
-				toClose.Close();
-
+			toClose?.Close();
 			cmd.Dispose();
 
 			return results;
@@ -885,8 +873,7 @@ namespace CodeOnlyStoredProcedure
 				TransferOutputParameters(CancellationToken.None, dbParameters);
             }
 
-            if (connection != null)
-                connection.Close();
+            connection?.Close();
 			
 			return results;
 		}
@@ -935,9 +922,8 @@ namespace CodeOnlyStoredProcedure
             if (baseClass != null)
             {
                 IDbConnection toClose;
-                var cmd = connection.CreateCommand(Schema, Name, timeout, out toClose);
-                var asyncCapable = cmd as DbCommand;
-                return ExecuteAsync(asyncCapable, toClose, token);
+                var cmd = connection.CreateCommand(Schema, Name, timeout, out toClose) as DbCommand;
+                return ExecuteAsync(cmd, toClose, token);
             }
 #endif
 
@@ -971,9 +957,7 @@ namespace CodeOnlyStoredProcedure
             token.ThrowIfCancellationRequested();
 			TransferOutputParameters(token, dbParameters);
 
-			if (toClose != null)
-				toClose.Close();
-
+			toClose?.Close();
 			cmd.Dispose();
 
 			return results;
@@ -1169,8 +1153,7 @@ namespace CodeOnlyStoredProcedure
 				TransferOutputParameters(CancellationToken.None, dbParameters);
             }
 
-            if (connection != null)
-                connection.Close();
+            connection?.Close();
 			
 			return results;
 		}
@@ -1219,9 +1202,8 @@ namespace CodeOnlyStoredProcedure
             if (baseClass != null)
             {
                 IDbConnection toClose;
-                var cmd = connection.CreateCommand(Schema, Name, timeout, out toClose);
-                var asyncCapable = cmd as DbCommand;
-                return ExecuteAsync(asyncCapable, toClose, token);
+                var cmd = connection.CreateCommand(Schema, Name, timeout, out toClose) as DbCommand;
+                return ExecuteAsync(cmd, toClose, token);
             }
 #endif
 
@@ -1257,9 +1239,7 @@ namespace CodeOnlyStoredProcedure
             token.ThrowIfCancellationRequested();
 			TransferOutputParameters(token, dbParameters);
 
-			if (toClose != null)
-				toClose.Close();
-
+			toClose?.Close();
 			cmd.Dispose();
 
 			return results;
@@ -1465,8 +1445,7 @@ namespace CodeOnlyStoredProcedure
 				TransferOutputParameters(CancellationToken.None, dbParameters);
             }
 
-            if (connection != null)
-                connection.Close();
+            connection?.Close();
 			
 			return results;
 		}
@@ -1515,9 +1494,8 @@ namespace CodeOnlyStoredProcedure
             if (baseClass != null)
             {
                 IDbConnection toClose;
-                var cmd = connection.CreateCommand(Schema, Name, timeout, out toClose);
-                var asyncCapable = cmd as DbCommand;
-                return ExecuteAsync(asyncCapable, toClose, token);
+                var cmd = connection.CreateCommand(Schema, Name, timeout, out toClose) as DbCommand;
+                return ExecuteAsync(cmd, toClose, token);
             }
 #endif
 
@@ -1555,9 +1533,7 @@ namespace CodeOnlyStoredProcedure
             token.ThrowIfCancellationRequested();
 			TransferOutputParameters(token, dbParameters);
 
-			if (toClose != null)
-				toClose.Close();
-
+			toClose?.Close();
 			cmd.Dispose();
 
 			return results;
@@ -1773,8 +1749,7 @@ namespace CodeOnlyStoredProcedure
 				TransferOutputParameters(CancellationToken.None, dbParameters);
             }
 
-            if (connection != null)
-                connection.Close();
+            connection?.Close();
 			
 			return results;
 		}
@@ -1823,9 +1798,8 @@ namespace CodeOnlyStoredProcedure
             if (baseClass != null)
             {
                 IDbConnection toClose;
-                var cmd = connection.CreateCommand(Schema, Name, timeout, out toClose);
-                var asyncCapable = cmd as DbCommand;
-                return ExecuteAsync(asyncCapable, toClose, token);
+                var cmd = connection.CreateCommand(Schema, Name, timeout, out toClose) as DbCommand;
+                return ExecuteAsync(cmd, toClose, token);
             }
 #endif
 
@@ -1865,9 +1839,7 @@ namespace CodeOnlyStoredProcedure
             token.ThrowIfCancellationRequested();
 			TransferOutputParameters(token, dbParameters);
 
-			if (toClose != null)
-				toClose.Close();
-
+			toClose?.Close();
 			cmd.Dispose();
 
 			return results;

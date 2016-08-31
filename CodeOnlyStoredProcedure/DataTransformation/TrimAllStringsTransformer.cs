@@ -66,10 +66,7 @@ namespace CodeOnlyStoredProcedure.DataTransformation
         /// <param name="isNullable">If the target property is a nullable of type <paramref name="targetType"/></param>
         /// <param name="propertyAttributes">The attributes applied to the property.</param>
         /// <returns>The trimmed string.</returns>
-        public object Transform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes)
-        {
-            return Transform((string)value, propertyAttributes);
-        }
+        public object Transform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes) => Transform((string)value, propertyAttributes);
         
         /// <summary>
         /// Trims the whitespace from the input string

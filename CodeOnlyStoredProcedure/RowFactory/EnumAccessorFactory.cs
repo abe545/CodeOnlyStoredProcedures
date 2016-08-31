@@ -57,9 +57,8 @@ namespace CodeOnlyStoredProcedure.RowFactory
 
             if (propertyInfo == null)
             {
-                propertyName = "result";
-                errorMessage = "Null value is not allowed for single column result set that returns " +
-                                typeof(T) + ", but null was the result from the stored procedure.";
+                propertyName        = "result";
+                errorMessage        = $"Null value is not allowed for single column result set that returns {typeof(T)}, but null was the result from the stored procedure.";
                 attributeExpression = Expression.Constant(new Attribute[0]);
             }
             else
@@ -250,7 +249,7 @@ namespace CodeOnlyStoredProcedure.RowFactory
             var excep   = Expression.Throw(
                               Expression.New(typeof(NotSupportedException).GetConstructor(new[] { typeof(string) }),
                                   Expression.Call(typeof(string).GetMethod("Format", new[] { typeof(string), typeof(object) }),
-                                      Expression.Constant("Could not parse the string \"{0}\" into an enum of type " + dbType + "."),
+                                      Expression.Constant($"Could not parse the string \"{0}\" into an enum of type {dbType}."),
                                       str
                                   )
                               ), underlying);

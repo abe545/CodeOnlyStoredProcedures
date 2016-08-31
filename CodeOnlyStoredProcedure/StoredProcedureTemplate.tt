@@ -336,8 +336,7 @@ public class StoredProcedureTemplate : Template
 				<#+ WriteReadResults("\t\t\t\t"); #>
             }
 
-            if (connection != null)
-                connection.Close();
+            connection?.Close();
 			
 			return results;
 		}
@@ -386,9 +385,8 @@ public class StoredProcedureTemplate : Template
             if (baseClass != null)
             {
                 IDbConnection toClose;
-                var cmd = connection.CreateCommand(Schema, Name, timeout, out toClose);
-                var asyncCapable = cmd as DbCommand;
-                return ExecuteAsync(asyncCapable, toClose, token);
+                var cmd = connection.CreateCommand(Schema, Name, timeout, out toClose) as DbCommand;
+                return ExecuteAsync(cmd, toClose, token);
             }
 #endif
 
@@ -415,9 +413,7 @@ public class StoredProcedureTemplate : Template
             token.ThrowIfCancellationRequested();
 			TransferOutputParameters(token, dbParameters);
 
-			if (toClose != null)
-				toClose.Close();
-
+			toClose?.Close();
 			cmd.Dispose();
 
 			return results;
