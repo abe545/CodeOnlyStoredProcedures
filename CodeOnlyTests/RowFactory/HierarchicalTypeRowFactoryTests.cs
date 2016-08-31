@@ -745,6 +745,80 @@ namespace CodeOnlyTests.RowFactory
                             });
                 }
             }
+
+            [TestMethod]
+            public void Builds_Hierarchy_When_Child_Has_Case_Insensitive_Key_Match()
+            {
+                using (GlobalSettings.UseTestInstance())
+                {
+                    var reader = SetupDataReader(
+                    new Dictionary<string, object>
+                    {
+                        { nameof(CaseInsensitiveParent.id), 42 }
+                    },
+                    new Dictionary<string, object>
+                    {
+                        { nameof(CaseInsensitiveChild.caseinsensitiveparentid), 42 },
+                        { nameof(CaseInsensitiveChild.Id), 18 }
+                    });
+
+                    var toTest = new HierarchicalTypeRowFactory<CaseInsensitiveParent>();
+                    var res = toTest.ParseRows(reader, new IDataTransformer[0], CancellationToken.None);
+
+                    res.Should().ContainSingle("because only one row was setup").Which
+                        .ShouldBeEquivalentTo(
+                            new CaseInsensitiveParent
+                            {
+                                id = 42,
+                                Children = new List<CaseInsensitiveChild>
+                                {
+                                    new CaseInsensitiveChild
+                                    {
+                                        caseinsensitiveparentid = 42,
+                                        Id = 18
+                                    }
+                                }
+                            });
+                }
+            }
+
+            [TestMethod]
+            public void Builds_Hierarchy_When_Child_Has_Case_Insensitive_Key_Match_Will_Choose_Exact_Match_First()
+            {
+                using (GlobalSettings.UseTestInstance())
+                {
+                    var reader = SetupDataReader(
+                    new Dictionary<string, object>
+                    {
+                        { nameof(CaseInsensitiveParent2.id), 42 }
+                    },
+                    new Dictionary<string, object>
+                    {
+                        { nameof(CaseInsensitiveChild2.CaseInsensitiveParent2Id), 42 },
+                        { nameof(CaseInsensitiveChild2.caseinsensitiveparent2id), 19 },
+                        { nameof(CaseInsensitiveChild2.Id), 18 }
+                    });
+
+                    var toTest = new HierarchicalTypeRowFactory<CaseInsensitiveParent2>();
+                    var res = toTest.ParseRows(reader, new IDataTransformer[0], CancellationToken.None);
+
+                    res.Should().ContainSingle("because only one row was setup").Which
+                        .ShouldBeEquivalentTo(
+                            new CaseInsensitiveParent2
+                            {
+                                id = 42,
+                                Children = new List<CaseInsensitiveChild2>
+                                {
+                                    new CaseInsensitiveChild2
+                                    {
+                                        CaseInsensitiveParent2Id = 42,
+                                        caseinsensitiveparent2id = 19,
+                                        Id = 18
+                                    }
+                                }
+                            });
+                }
+            }
         }
 
         private static IDataReader SetupDataReader(params Dictionary<string, object>[] values)
@@ -830,6 +904,31 @@ namespace CodeOnlyTests.RowFactory
             public int UniverseId { get; set; }
             public string Name { get; set; }
             public IList<Galaxy> Galaxies { get; set; }
+        }
+
+        private class CaseInsensitiveParent
+        {
+            public int id { get; set; }
+            public IEnumerable<CaseInsensitiveChild> Children { get; set; }
+        }
+
+        private class CaseInsensitiveChild
+        {
+            public int caseinsensitiveparentid { get; set; }
+            public int Id { get; set; }
+        }
+
+        private class CaseInsensitiveParent2
+        {
+            public int id { get; set; }
+            public IEnumerable<CaseInsensitiveChild2> Children { get; set; }
+        }
+
+        private class CaseInsensitiveChild2
+        {
+            public int caseinsensitiveparent2id { get; set; }
+            public int CaseInsensitiveParent2Id { get; set; }
+            public int Id { get; set; }
         }
 
         private class Galaxy
