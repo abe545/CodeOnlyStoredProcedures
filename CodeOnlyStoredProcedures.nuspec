@@ -13,6 +13,7 @@ Code Only Stored Procedures will not create any Stored Procedures on your databa
 Fixed bug where hierarchical result sets could not be marked as optional
 Hierarchies are now much faster to build, especially with large data sets.
 DateTimeOffset is now fully supported (in the past you had to use attributes or the Fluent syntax to specify the DbType).
+Hierarchical result sets will now match using case-insensitive names if the case-sensitive ones aren't found.
      
 2.2.6
 Fixed bug where dynamic stored procedures wouldn't dispose of the IDbCommand objects they created.
