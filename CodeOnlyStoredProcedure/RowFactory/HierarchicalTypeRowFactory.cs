@@ -75,7 +75,10 @@ namespace CodeOnlyStoredProcedure.RowFactory
                         if (!GlobalSettings.Instance.InterfaceMap.TryGetValue(childType, out implType))
                             implType = childType;
 
-                        var fk = implType.GetMappedProperties(requireReadable: true).FirstOrDefault(p => p.Name == foreignKeyName);
+                        var mappedProps = implType.GetMappedProperties(requireReadable: true);
+
+                        var fk = mappedProps.FirstOrDefault(p => p.Name == foreignKeyName) ?? 
+                                 mappedProps.FirstOrDefault(p => p.Name.Equals(foreignKeyName, StringComparison.InvariantCultureIgnoreCase));
                         if (fk == null)
                             throw new NotSupportedException($"Could not find the foreign key property on {implType.Name}. Expected property named {foreignKeyName}, but was not found.");
                         else if (fk.PropertyType != key.PropertyType)
@@ -120,7 +123,9 @@ namespace CodeOnlyStoredProcedure.RowFactory
                        .SelectMany(i => i.GetProperties())
                        .Where(p => p.CanRead && p.GetCustomAttributes(typeof(KeyAttribute), true).Any())
                        .Select(p => props.FirstOrDefault(tp => tp.Name == p.Name && tp.CanRead))
-                       .FirstOrDefault(p => p != null);
+                       .FirstOrDefault(p => p != null) ??
+                props.SingleOrDefault(p => p.CanRead && p.Name.Equals("Id", StringComparison.InvariantCultureIgnoreCase)) ??
+                props.SingleOrDefault(p => p.CanRead && p.Name.Equals(idWithClassName, StringComparison.InvariantCultureIgnoreCase));
         }
 
         private static string GetForeignKeyPropertyName(Type t, IEnumerable<PropertyInfo> interfaceProperties, PropertyInfo child)
