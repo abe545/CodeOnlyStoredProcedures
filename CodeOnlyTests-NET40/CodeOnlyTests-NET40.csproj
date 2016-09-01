@@ -119,6 +119,9 @@
     <Compile Include="..\CodeOnlyTests\HierarchicalStoredProcedureTests.cs">
       <Link>HierarchicalStoredProcedureTests.cs</Link>
     </Compile>
+    <Compile Include="..\CodeOnlyTests\IDbConnectionExtensionsTests.cs">
+      <Link>IDbConnectionExtensionsTests.cs</Link>
+    </Compile>
     <Compile Include="..\CodeOnlyTests\RowFactory\ComplexTypeRowFactoryTests.cs">
       <Link>RowFactory\ComplexTypeRowFactoryTests.cs</Link>
     </Compile>

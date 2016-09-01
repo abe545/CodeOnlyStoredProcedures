@@ -342,10 +342,16 @@ namespace CodeOnlyStoredProcedure
         /// Will automatically convert all values returned from the database into the proper type to set
         /// on the model properties for every StoredProcedure that executes.
         /// </summary>
-        public static void EnableConvertOnAllNumericValues()
-        {
-            GlobalSettings.Instance.ConvertAllNumericValues = true;
-        }
+        public static void EnableConvertOnAllNumericValues() => GlobalSettings.Instance.ConvertAllNumericValues = true;
+
+        /// <summary>
+        /// Will prevent connections from being cloned when calling a stored procedure. The default behavior will clone
+        /// and dispose connections for every call (so long as the connection implements <see cref="ICloneable"/>, 
+        /// as there are fewer conflicts with other frameworks who share the connection. If you have full control
+        /// of the connection, we recommend disabling connection cloning. Especially if you make a lot of stored
+        /// procedure calls.
+        /// </summary>
+        public static void DisableConnectionCloningForEachCall() => GlobalSettings.Instance.CloneConnectionForEachCall = false;
         #endregion
 
         /// <summary>

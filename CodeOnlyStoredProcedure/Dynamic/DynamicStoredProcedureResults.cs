@@ -308,7 +308,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
                         e = Expression.Call(null, singleExtension.Value.MakeGenericMethod(retType), e);
                     }
 
-                    // make sure to close the connection
+                    // make sure to dispose the DynamicStoredProcedureResults
                     var res = Expression.Variable(retType);
                     e = Expression.Block(retType,
                         new[] { res },

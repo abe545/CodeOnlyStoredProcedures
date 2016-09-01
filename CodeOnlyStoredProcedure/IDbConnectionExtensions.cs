@@ -194,7 +194,7 @@ namespace CodeOnlyStoredProcedure
             // uses the connection (like an EF DbSet), we could possibly close
             // the connection while a transaction is in process.
             // By only opening a clone of the connection, we avoid this issue.
-            if (connection is ICloneable)
+            if (GlobalSettings.Instance.CloneConnectionForEachCall && connection is ICloneable)
             {
                 connection = closeAfterExecute = (IDbConnection)((ICloneable)connection).Clone();
                 connection.Open();
