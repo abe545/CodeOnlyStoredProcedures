@@ -351,6 +351,8 @@ namespace CodeOnlyStoredProcedure
         /// of the connection, we recommend disabling connection cloning. Especially if you make a lot of stored
         /// procedure calls.
         /// </summary>
+        /// <remarks>Make sure your connection supports multiple active result sets, or concurrent calls will throw
+        /// an exception.</remarks>
         public static void DisableConnectionCloningForEachCall() => GlobalSettings.Instance.CloneConnectionForEachCall = false;
         #endregion
 

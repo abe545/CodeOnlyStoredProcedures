@@ -32,6 +32,12 @@ namespace SmokeTests
             var res  = RunTests(toTest.Database.Connection, smokeTests,      (t, db) => t(db));
                 res &= RunTests(toTest.Database.Connection, asyncSmokeTests, (t, db) => t(db).Result);
 
+            CodeOnlyStoredProcedure.StoredProcedure.DisableConnectionCloningForEachCall();
+            toTest.Database.Connection.Open();
+
+            res &= RunTests(toTest.Database.Connection, smokeTests,      (t, db) => t(db),        "No Connection Cloning ");
+            res &= RunTests(toTest.Database.Connection, asyncSmokeTests, (t, db) => t(db).Result, "No Connection Cloning ");
+
             if (!res)
             {
                 // tests failed
@@ -51,18 +57,19 @@ namespace SmokeTests
         private static bool RunTests<T>(
             IDbConnection db,
             IEnumerable<Lazy<T, ISmokeTest>> tests,
-            Func<T, IDbConnection, Tuple<bool, string>> runner)
+            Func<T, IDbConnection, Tuple<bool, string>> runner,
+            string prefix = "")
         {
             var result = true;
             foreach (var t in tests)
             {
-                BeginTest(t.Metadata);
+                BeginTest(t.Metadata, prefix);
                 var res = runner(t.Value, db);
                 result &= res.Item1;
                 if (res.Item1)
-                    TestSucceeded(t.Metadata);
+                    TestSucceeded(t.Metadata, prefix);
                 else
-                    TestFailed(res.Item2, t.Metadata);
+                    TestFailed(res.Item2, t.Metadata, prefix);
             }
 
             return result;
@@ -74,9 +81,9 @@ namespace SmokeTests
             Console.ReadLine();
         }
 
-        private static void BeginTest(ISmokeTest metadata)
+        private static void BeginTest(ISmokeTest metadata, string prefix)
         {
-            Console.Write("Running {0} - ", metadata.Name);
+            Console.Write($"Running {prefix}{metadata.Name} - ");
             
             if (isInAppveyor)
             {
@@ -86,7 +93,7 @@ namespace SmokeTests
             }
         }
 
-        private static void TestSucceeded(ISmokeTest metadata)
+        private static void TestSucceeded(ISmokeTest metadata, string prefix)
         {
             if (testWatch != null)
                 testWatch.Stop();
@@ -98,14 +105,14 @@ namespace SmokeTests
             if (isInAppveyor)
             {
                 var message = BuildAppveyorTestMessage(
-                    metadata.Name,
+                    $"{prefix}{metadata.Name}",
                     AppveyorTestStatus.Passed,
                     Tuple.Create("durationMilliseconds", testWatch.ElapsedMilliseconds.ToString()));
                 SendAppveyorTestMessage("PUT", message);
             }
         }
 
-        private static void TestFailed(string error, ISmokeTest metadata)
+        private static void TestFailed(string error, ISmokeTest metadata, string prefix)
         {
             if (testWatch != null)
                 testWatch.Stop();
@@ -118,7 +125,7 @@ namespace SmokeTests
             if (isInAppveyor)
             {
                 var message = BuildAppveyorTestMessage(
-                    metadata.Name,
+                    $"{prefix}{metadata.Name}",
                     AppveyorTestStatus.Failed,
                     Tuple.Create("ErrorMessage", error),
                     Tuple.Create("durationMilliseconds", testWatch.ElapsedMilliseconds.ToString()));

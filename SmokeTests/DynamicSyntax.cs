@@ -217,7 +217,7 @@ namespace SmokeTests
         Tuple<bool, string> GetReturnValueWithOutParam(IDbConnection db)
         {
             int retVal = -1;
-            db.Execute(Program.timeout).usp_ReturnsOne(returnValue: out retVal);
+            db.ExecuteNonQuery(Program.timeout).usp_ReturnsOne(returnValue: out retVal);
 
             if (retVal != 1)
                 return Tuple.Create(false, "ReturnValue not set");
@@ -229,7 +229,7 @@ namespace SmokeTests
         Tuple<bool, string> GetReturnValueWithInputProperty(IDbConnection db)
         {
             var input = new ReturnsOne();
-            db.Execute(Program.timeout).usp_ReturnsOne(input);
+            db.ExecuteNonQuery(Program.timeout).usp_ReturnsOne(input);
 
             if (input.ReturnValue != 1)
                 return Tuple.Create(false, "ReturnValue not set");
@@ -241,7 +241,7 @@ namespace SmokeTests
         async Task<Tuple<bool, string>> AsyncAwaitGetReturnValueWithInputProperty(IDbConnection db)
         {
             var input = new ReturnsOne();
-            await db.ExecuteAsync(Program.timeout).usp_ReturnsOne(input);
+            await db.ExecuteNonQueryAsync(Program.timeout).usp_ReturnsOne(input);
 
             if (input.ReturnValue != 1)
                 return Tuple.Create(false, "ReturnValue not set");
@@ -253,7 +253,7 @@ namespace SmokeTests
         Task<Tuple<bool, string>> AsyncTaskGetReturnValueWithInputProperty(IDbConnection db)
         {
             var input = new ReturnsOne();
-            Task t = db.ExecuteAsync(Program.timeout).usp_ReturnsOne(input);
+            Task t = db.ExecuteNonQueryAsync(Program.timeout).usp_ReturnsOne(input);
 
             return t.ContinueWith(_ =>
             {
