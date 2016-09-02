@@ -122,11 +122,15 @@ public class StoredProcedureTemplate : Template
 		WriteLine("");
 		WriteLine("token.ThrowIfCancellationRequested();");
 		WriteLine("");
-		WriteLine("var reader = cmd.ExecuteReader();");
+		WriteLine("using (var reader = cmd.ExecuteReader())");
+        WriteLine("{");
+        PushIndent("\t");
 
 		if (TypeCount == 1)
         {
 			WriteLine("results = T1Factory.ParseRows(reader, DataTransformers, token);");
+		    PopIndent();
+            WriteLine("}");
 			PopIndent();
 			return;
         }
@@ -157,6 +161,9 @@ public class StoredProcedureTemplate : Template
 		WriteLine("TransferOutputParameters(CancellationToken.None, dbParameters);");
 
 		PopIndent();
+        WriteLine("}");
+
+		PopIndent();
     }
 
 	public void WriteReadResultsAsync()
@@ -183,6 +190,7 @@ public class StoredProcedureTemplate : Template
 			Write(", t" + i);
 
 		WriteLine(");");
+
 		PopIndent();
     }
 
@@ -407,11 +415,13 @@ public class StoredProcedureTemplate : Template
             var dbParameters = AddParameters(cmd);
 			
             token.ThrowIfCancellationRequested();
-			var reader = await cmd.ExecuteReaderAsync(token);
-			<#+ WriteReadResultsAsync(); #>
+			using (var reader = await cmd.ExecuteReaderAsync(token))
+            {
+			    <#+ WriteReadResultsAsync(); #>
 
-            token.ThrowIfCancellationRequested();
-			TransferOutputParameters(token, dbParameters);
+                token.ThrowIfCancellationRequested();
+			    TransferOutputParameters(token, dbParameters);
+            }
 
 			toClose?.Close();
 			cmd.Dispose();

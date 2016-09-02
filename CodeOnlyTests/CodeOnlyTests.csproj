@@ -80,6 +80,7 @@
     <Compile Include="DataTransformation\InternAllStringsTransformerTests.cs" />
     <Compile Include="DataTransformation\TrimAllStringsTransformerTests.cs" />
     <Compile Include="HierarchicalStoredProcedureTests.cs" />
+    <Compile Include="IDbConnectionExtensionsTests.cs" />
     <Compile Include="MoqExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="..\VersionInfo.cs">

@@ -9,16 +9,15 @@ namespace CodeOnlyStoredProcedure
         private static GlobalSettings instance = new GlobalSettings();
 
         public static GlobalSettings                   Instance                { get { return instance; } }
-        public        IList<IDataTransformer>          DataTransformers        { get; }
-        public        ConcurrentDictionary<Type, Type> InterfaceMap            { get; }
+        public        IList<IDataTransformer>          DataTransformers        { get; } = new List<IDataTransformer>();
+        public        ConcurrentDictionary<Type, Type> InterfaceMap            { get; } = new ConcurrentDictionary<Type, Type>();
         public        bool                             IsTestInstance          { get; }
         public        bool                             ConvertAllNumericValues { get; set; }
+        public        bool                             CloneConnectionForEachCall { get; set; } = true;
 
         private GlobalSettings(bool isTestInstance = false)
         {
-            IsTestInstance   = isTestInstance;
-            DataTransformers = new List<IDataTransformer>();
-            InterfaceMap     = new ConcurrentDictionary<Type, Type>();
+            IsTestInstance = isTestInstance;
         }
 
         public static IDisposable UseTestInstance()

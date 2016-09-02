@@ -24,6 +24,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
         private        readonly CancellationToken                                 token;
         private        readonly int                                               timeout;
         private        readonly DynamicExecutionMode                              executionMode;
+        private        readonly bool                                              hasResults;
 
         static DynamicStoredProcedure()
         {
@@ -36,7 +37,8 @@ namespace CodeOnlyStoredProcedure.Dynamic
                                       IEnumerable<IDataTransformer> transformers,
                                       CancellationToken             token,
                                       int                           timeout,
-                                      DynamicExecutionMode          executionMode)
+                                      DynamicExecutionMode          executionMode,
+                                      bool                          hasResults)
         {
             Contract.Requires(connection   != null);
             Contract.Requires(transformers != null);
@@ -46,6 +48,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
             this.token         = token;
             this.timeout       = timeout;
             this.executionMode = executionMode;
+            this.hasResults    = hasResults;
         }
 
         private DynamicStoredProcedure(IDbConnection                 connection,
@@ -53,7 +56,8 @@ namespace CodeOnlyStoredProcedure.Dynamic
                                        CancellationToken             token,
                                        int                           timeout,
                                        string                        schema,
-                                       DynamicExecutionMode          executionMode)
+                                       DynamicExecutionMode          executionMode,
+                                       bool                          hasResults)
         {
             Contract.Requires(connection   != null);
             Contract.Requires(transformers != null);
@@ -65,6 +69,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
             this.token         = token;
             this.timeout       = timeout;
             this.executionMode = executionMode;
+            this.hasResults    = hasResults;
         }
 
         public override bool TryGetMember(GetMemberBinder binder, out object result)
@@ -72,7 +77,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
             if (!string.IsNullOrEmpty(schema))
                 throw new StoredProcedureException($"Schema already specified once. \n\tExisting schema: {schema}\n\tAdditional schema: {binder.Name}");
 
-            result = new DynamicStoredProcedure(connection, transformers, token, timeout, binder.Name, executionMode);
+            result = new DynamicStoredProcedure(connection, transformers, token, timeout, binder.Name, executionMode, hasResults);
             return true;
         }
 
@@ -166,6 +171,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
                 parameters,
                 transformers,
                 executionMode,
+                hasResults,
                 token);
 
             return true;

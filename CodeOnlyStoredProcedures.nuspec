@@ -10,7 +10,9 @@
         <description>A library for easily calling Stored Procedures in .NET. Works great with Entity Framework Code First models. 
 Code Only Stored Procedures will not create any Stored Procedures on your database. Instead, its aim is to make it easy to call your existing stored procedures by writing simple code.</description>
         <releaseNotes>2.3.0
-Fixed bug where hierarchical result sets could not be marked as optional
+Can now opt in to not clone the database connection before executing a StoredProcedure.
+Can now execute a non-query using the dynamic syntax.
+Fixed bug where hierarchical result sets could not be marked as optional.
 Hierarchies are now much faster to build, especially with large data sets.
 DateTimeOffset is now fully supported (in the past you had to use attributes or the Fluent syntax to specify the DbType).
 Hierarchical result sets will now match using case-insensitive names if the case-sensitive ones aren't found.

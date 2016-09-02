@@ -25,6 +25,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
             });
 
         private readonly Task<IDataReader>             resultTask;
+        private readonly Task                          nonQueryTask;
         private readonly IDbConnection                 connection;
         private readonly IDbCommand                    command;
         private readonly IEnumerable<IDataTransformer> transformers;
@@ -40,6 +41,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
             List<IStoredProcedureParameter> parameters,
             IEnumerable<IDataTransformer>   transformers,
             DynamicExecutionMode            executionMode,
+            bool                            hasResults,
             CancellationToken               token)
         {
             Contract.Requires(connection != null);
@@ -57,27 +59,48 @@ namespace CodeOnlyStoredProcedure.Dynamic
             foreach (var p in parameters)
                 command.Parameters.Add(p.CreateDbDataParameter(command));
 
-            if (executionMode == DynamicExecutionMode.Synchronous)
+            if (!hasResults)
+            {
+                if (executionMode == DynamicExecutionMode.Synchronous)
+                {
+                    command.ExecuteNonQuery();
+                    TransferOutputParameters(parameters, token);
+                }
+                else
+                {
+#if !NET40
+                    var sqlCommand = command as SqlCommand;
+                    if (sqlCommand != null)
+                        nonQueryTask = sqlCommand.ExecuteNonQueryAsync(token);
+                    else
+#endif
+                        nonQueryTask = Task.Factory.StartNew(() => command.ExecuteNonQuery(),
+                                                           token,
+                                                           TaskCreationOptions.None,
+                                                           TaskScheduler.Default);
+
+                    nonQueryTask = nonQueryTask.ContinueWith(_ => TransferOutputParameters(parameters, token), token);
+                }
+            }
+            else if (executionMode == DynamicExecutionMode.Synchronous)
             {
                 var tcs = new TaskCompletionSource<IDataReader>();
 
                 token.ThrowIfCancellationRequested();
                 var res = command.ExecuteReader();
-                token.ThrowIfCancellationRequested();
 
-                foreach (IDbDataParameter p in command.Parameters)
+                TransferOutputParameters(parameters, token);
+
+                if (token.IsCancellationRequested)
                 {
-                    if (p.Direction != ParameterDirection.Input)
-                    {
-                        parameters.OfType<IOutputStoredProcedureParameter>()
-                                  .FirstOrDefault(sp => sp.ParameterName == p.ParameterName)
-                                 ?.TransferOutputValue(p.Value);
-                    }
+                    res.Dispose();
+                    token.ThrowIfCancellationRequested();
                 }
-
-                token.ThrowIfCancellationRequested();
-                tcs.SetResult(res);
-                resultTask = tcs.Task;
+                else
+                {
+                    tcs.SetResult(res);
+                    resultTask = tcs.Task;
+                }
             }
             else
             {
@@ -93,19 +116,10 @@ namespace CodeOnlyStoredProcedure.Dynamic
                                                        TaskScheduler.Default);
 
                 resultTask = resultTask.ContinueWith(r =>
-                                       {
-                                           foreach (IDbDataParameter p in command.Parameters)
-                                           {
-                                               if (p.Direction != ParameterDirection.Input)
-                                               {
-                                                   parameters.OfType<IOutputStoredProcedureParameter>()
-                                                             .FirstOrDefault(sp => sp.ParameterName == p.ParameterName)
-                                                            ?.TransferOutputValue(p.Value);
-                                               }
-                                           }
-                                       
-                                           return r.Result;
-                                       }, token);
+                {
+                    TransferOutputParameters(parameters, token);                                       
+                    return r.Result;
+                }, token);
             }
         }
 
@@ -117,29 +131,62 @@ namespace CodeOnlyStoredProcedure.Dynamic
             command?.Dispose();
         }
 
-        private IEnumerable<T> GetResults<T>(bool isSingle) => RowFactory<T>.Create(isSingle).ParseRows(resultTask.Result, transformers, token);
+        private IEnumerable<T> GetResults<T>(bool isSingle)
+        {
+            if (resultTask == null)
+                throw new NotSupportedException("When calling the dynamic syntax with a NonQuery variant, no results are returned, so the value can not be cast to a result set.");
+
+            try
+            {
+                return RowFactory<T>.Create(isSingle).ParseRows(resultTask.Result, transformers, token);
+            }
+            finally
+            {
+                if (isSingle)
+                    resultTask.Result.Dispose();
+            }
+        }
         
         private Task ContinueNoResults()
         {
+            if (nonQueryTask != null)
+            {
+                return nonQueryTask.ContinueWith(r =>
+                {
+                    Dispose();
+
+                    if (r.Status == TaskStatus.Faulted)
+                        throw r.Exception;
+                });
+            }
+
             return resultTask.ContinueWith(r =>
             {
+                r.Result.Dispose();
                 Dispose();
+
                 if (r.Status == TaskStatus.Faulted)
                     throw r.Exception;
-            }, token);
+            });
         }
 
         private Task<IEnumerable<T>> CreateSingleContinuation<T>()
         {
+            if (resultTask == null)
+                throw new NotSupportedException("When calling the dynamic syntax with a NonQuery variant, no results are returned, so the value can not be cast to a result set.");
+
             return resultTask.ContinueWith(_ =>
             {
                 try { return GetResults<T>(true); }
                 finally { Dispose(); }
-            }, token);
+            });
         }
 
         private Task<T> CreateSingleRowContinuation<T>()
         {
+            if (resultTask == null)
+                throw new NotSupportedException("When calling the dynamic syntax with a NonQuery variant, no results are returned, so the value can not be cast to a result set.");
+
             return resultTask.ContinueWith(_ =>
             {
                 try { return GetResults<T>(true).SingleOrDefault(); }
@@ -150,28 +197,42 @@ namespace CodeOnlyStoredProcedure.Dynamic
         private T GetMultipleResults<T>()
         {
             Contract.Ensures(Contract.Result<T>() != null);
-            
-            var types = typeof(T).GetGenericArguments();
-            var res   = types.Select((t, i) =>
+
+            if (resultTask == null)
+                throw new NotSupportedException("When calling the dynamic syntax with a NonQuery variant, no results are returned, so the value can not be cast to a result set.");
+
+            try
             {
-                if (i > 0)
-                    resultTask.Result.NextResult();
+                var types = typeof(T).GetGenericArguments();
+                var res   = types.Select((t, i) =>
+                {
+                    if (i > 0)
+                        resultTask.Result.NextResult();
 
-                token.ThrowIfCancellationRequested();
+                    token.ThrowIfCancellationRequested();
 
-                return getResultsMethod.Value
-                                       .MakeGenericMethod(t.GetEnumeratedType())
-                                       .Invoke(this, new object[] { false });
-            }).ToArray();
+                    return getResultsMethod.Value
+                                           .MakeGenericMethod(t.GetEnumeratedType())
+                                           .Invoke(this, new object[] { false });
+                }).ToArray();
 
-            return (T)tupleCreates.Value[types.Length]
-                                  .MakeGenericMethod(types)
-                                  .Invoke(null, res);
+                return (T)tupleCreates.Value[types.Length]
+                                      .MakeGenericMethod(types)
+                                      .Invoke(null, res);
+            }
+            finally
+            {
+                resultTask.Result.Dispose();
+            }
         }
 
         private Task<T> CreateMultipleContinuation<T>()
         {
             Contract.Ensures(Contract.Result<Task<T>>() != null);
+
+            if (resultTask == null)
+                throw new NotSupportedException("When calling the dynamic syntax with a NonQuery variant, no results are returned, so the value can not be cast to a result set.");
+
 
             return resultTask.ContinueWith(_ =>
             {
@@ -191,7 +252,21 @@ namespace CodeOnlyStoredProcedure.Dynamic
             if (executionMode == DynamicExecutionMode.Synchronous)
                 throw new NotSupportedException(DynamicStoredProcedure.asyncParameterDirectionError);
 
-            return DynamicStoredProcedureResultsAwaiter.Create(this, resultTask, continueOnCaller);
+            return DynamicStoredProcedureResultsAwaiter.Create(this, nonQueryTask ?? resultTask, continueOnCaller);
+        }
+
+        private void TransferOutputParameters(List<IStoredProcedureParameter> parameters, CancellationToken token)
+        {
+            foreach (IDbDataParameter p in command.Parameters)
+            {
+                token.ThrowIfCancellationRequested();
+                if (p.Direction != ParameterDirection.Input)
+                {
+                    parameters.OfType<IOutputStoredProcedureParameter>()
+                              .FirstOrDefault(sp => sp.ParameterName == p.ParameterName)
+                             ?.TransferOutputValue(p.Value);
+                }
+            }
         }
 
         private class Meta : DynamicMetaObject
@@ -308,7 +383,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
                         e = Expression.Call(null, singleExtension.Value.MakeGenericMethod(retType), e);
                     }
 
-                    // make sure to close the connection
+                    // make sure to dispose the DynamicStoredProcedureResults
                     var res = Expression.Variable(retType);
                     e = Expression.Block(retType,
                         new[] { res },
