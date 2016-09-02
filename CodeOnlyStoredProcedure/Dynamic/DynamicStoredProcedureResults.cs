@@ -65,6 +65,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
                 {
                     command.ExecuteNonQuery();
                     TransferOutputParameters(parameters, token);
+                    Dispose();
                 }
                 else
                 {
