@@ -15,6 +15,9 @@ namespace CodeOnlyStoredProcedure
         public        bool                             ConvertAllNumericValues { get; set; }
         public        bool                             CloneConnectionForEachCall { get; set; } = true;
 
+        internal string OpenObjectQuote { get; private set; } = "[";
+        internal string CloseObjectQuote { get; private set; } = "]";
+
         private GlobalSettings(bool isTestInstance = false)
         {
             IsTestInstance = isTestInstance;
@@ -25,6 +28,33 @@ namespace CodeOnlyStoredProcedure
             var disposer = new Disposer();
             instance = new GlobalSettings(true);
             return disposer;
+        }
+
+        public void SetObjectQuoteStyle(ObjectQuoteStyle style)
+        {
+            switch (style)
+            {
+                case ObjectQuoteStyle.DoubleQuote:
+                    SetObjectQuoteStyle("\"", "\"");
+                    break;
+
+                case ObjectQuoteStyle.BackTick:
+                    SetObjectQuoteStyle("`", "`");
+                    break;
+
+                case ObjectQuoteStyle.Brackets:
+                    SetObjectQuoteStyle("[", "]");
+                    break;
+
+                default:
+                    throw new ArgumentException($"{style} is not a valid value for a ObjectQuoteStyle", "style");
+            }
+        }
+
+        public void SetObjectQuoteStyle(string openQuote, string closeQuote)
+        {
+            OpenObjectQuote = openQuote;
+            CloseObjectQuote = closeQuote;
         }
 
         private class Disposer : IDisposable
