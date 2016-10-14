@@ -100,6 +100,130 @@ namespace CodeOnlyTests
                     db.Verify(d => d.Open(), Times.Never());
                 }
             }
+
+            [TestMethod]
+            public void Quotes_With_SquareBrackets_When_Set_Via_Enum()
+            {
+                using (GlobalSettings.UseTestInstance())
+                {
+                    GlobalSettings.Instance.SetObjectQuoteStyle(ObjectQuoteStyle.Brackets);
+                    var db = new Mock<IDbConnection>();
+                    var db2 = new Mock<IDbConnection>();
+
+                    db.As<ICloneable>().Setup(c => c.Clone()).Returns(db2.Object);
+
+                    var cmd = new Mock<IDbCommand>();
+                    cmd.SetupAllProperties();
+
+                    db2.Setup(d => d.CreateCommand()).Returns(cmd.Object);
+
+                    IDbConnection outConn;
+                    var res = db.Object.CreateCommand("foo", "bar", 20, out outConn);
+
+                    outConn.Should().NotBeNull();
+                    res.Should().NotBeNull();
+                    res.CommandText.Should().Be("[foo].[bar]");
+                    res.CommandTimeout.Should().Be(20);
+                    res.CommandType.Should().Be(CommandType.StoredProcedure);
+
+                    db.As<ICloneable>().Verify(c => c.Clone(), Times.Once());
+                    db2.Verify(d => d.CreateCommand(), Times.Once());
+                    db2.Verify(d => d.Open(), Times.Once());
+                }
+            }
+
+            [TestMethod]
+            public void Quotes_With_DoubleQuotes_When_Set_Via_Enum()
+            {
+                using (GlobalSettings.UseTestInstance())
+                {
+                    GlobalSettings.Instance.SetObjectQuoteStyle(ObjectQuoteStyle.DoubleQuote);
+                    var db = new Mock<IDbConnection>();
+                    var db2 = new Mock<IDbConnection>();
+
+                    db.As<ICloneable>().Setup(c => c.Clone()).Returns(db2.Object);
+
+                    var cmd = new Mock<IDbCommand>();
+                    cmd.SetupAllProperties();
+
+                    db2.Setup(d => d.CreateCommand()).Returns(cmd.Object);
+
+                    IDbConnection outConn;
+                    var res = db.Object.CreateCommand("foo", "bar", 20, out outConn);
+
+                    outConn.Should().NotBeNull();
+                    res.Should().NotBeNull();
+                    res.CommandText.Should().Be("\"foo\".\"bar\"");
+                    res.CommandTimeout.Should().Be(20);
+                    res.CommandType.Should().Be(CommandType.StoredProcedure);
+
+                    db.As<ICloneable>().Verify(c => c.Clone(), Times.Once());
+                    db2.Verify(d => d.CreateCommand(), Times.Once());
+                    db2.Verify(d => d.Open(), Times.Once());
+                }
+            }
+
+            [TestMethod]
+            public void Quotes_With_Backticks_When_Set_Via_Enum()
+            {
+                using (GlobalSettings.UseTestInstance())
+                {
+                    GlobalSettings.Instance.SetObjectQuoteStyle(ObjectQuoteStyle.BackTick);
+                    var db = new Mock<IDbConnection>();
+                    var db2 = new Mock<IDbConnection>();
+
+                    db.As<ICloneable>().Setup(c => c.Clone()).Returns(db2.Object);
+
+                    var cmd = new Mock<IDbCommand>();
+                    cmd.SetupAllProperties();
+
+                    db2.Setup(d => d.CreateCommand()).Returns(cmd.Object);
+
+                    IDbConnection outConn;
+                    var res = db.Object.CreateCommand("foo", "bar", 20, out outConn);
+
+                    outConn.Should().NotBeNull();
+                    res.Should().NotBeNull();
+                    res.CommandText.Should().Be("`foo`.`bar`");
+                    res.CommandTimeout.Should().Be(20);
+                    res.CommandType.Should().Be(CommandType.StoredProcedure);
+
+                    db.As<ICloneable>().Verify(c => c.Clone(), Times.Once());
+                    db2.Verify(d => d.CreateCommand(), Times.Once());
+                    db2.Verify(d => d.Open(), Times.Once());
+                }
+            }
+
+            [TestMethod]
+            public void Quotes_With_Custom_Value_When_Set_Via_String()
+            {
+                using (GlobalSettings.UseTestInstance())
+                {
+                    GlobalSettings.Instance.SetObjectQuoteStyle("(", "*");
+                    var db = new Mock<IDbConnection>();
+                    var db2 = new Mock<IDbConnection>();
+
+                    db.As<ICloneable>().Setup(c => c.Clone()).Returns(db2.Object);
+
+                    var cmd = new Mock<IDbCommand>();
+                    cmd.SetupAllProperties();
+
+                    db2.Setup(d => d.CreateCommand()).Returns(cmd.Object);
+
+                    IDbConnection outConn;
+                    var res = db.Object.CreateCommand("foo", "bar", 20, out outConn);
+
+                    outConn.Should().NotBeNull();
+                    res.Should().NotBeNull();
+                    res.CommandText.Should().Be("(foo*.(bar*");
+                    res.CommandTimeout.Should().Be(20);
+                    res.CommandType.Should().Be(CommandType.StoredProcedure);
+
+                    db.As<ICloneable>().Verify(c => c.Clone(), Times.Once());
+                    db2.Verify(d => d.CreateCommand(), Times.Once());
+                    db2.Verify(d => d.Open(), Times.Once());
+                }
+            }
         }
     }
 }

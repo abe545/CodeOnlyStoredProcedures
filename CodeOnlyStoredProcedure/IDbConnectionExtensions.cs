@@ -357,8 +357,11 @@ namespace CodeOnlyStoredProcedure
             else
                 closeAfterExecute = null;
 
+            var open  = GlobalSettings.Instance.OpenObjectQuote;
+            var close = GlobalSettings.Instance.CloseObjectQuote;
+
             var cmd            = connection.CreateCommand();
-            cmd.CommandText    = $"[{schema}].[{name}]";
+            cmd.CommandText    = $"{open}{schema}{close}.{open}{name}{close}";
             cmd.CommandType    = CommandType.StoredProcedure;
             cmd.CommandTimeout = timeout;
 
