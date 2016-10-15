@@ -354,6 +354,21 @@ namespace CodeOnlyStoredProcedure
         /// <remarks>Make sure your connection supports multiple active result sets, or concurrent calls will throw
         /// an exception.</remarks>
         public static void DisableConnectionCloningForEachCall() => GlobalSettings.Instance.CloneConnectionForEachCall = false;
+
+        /// <summary>
+        /// Allows you to change the default behavior of the object quoting syntax. If not set, the default style is
+        /// <see cref="ObjectQuoteStyle.Brackets"/>.
+        /// </summary>
+        /// <param name="style">THe <see cref="ObjectQuoteStyle"/> to use to define the object quote style.</param>
+        public static void SetObjectQuoteStyle(ObjectQuoteStyle style) => GlobalSettings.Instance.SetObjectQuoteStyle(style);
+
+        /// <summary>
+        /// Allows you to change the default behavior of the object quoting syntax. If not set, the open quote is "[",
+        /// and the close quote is "]".
+        /// </summary>
+        /// <param name="openQuote">The string to use to start an object quote.</param>
+        /// <param name="closeQuote">The string to use to close an object quote.</param>
+        public static void SetObjectQuoteStyle(string openQuote, string closeQuote) => GlobalSettings.Instance.SetObjectQuoteStyle(openQuote, closeQuote);
         #endregion
 
         /// <summary>
