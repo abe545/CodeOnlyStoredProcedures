@@ -436,6 +436,33 @@ namespace CodeOnlyTests
         {
             typeof(DateTimeOffset).InferDbType().Should().Be(DbType.DateTimeOffset);
         }
+
+        [TestMethod]
+        public void InferDbType_ReturnsBinary_ForByteArray()
+        {
+            typeof(byte[]).InferDbType().Should().Be(DbType.Binary);
+        }
+        #endregion
+
+        #region TryInferSqlDbType
+        [TestMethod]
+        public void TryInferSqlDbType_ReturnsNVarChar_ForEnum()
+        {
+            var result = typeof(EnumToTest).TryInferSqlDbType();
+            result.Should().Be(SqlDbType.NVarChar, "because an enum should be passed as a varchar");
+        }
+
+        [TestMethod]
+        public void TryInferSqlDbType_ReturnsDateTimeOffset()
+        {
+            typeof(DateTimeOffset).TryInferSqlDbType().Should().Be(SqlDbType.DateTimeOffset);
+        }
+
+        [TestMethod]
+        public void TryInferSqlDbType_ReturnsBinary_ForByteArray()
+        {
+            typeof(byte[]).TryInferSqlDbType().Should().Be(SqlDbType.VarBinary);
+        }
         #endregion
 
         #region CreateSqlMetaData

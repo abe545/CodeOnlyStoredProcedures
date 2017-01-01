@@ -963,6 +963,85 @@ namespace SmokeTests
         }
         #endregion
 
+        #region Binary Data
+        [SmokeTest("Fluent Syntax Binary ResultSet")]
+        Tuple<bool, string> ExecuteBinarySync(IDbConnection db)
+        {
+            byte[] res = StoredProcedure.Create ("usp_GetIntAsBytes")
+                                        .WithParameter("toBytes", 42)
+                                        .WithResults<byte[]>()
+                                        .Execute(db, Program.timeout)
+                                        .Single();
+
+            if (BitConverter.IsLittleEndian)
+                Array.Reverse(res);
+
+            if (BitConverter.ToInt32(res, 0) != 42)
+                return Tuple.Create(false, "The bytes returned from the stored procedure did not match the expected results");
+
+            return Tuple.Create(true, "");
+        }
+
+        [SmokeTest("Fluent Syntax Binary ResultSet (await)")]
+        async Task<Tuple<bool, string>> ExecuteBinaryAsync(IDbConnection db)
+        {
+            byte[] res = (await StoredProcedure.Create ("usp_GetIntAsBytes")
+                                               .WithParameter("toBytes", 42)
+                                               .WithResults<byte[]>()
+                                               .ExecuteAsync(db, Program.timeout))
+                                               .Single();
+            if (BitConverter.IsLittleEndian)
+                Array.Reverse(res);
+
+            if (BitConverter.ToInt32(res, 0) != 42)
+                return Tuple.Create(false, "The bytes returned from the stored procedure did not match the expected results");
+
+            return Tuple.Create(true, "");
+        }
+
+        [SmokeTest("Fluent Syntax Binary ResultSet (task)")]
+        Task<Tuple<bool, string>> ExecuteBinaryTask(IDbConnection db)
+        {
+            var t = StoredProcedure.Create ("usp_GetIntAsBytes")
+                                   .WithParameter("toBytes", 42)
+                                   .WithResults<byte[]>()
+                                   .ExecuteAsync(db, Program.timeout);
+
+            return t.ContinueWith(r =>
+            {
+                var res = r.Result.Single();
+
+                if (BitConverter.IsLittleEndian)
+                    Array.Reverse(res);
+
+                if (BitConverter.ToInt32(res, 0) != 42)
+                    return Tuple.Create(false, "The bytes returned from the stored procedure did not match the expected results");
+
+                return Tuple.Create(true, "");
+
+            });
+        }
+
+        [SmokeTest("Fluent Syntax Binary Parameter")]
+        Tuple<bool, string> ExecuteBinaryParameter(IDbConnection db)
+        {
+            byte[] bytes = BitConverter.GetBytes(123456);
+            if (BitConverter.IsLittleEndian)
+                Array.Reverse(bytes);
+
+            int res = StoredProcedure.Create("usp_GetBytesAsInt")
+                                     .WithParameter("toInt", bytes)
+                                     .WithResults<int>()
+                                     .Execute(db, Program.timeout)
+                                     .Single();
+            
+            if (res != 123456)
+                return Tuple.Create(false, "The int returned from the stored procedure did not match the expected results");
+
+            return Tuple.Create(true, "");
+        }
+        #endregion
+
         private class DoublingTransformer : IDataTransformer<int>, IDataTransformer<Spoke>
         {
             public bool CanTransform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes)

@@ -36,7 +36,8 @@ namespace CodeOnlyStoredProcedure
                 typeof(DateTimeOffset),
                 typeof(TimeSpan),
                 typeof(Char),
-                typeof(Guid)
+                typeof(Guid),
+                typeof(byte[])
             };
 
         internal static IEnumerable<PropertyInfo> GetMappedProperties(
@@ -62,7 +63,7 @@ namespace CodeOnlyStoredProcedure
         {
             Contract.Requires(t != null);
 
-            return t.IsArray || typeof(IEnumerable).IsAssignableFrom(t) && t.IsGenericType;
+            return t != typeof(byte[]) && (t.IsArray || typeof(IEnumerable).IsAssignableFrom(t) && t.IsGenericType);
         }
 
         internal static Type GetEnumeratedType(this Type t)
@@ -131,6 +132,8 @@ namespace CodeOnlyStoredProcedure
                 return DbType.SByte;
             else if (type == typeof(Char))
                 return DbType.StringFixedLength;
+            else if (type == typeof(byte[]))
+                return DbType.Binary;
 
             return DbType.Object;
         }
@@ -167,6 +170,8 @@ namespace CodeOnlyStoredProcedure
                 return SqlDbType.NChar;
             else if (type == typeof(Single))
                 return SqlDbType.Real;
+            else if (type == typeof(byte[]))
+                return SqlDbType.VarBinary;
 
             return null;
         }
@@ -199,8 +204,12 @@ namespace CodeOnlyStoredProcedure
                 case DbType.StringFixedLength:
                 case DbType.AnsiString:
                 case DbType.String:
-                case DbType.Binary:
                     parameter.Size = specifiedSize ?? defaultSize;
+                    break;
+
+                case DbType.Binary:
+                    if (specifiedSize.HasValue)
+                        parameter.Size = specifiedSize.Value;
                     break;
 
                 case DbType.Currency:
@@ -242,8 +251,10 @@ namespace CodeOnlyStoredProcedure
                 case SqlDbType.NVarChar:
                 case SqlDbType.Text:
                 case SqlDbType.NText:
-                case SqlDbType.VarBinary:
                     return new SqlMetaData(columnName, specifiedSqlDbType.Value, specifiedSize ?? defaultSize);
+
+                case SqlDbType.VarBinary:
+                    return new SqlMetaData(columnName, specifiedSqlDbType.Value, specifiedSize ?? 8000);
 
                 case SqlDbType.Decimal:
                     return new SqlMetaData(columnName, specifiedSqlDbType.Value, specifiedPrecision ?? defaultPrecision, specifiedScale ?? defaultScale);

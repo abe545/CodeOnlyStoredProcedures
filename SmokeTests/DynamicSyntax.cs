@@ -689,5 +689,67 @@ namespace SmokeTests
             }
         }
         #endregion
+
+        #region Binary
+        [SmokeTest("Dynamic Syntax Binary ResultSet")]
+        Tuple<bool, string> ExecuteBinarySync(IDbConnection db)
+        {
+            byte[] res = db.Execute(Program.timeout).usp_GetIntAsBytes(@toBytes: 42);
+            if (BitConverter.IsLittleEndian)
+                Array.Reverse(res);
+
+            if (BitConverter.ToInt32(res, 0) != 42)
+                return Tuple.Create(false, "The bytes returned from the stored procedure did not match the expected results");
+
+            return Tuple.Create(true, "");
+        }
+
+        [SmokeTest("Dynamic Syntax Binary ResultSet (await)")]
+        async Task<Tuple<bool, string>> ExecuteBinaryAsync(IDbConnection db)
+        {
+            byte[] res = await db.ExecuteAsync(Program.timeout).usp_GetIntAsBytes(@toBytes: 42);
+            if (BitConverter.IsLittleEndian)
+                Array.Reverse(res);
+
+            if (BitConverter.ToInt32(res, 0) != 42)
+                return Tuple.Create(false, "The bytes returned from the stored procedure did not match the expected results");
+
+            return Tuple.Create(true, "");
+        }
+
+        [SmokeTest("Dynamic Syntax Binary ResultSet (task)")]
+        Task<Tuple<bool, string>> ExecuteBinaryTask(IDbConnection db)
+        {
+            Task<byte[]> t = db.ExecuteAsync(Program.timeout).usp_GetIntAsBytes(@toBytes: 42);
+
+            return t.ContinueWith(r =>
+            {
+                var res = r.Result;
+
+                if (BitConverter.IsLittleEndian)
+                    Array.Reverse(res);
+
+                if (BitConverter.ToInt32(res, 0) != 42)
+                    return Tuple.Create(false, "The bytes returned from the stored procedure did not match the expected results");
+
+                return Tuple.Create(true, "");
+
+            });
+        }
+
+        [SmokeTest("Dynamic Syntax Binary Parameter")]
+        Tuple<bool, string> ExecuteBinaryParameter(IDbConnection db)
+        {
+            byte[] bytes = BitConverter.GetBytes(123456);
+            if (BitConverter.IsLittleEndian)
+                Array.Reverse(bytes);
+
+            int res = db.Execute(Program.timeout).usp_GetBytesAsInt(@toInt: bytes);
+            if (res != 123456)
+                return Tuple.Create(false, "The int returned from the stored procedure did not match the expected results");
+
+            return Tuple.Create(true, "");
+        }
+        #endregion
     }
 }

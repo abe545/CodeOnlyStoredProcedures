@@ -1,4 +1,4 @@
-version: 2.3.0.{build}
+version: 2.4.0.{build}
 skip_tags: false
 
 # Operating system (build VM template)
@@ -10,7 +10,7 @@ branches:
     - gh-pages
 
 init:
-  - ps: $env:releaseVersion = "2.3.0"
+  - ps: $env:releaseVersion = "2.4.0"
   - ps: $env:packageVersion = if (Test-Path env:\APPVEYOR_REPO_TAG_NAME) { "$env:APPVEYOR_REPO_TAG_NAME" } else { "{0}-aInternalBuild{1:000}" -f $env:releaseVersion, [System.Int32]::Parse($env:APPVEYOR_BUILD_NUMBER) }
   
 assembly_info:
