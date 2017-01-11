@@ -1042,6 +1042,70 @@ namespace SmokeTests
         }
         #endregion
 
+        #region Reference Parameters
+        [SmokeTest("Fluent Syntax InputOutput Parameter")]
+        Tuple<bool, string> ExecuteInputOutputParameterSync(IDbConnection db)
+        {
+            int value = 0;
+            StoredProcedure.Create("usp_Square")
+                           .WithInputOutputParameter("value", 4, x => value = x)
+                           .Execute(db, Program.timeout);
+
+            if (value != 16)
+                return Tuple.Create(false, $"The value was not squared after the stored procedure completed. Expected 16, value is {value}.");
+
+            return Tuple.Create(true, "");
+        }
+
+        [SmokeTest("Fluent Syntax InputOutput Property")]
+        Tuple<bool, string> ExecuteInputOutputPropertySync(IDbConnection db)
+        {
+            var p = new SquareInput { value = 8 };
+            StoredProcedure.Create("usp_Square")
+                           .WithInput(p)
+                           .Execute(db, Program.timeout);
+
+            if (p.value != 64)
+                return Tuple.Create(false, $"The value was not squared after the stored procedure completed. Expected 64, value is {p.value}.");
+
+            return Tuple.Create(true, "");
+        }
+
+        [SmokeTest("Fluent Syntax InputOutput Parameter Async")]
+        async Task<Tuple<bool, string>> ExecuteInputOutputParameterAsync(IDbConnection db)
+        {
+            int value = 0;
+            await StoredProcedure.Create("usp_Square")
+                                 .WithInputOutputParameter("value", 4, x => value = x)
+                                 .ExecuteAsync(db, Program.timeout);
+
+            if (value != 16)
+                return Tuple.Create(false, $"The value was not squared after the stored procedure completed. Expected 16, value is {value}.");
+
+            return Tuple.Create(true, "");
+        }
+
+        [SmokeTest("Fluent Syntax InputOutput Property Async")]
+        async Task<Tuple<bool, string>> ExecuteInputOutputPropertyAsync(IDbConnection db)
+        {
+            var p = new SquareInput { value = 8 };
+            await StoredProcedure.Create("usp_Square")
+                                 .WithInput(p)
+                                 .ExecuteAsync(db, Program.timeout);
+
+            if (p.value != 64)
+                return Tuple.Create(false, $"The value was not squared after the stored procedure completed. Expected 64, value is {p.value}.");
+
+            return Tuple.Create(true, "");
+        }
+
+        private class SquareInput
+        {
+            [StoredProcedureParameter(Direction = ParameterDirection.InputOutput)]
+            public int value { get; set; }
+        }
+        #endregion
+
         private class DoublingTransformer : IDataTransformer<int>, IDataTransformer<Spoke>
         {
             public bool CanTransform(object value, Type targetType, bool isNullable, IEnumerable<Attribute> propertyAttributes)

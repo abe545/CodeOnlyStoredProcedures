@@ -751,5 +751,51 @@ namespace SmokeTests
             return Tuple.Create(true, "");
         }
         #endregion
+
+        #region Reference Parameters
+        [SmokeTest("Dynamic Syntax Reference Parameter")]
+        Tuple<bool, string> ExecuteRefParameterSync(IDbConnection db)
+        {
+            int value = 2;
+            db.ExecuteNonQuery(Program.timeout).usp_Square(@value: ref value);
+            if (value != 4)
+                return Tuple.Create(false, $"The value was not squared after the stored procedure completed. Expected 4, value is {value}.");
+
+            return Tuple.Create(true, "");
+        }
+
+        private class SquareInput
+        {
+            [StoredProcedureParameter(Direction = ParameterDirection.InputOutput)]
+            public int value { get; set; }
+        }
+
+        [SmokeTest("Dynamic Syntax Reference Parameter (await)")]
+        async Task<Tuple<bool, string>> ExecuteRefParameterAsync(IDbConnection db)
+        {
+            var p = new SquareInput { value = 4 };
+            await db.ExecuteNonQueryAsync(Program.timeout).usp_Square(p);
+            if (p.value != 16)
+                return Tuple.Create(false, $"The value was not squared after the stored procedure completed. Expected 16, value is {p.value}.");
+
+            return Tuple.Create(true, "");
+        }
+
+        [SmokeTest("Dynamic Syntax Reference Parameter (task)")]
+        Task<Tuple<bool, string>> ExecuteRefParameterTask(IDbConnection db)
+        {
+            var p = new SquareInput { value = 4 };
+            Task t = db.ExecuteNonQueryAsync(Program.timeout).usp_Square(p);
+
+            return t.ContinueWith(r =>
+            {
+                if (p.value != 16)
+                    return Tuple.Create(false, $"The value was not squared after the stored procedure completed. Expected 16, value is {p.value}.");
+
+                return Tuple.Create(true, "");
+
+            });
+        }
+        #endregion
     }
 }
