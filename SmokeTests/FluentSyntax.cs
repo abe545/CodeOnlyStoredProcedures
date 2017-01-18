@@ -286,11 +286,6 @@ namespace SmokeTests
                 return Tuple.Create(false, $"\texpected {dt.ToUniversalTime()}, but returned {res}");
 
             return Tuple.Create(true, "");
-
-            if (res != dt.ToUniversalTime())
-                return Tuple.Create(false, $"\texpected {dt.ToUniversalTime()}, but returned {res}");
-
-            return Tuple.Create(true, "");
         }
 
         [SmokeTest("Fluent Syntax async Simple ResultSet WithInput")]
@@ -1103,6 +1098,106 @@ namespace SmokeTests
         {
             [StoredProcedureParameter(Direction = ParameterDirection.InputOutput)]
             public int value { get; set; }
+        }
+
+        [SmokeTest("Fluent Syntax Output Parameter With Results")]
+        Tuple<bool, string> ExecuteWithResultsOutputParameterSync(IDbConnection db)
+        {
+            int value = 0;
+            var parameters = StoredProcedure.Create("usp_Add")
+                                            .WithParameter("param1", 3)
+                                            .WithParameter("param2", 1)
+                                            .WithResults<int>()
+                                            .WithOutputParameter("result", (int x) => value = x)
+                                            .Execute(db, Program.timeout);
+
+            if (value != 4)
+                return Tuple.Create(false, $"The value was not returned after the stored procedure completed. Expected 4, value is {value}.");
+
+            if (!parameters.OrderBy(i => i).SequenceEqual(new[] { 1, 3 }))
+                return Tuple.Create(false, $"The expected result set was [1,3]. The results returned were [{string.Join(",", parameters)}].");
+
+            return Tuple.Create(true, "");
+        }
+
+        [SmokeTest("Fluent Syntax Output Parameter With unobserved Results")]
+        Tuple<bool, string> ExecuteWithUnObservedResultsOutputParameterSync(IDbConnection db)
+        {
+            int value = 0;
+            StoredProcedure.Create("usp_Add")
+                           .WithParameter("param1", 3)
+                           .WithParameter("param2", 1)
+                           .WithOutputParameter("result", (int x) => value = x)
+                           .Execute(db, Program.timeout);
+
+            if (value != 4)
+                return Tuple.Create(false, $"The value was not returned after the stored procedure completed. Expected 4, value is {value}.");
+
+            return Tuple.Create(true, "");
+        }
+
+        [SmokeTest("Fluent Syntax Output Property With Results")]
+        Tuple<bool, string> ExecuteWithResultsOutputPropertySync(IDbConnection db)
+        {
+            var p = new AddInput { Param1 = 8, Param2 = 3 };
+            var parameters = StoredProcedure.Create("usp_Add")
+                                            .WithInput(p)
+                                            .WithResults<int>()
+                                            .Execute(db, Program.timeout);
+
+            if (p.Result != 11)
+                return Tuple.Create(false, $"The value was not returned after the stored procedure completed. Expected 11, value is {p.Result}.");
+
+            if (!parameters.OrderBy(i => i).SequenceEqual(new[] { 3, 8 }))
+                return Tuple.Create(false, $"The expected result set was [3,8]. The results returned were [{string.Join(",", parameters)}].");
+
+            return Tuple.Create(true, "");
+        }
+
+        [SmokeTest("Fluent Syntax Output Parameter With Results Async")]
+        async Task<Tuple<bool, string>> ExecuteWithResultsOutputParameterAsync(IDbConnection db)
+        {
+            int value = 0;
+            var parameters = await StoredProcedure.Create("usp_Add")
+                                                  .WithParameter("param1", 3)
+                                                  .WithResults<int>()
+                                                  .WithParameter("param2", 1)
+                                                  .WithOutputParameter("result", (int x) => value = x)
+                                                  .ExecuteAsync(db, Program.timeout);
+
+            if (value != 4)
+                return Tuple.Create(false, $"The value was not returned after the stored procedure completed. Expected 4, value is {value}.");
+
+            if (!parameters.OrderBy(i => i).SequenceEqual(new[] { 1, 3 }))
+                return Tuple.Create(false, $"The expected result set was [1,3]. The results returned were [{string.Join(",", parameters)}].");
+
+            return Tuple.Create(true, "");
+        }
+
+        [SmokeTest("Fluent Syntax Output Property With Results Async")]
+        async Task<Tuple<bool, string>> ExecuteWithResultsOutputPropertyAsync(IDbConnection db)
+        {
+            var p = new AddInput { Param1 = 8, Param2 = 3 };
+            var parameters = await StoredProcedure.Create("usp_Add")
+                                                  .WithResults<int>()
+                                                  .WithInput(p)
+                                                  .ExecuteAsync(db, Program.timeout);
+
+            if (p.Result != 11)
+                return Tuple.Create(false, $"The value was not returned after the stored procedure completed. Expected 11, value is {p.Result}.");
+
+            if (!parameters.OrderBy(i => i).SequenceEqual(new[] { 3, 8 }))
+                return Tuple.Create(false, $"The expected result set was [3,8]. The results returned were [{string.Join(",", parameters)}].");
+
+            return Tuple.Create(true, "");
+        }
+
+        class AddInput
+        {
+            public int Param1 { get; set; }
+            public int Param2 { get; set; }
+            [StoredProcedureParameter(Direction = ParameterDirection.Output)]
+            public int Result { get; set; }
         }
         #endregion
 

@@ -753,11 +753,22 @@ namespace SmokeTests
         #endregion
 
         #region Reference Parameters
-        [SmokeTest("Dynamic Syntax Reference Parameter")]
-        Tuple<bool, string> ExecuteRefParameterSync(IDbConnection db)
+        [SmokeTest("Dynamic Syntax Reference Parameter (ExecuteNonQuery)")]
+        Tuple<bool, string> ExecuteNonQueryRefParameterSync(IDbConnection db)
         {
             int value = 2;
             db.ExecuteNonQuery(Program.timeout).usp_Square(@value: ref value);
+            if (value != 4)
+                return Tuple.Create(false, $"The value was not squared after the stored procedure completed. Expected 4, value is {value}.");
+
+            return Tuple.Create(true, "");
+        }
+
+        [SmokeTest("Dynamic Syntax Reference Parameter (Execute)")]
+        Tuple<bool, string> ExecuteRefParameterSync(IDbConnection db)
+        {
+            int value = 2;
+            db.Execute(Program.timeout).usp_Square(@value: ref value);
             if (value != 4)
                 return Tuple.Create(false, $"The value was not squared after the stored procedure completed. Expected 4, value is {value}.");
 
@@ -770,8 +781,8 @@ namespace SmokeTests
             public int value { get; set; }
         }
 
-        [SmokeTest("Dynamic Syntax Reference Parameter (await)")]
-        async Task<Tuple<bool, string>> ExecuteRefParameterAsync(IDbConnection db)
+        [SmokeTest("Dynamic Syntax Reference Parameter (await ExecuteNonQueryAsync)")]
+        async Task<Tuple<bool, string>> ExecuteNonQueryAsyncRefParameterAsync(IDbConnection db)
         {
             var p = new SquareInput { value = 4 };
             await db.ExecuteNonQueryAsync(Program.timeout).usp_Square(p);
@@ -781,8 +792,8 @@ namespace SmokeTests
             return Tuple.Create(true, "");
         }
 
-        [SmokeTest("Dynamic Syntax Reference Parameter (task)")]
-        Task<Tuple<bool, string>> ExecuteRefParameterTask(IDbConnection db)
+        [SmokeTest("Dynamic Syntax Reference Parameter (task ExecuteNonQueryAsync)")]
+        Task<Tuple<bool, string>> ExecuteNonQueryAsyncRefParameterTask(IDbConnection db)
         {
             var p = new SquareInput { value = 4 };
             Task t = db.ExecuteNonQueryAsync(Program.timeout).usp_Square(p);
@@ -795,6 +806,100 @@ namespace SmokeTests
                 return Tuple.Create(true, "");
 
             });
+        }
+
+        [SmokeTest("Dynamic Syntax Reference Parameter (await ExecuteAsync)")]
+        async Task<Tuple<bool, string>> ExecuteRefParameterAsync(IDbConnection db)
+        {
+            var p = new SquareInput { value = 4 };
+            await db.ExecuteAsync(Program.timeout).usp_Square(p);
+            if (p.value != 16)
+                return Tuple.Create(false, $"The value was not squared after the stored procedure completed. Expected 16, value is {p.value}.");
+
+            return Tuple.Create(true, "");
+        }
+
+        [SmokeTest("Dynamic Syntax Reference Parameter (task ExecuteAsync)")]
+        Task<Tuple<bool, string>> ExecuteRefParameterTask(IDbConnection db)
+        {
+            var p = new SquareInput { value = 4 };
+            Task t = db.ExecuteAsync(Program.timeout).usp_Square(p);
+
+            return t.ContinueWith(r =>
+            {
+                if (p.value != 16)
+                    return Tuple.Create(false, $"The value was not squared after the stored procedure completed. Expected 16, value is {p.value}.");
+
+                return Tuple.Create(true, "");
+
+            });
+        }
+
+        [SmokeTest("Dynamic Syntax Reference Parameter with Results", ignore: true)]
+        Tuple<bool, string> ExecuteRefParameterResultsSync(IDbConnection db)
+        {
+            int value = 18;
+            IEnumerable<int> parameters = db.Execute(Program.timeout).usp_Add(@param1: 3, @param2: 4, @result: out value);
+
+            if (value != 7)
+                return Tuple.Create(false, $"The value was not set after the stored procedure completed. Expected 7, value is {value}.");
+            if (!parameters.SequenceEqual(new[] { 3, 4 }))
+                return Tuple.Create(false, $"Expected the input values to be returned from the stored procedure. Expected [3,4], received [{ string.Join(",", parameters.Select(i => i.ToString())) }]");
+
+            return Tuple.Create(true, "");
+        }
+
+        [SmokeTest("Dynamic Syntax Output Parameter with Results (via input class)")]
+        Tuple<bool, string> ExecuteOutputParameterResultsSync(IDbConnection db)
+        {
+            var input = new AddInput { Param1 = 3, Param2 = 4 };
+            IEnumerable<int> parameters = db.Execute(Program.timeout).usp_Add(input);
+
+            if (input.Result != 7)
+                return Tuple.Create(false, $"The value was not set after the stored procedure completed. Expected 7, value is {input.Result}.");
+            if (!parameters.SequenceEqual(new[] { 3, 4 }))
+                return Tuple.Create(false, $"Expected the input values to be returned from the stored procedure. Expected [3,4], received [{ string.Join(",", parameters.Select(i => i.ToString())) }]");
+
+            return Tuple.Create(true, "");
+        }
+
+        [SmokeTest("Dynamic Syntax Reference Parameter with Results (async)")]
+        async Task<Tuple<bool, string>> ExecuteAsyncRefParameterResultsSync(IDbConnection db)
+        {
+            var input = new AddInput { Param1 = 3, Param2 = 4 };
+            IEnumerable<int> parameters = await db.ExecuteAsync(Program.timeout).usp_Add(input);
+
+            if (input.Result != 7)
+                return Tuple.Create(false, $"The value was not set after the stored procedure completed. Expected 7, value is {input.Result}.");
+            if (!parameters.SequenceEqual(new[] { 3, 4 }))
+                return Tuple.Create(false, $"Expected the input values to be returned from the stored procedure. Expected [3,4], received [{ string.Join(",", parameters.Select(i => i.ToString())) }]");
+
+            return Tuple.Create(true, "");
+        }
+
+        [SmokeTest("Dynamic Syntax Output Parameter with Results (Task)")]
+        Task<Tuple<bool, string>> ExecuteTaskOutputParameterResultsSync(IDbConnection db)
+        {
+            var input = new AddInput { Param1 = 3, Param2 = 4 };
+            Task<IEnumerable<int>> parameters = db.ExecuteAsync(Program.timeout).usp_Add(input);
+
+            return parameters.ContinueWith(r =>
+            {
+                if (input.Result != 7)
+                    return Tuple.Create(false, $"The value was not set after the stored procedure completed. Expected 7, value is {input.Result}.");
+                if (!r.Result.SequenceEqual(new[] { 3, 4 }))
+                    return Tuple.Create(false, $"Expected the input values to be returned from the stored procedure. Expected [3,4], received [{ string.Join(",", r.Result.Select(i => i.ToString())) }]");
+
+                return Tuple.Create(true, "");
+            });
+        }
+
+        class AddInput
+        {
+            public int Param1 { get; set; }
+            public int Param2 { get; set; }
+            [StoredProcedureParameter(Direction = ParameterDirection.Output)]
+            public int Result { get; set; }
         }
         #endregion
     }

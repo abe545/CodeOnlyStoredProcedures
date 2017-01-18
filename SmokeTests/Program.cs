@@ -29,50 +29,71 @@ namespace SmokeTests
             var smokeTests      = container.GetExports<Func<IDbConnection,      Tuple<bool, string>>,  ISmokeTest>();
             var asyncSmokeTests = container.GetExports<Func<IDbConnection, Task<Tuple<bool, string>>>, ISmokeTest>();
 
-            var res  = RunTests(toTest.Database.Connection, smokeTests,      (t, db) => t(db));
-                res &= RunTests(toTest.Database.Connection, asyncSmokeTests, (t, db) => t(db).Result);
+            var res1 = RunTests(toTest.Database.Connection, smokeTests,      (t, db) => t(db));
+            var res2 = RunTests(toTest.Database.Connection, asyncSmokeTests, (t, db) => t(db).Result);
 
             CodeOnlyStoredProcedure.StoredProcedure.DisableConnectionCloningForEachCall();
             toTest.Database.Connection.Open();
 
-            res &= RunTests(toTest.Database.Connection, smokeTests,      (t, db) => t(db),        "No Connection Cloning ");
-            res &= RunTests(toTest.Database.Connection, asyncSmokeTests, (t, db) => t(db).Result, "No Connection Cloning ");
+            var res3 = RunTests(toTest.Database.Connection, smokeTests,      (t, db) => t(db),        "No Connection Cloning ");
+            var res4 = RunTests(toTest.Database.Connection, asyncSmokeTests, (t, db) => t(db).Result, "No Connection Cloning ");
 
-            if (!res)
+            var success = res1.Item1 + res2.Item1 + res3.Item1 + res4.Item1;
+            var ignore = res1.Item2 + res2.Item2 + res3.Item2 + res4.Item2;
+            var fail = res1.Item3 + res2.Item3 + res3.Item3 + res4.Item3;
+
+            if (success > 0)
             {
-                // tests failed
-                Console.ForegroundColor = ConsoleColor.DarkRed;
-                Console.WriteLine("Tests failed!");
-                Exiting();
-                return 1;
+                Console.ForegroundColor = ConsoleColor.DarkGreen;
+                Console.WriteLine($"{success} smoke tests succeeded!");
             }
-
-            Console.ForegroundColor = ConsoleColor.DarkGreen;
-            Console.WriteLine("All tests ran successfully!");
+            if (ignore > 0)
+            {
+                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                Console.WriteLine($"{ignore} smoke tests ignored.");
+            }
+            if (fail > 0)
+            {
+                Console.ForegroundColor = ConsoleColor.DarkRed;
+                Console.WriteLine($"{fail} smoke tests failed!");
+            }
+            
             Exiting();
-
-            return 0;
+            return fail > 0 ? 1 : 0;
         }
 
-        private static bool RunTests<T>(
+        private static Tuple<int, int, int> RunTests<T>(
             IDbConnection db,
             IEnumerable<Lazy<T, ISmokeTest>> tests,
             Func<T, IDbConnection, Tuple<bool, string>> runner,
             string prefix = "")
         {
-            var result = true;
+            int success = 0, ignore = 0, fail = 0;
             foreach (var t in tests)
             {
                 BeginTest(t.Metadata, prefix);
-                var res = runner(t.Value, db);
-                result &= res.Item1;
-                if (res.Item1)
-                    TestSucceeded(t.Metadata, prefix);
+                if (t.Metadata.Ignore)
+                {
+                    TestIgnored(t.Metadata, prefix);
+                    ++ignore;
+                }
                 else
-                    TestFailed(res.Item2, t.Metadata, prefix);
+                {
+                    var res = runner(t.Value, db);
+                    if (res.Item1)
+                    {
+                        TestSucceeded(t.Metadata, prefix);
+                        ++success;
+                    }
+                    else
+                    {
+                        TestFailed(res.Item2, t.Metadata, prefix);
+                        ++fail;
+                    }
+                }
             }
 
-            return result;
+            return Tuple.Create(success, ignore, fail);
         }
 
         [Conditional("DEBUG")]
@@ -107,6 +128,25 @@ namespace SmokeTests
                 var message = BuildAppveyorTestMessage(
                     $"{prefix}{metadata.Name}",
                     AppveyorTestStatus.Passed,
+                    Tuple.Create("durationMilliseconds", testWatch.ElapsedMilliseconds.ToString()));
+                SendAppveyorTestMessage("PUT", message);
+            }
+        }
+
+        private static void TestIgnored(ISmokeTest metadata, string prefix)
+        {
+            if (testWatch != null)
+                testWatch.Stop();
+
+            Console.ForegroundColor = ConsoleColor.DarkYellow;
+            Console.WriteLine("Ignored.");
+            Console.ResetColor();
+
+            if (isInAppveyor)
+            {
+                var message = BuildAppveyorTestMessage(
+                    $"{prefix}{metadata.Name}",
+                    AppveyorTestStatus.Ignored,
                     Tuple.Create("durationMilliseconds", testWatch.ElapsedMilliseconds.ToString()));
                 SendAppveyorTestMessage("PUT", message);
             }

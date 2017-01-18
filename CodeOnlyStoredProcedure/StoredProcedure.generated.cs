@@ -116,6 +116,10 @@ namespace CodeOnlyStoredProcedure
 				using (var reader = cmd.ExecuteReader())
 				{
 					results = T1Factory.ParseRows(reader, DataTransformers, token);
+
+					ReadToEnd(reader, token);
+
+					TransferOutputParameters(token, dbParameters);
 				}
             }
 
@@ -194,7 +198,7 @@ namespace CodeOnlyStoredProcedure
             {
 			    results = await T1Factory.ParseRowsAsync(reader, DataTransformers, token);
 
-                token.ThrowIfCancellationRequested();
+                ReadToEnd(reader, token);
 			    TransferOutputParameters(token, dbParameters);
             }
 
@@ -349,9 +353,9 @@ namespace CodeOnlyStoredProcedure
 					var t2 = T2Factory.ParseRows(reader, DataTransformers, token);
 					results = Tuple.Create(t1, t2);
 
-					token.ThrowIfCancellationRequested();
+					ReadToEnd(reader, token);
 
-					TransferOutputParameters(CancellationToken.None, dbParameters);
+					TransferOutputParameters(token, dbParameters);
 				}
             }
 
@@ -433,7 +437,7 @@ namespace CodeOnlyStoredProcedure
 			var t2 = await T2Factory.ParseRowsAsync(reader, DataTransformers, token);
 			results = Tuple.Create(t1, t2);
 
-                token.ThrowIfCancellationRequested();
+                ReadToEnd(reader, token);
 			    TransferOutputParameters(token, dbParameters);
             }
 
@@ -609,9 +613,9 @@ namespace CodeOnlyStoredProcedure
 					var t3 = T3Factory.ParseRows(reader, DataTransformers, token);
 					results = Tuple.Create(t1, t2, t3);
 
-					token.ThrowIfCancellationRequested();
+					ReadToEnd(reader, token);
 
-					TransferOutputParameters(CancellationToken.None, dbParameters);
+					TransferOutputParameters(token, dbParameters);
 				}
             }
 
@@ -695,7 +699,7 @@ namespace CodeOnlyStoredProcedure
 			var t3 = await T3Factory.ParseRowsAsync(reader, DataTransformers, token);
 			results = Tuple.Create(t1, t2, t3);
 
-                token.ThrowIfCancellationRequested();
+                ReadToEnd(reader, token);
 			    TransferOutputParameters(token, dbParameters);
             }
 
@@ -881,9 +885,9 @@ namespace CodeOnlyStoredProcedure
 					var t4 = T4Factory.ParseRows(reader, DataTransformers, token);
 					results = Tuple.Create(t1, t2, t3, t4);
 
-					token.ThrowIfCancellationRequested();
+					ReadToEnd(reader, token);
 
-					TransferOutputParameters(CancellationToken.None, dbParameters);
+					TransferOutputParameters(token, dbParameters);
 				}
             }
 
@@ -969,7 +973,7 @@ namespace CodeOnlyStoredProcedure
 			var t4 = await T4Factory.ParseRowsAsync(reader, DataTransformers, token);
 			results = Tuple.Create(t1, t2, t3, t4);
 
-                token.ThrowIfCancellationRequested();
+                ReadToEnd(reader, token);
 			    TransferOutputParameters(token, dbParameters);
             }
 
@@ -1165,9 +1169,9 @@ namespace CodeOnlyStoredProcedure
 					var t5 = T5Factory.ParseRows(reader, DataTransformers, token);
 					results = Tuple.Create(t1, t2, t3, t4, t5);
 
-					token.ThrowIfCancellationRequested();
+					ReadToEnd(reader, token);
 
-					TransferOutputParameters(CancellationToken.None, dbParameters);
+					TransferOutputParameters(token, dbParameters);
 				}
             }
 
@@ -1255,7 +1259,7 @@ namespace CodeOnlyStoredProcedure
 			var t5 = await T5Factory.ParseRowsAsync(reader, DataTransformers, token);
 			results = Tuple.Create(t1, t2, t3, t4, t5);
 
-                token.ThrowIfCancellationRequested();
+                ReadToEnd(reader, token);
 			    TransferOutputParameters(token, dbParameters);
             }
 
@@ -1461,9 +1465,9 @@ namespace CodeOnlyStoredProcedure
 					var t6 = T6Factory.ParseRows(reader, DataTransformers, token);
 					results = Tuple.Create(t1, t2, t3, t4, t5, t6);
 
-					token.ThrowIfCancellationRequested();
+					ReadToEnd(reader, token);
 
-					TransferOutputParameters(CancellationToken.None, dbParameters);
+					TransferOutputParameters(token, dbParameters);
 				}
             }
 
@@ -1553,7 +1557,7 @@ namespace CodeOnlyStoredProcedure
 			var t6 = await T6Factory.ParseRowsAsync(reader, DataTransformers, token);
 			results = Tuple.Create(t1, t2, t3, t4, t5, t6);
 
-                token.ThrowIfCancellationRequested();
+                ReadToEnd(reader, token);
 			    TransferOutputParameters(token, dbParameters);
             }
 
@@ -1769,9 +1773,9 @@ namespace CodeOnlyStoredProcedure
 					var t7 = T7Factory.ParseRows(reader, DataTransformers, token);
 					results = Tuple.Create(t1, t2, t3, t4, t5, t6, t7);
 
-					token.ThrowIfCancellationRequested();
+					ReadToEnd(reader, token);
 
-					TransferOutputParameters(CancellationToken.None, dbParameters);
+					TransferOutputParameters(token, dbParameters);
 				}
             }
 
@@ -1863,7 +1867,7 @@ namespace CodeOnlyStoredProcedure
 			var t7 = await T7Factory.ParseRowsAsync(reader, DataTransformers, token);
 			results = Tuple.Create(t1, t2, t3, t4, t5, t6, t7);
 
-                token.ThrowIfCancellationRequested();
+                ReadToEnd(reader, token);
 			    TransferOutputParameters(token, dbParameters);
             }
 

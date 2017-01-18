@@ -24,14 +24,15 @@ namespace CodeOnlyStoredProcedure.Dynamic
                                     .ToDictionary(mi => mi.GetGenericArguments().Count());
             });
 
-        private readonly Task<IDataReader>             resultTask;
-        private readonly Task                          nonQueryTask;
-        private readonly IDbConnection                 connection;
-        private readonly IDbCommand                    command;
-        private readonly IEnumerable<IDataTransformer> transformers;
-        private readonly DynamicExecutionMode          executionMode;
-        private readonly CancellationToken             token;
-        private          bool                          continueOnCaller;
+        private readonly Task<IDataReader>               resultTask;
+        private readonly Task                            nonQueryTask;
+        private readonly IDbConnection                   connection;
+        private readonly IDbCommand                      command;
+        private readonly List<IStoredProcedureParameter> parameters;
+        private readonly IEnumerable<IDataTransformer>   transformers;
+        private readonly DynamicExecutionMode            executionMode;
+        private readonly CancellationToken               token;
+        private          bool                            continueOnCaller;
 
         public DynamicStoredProcedureResults(
             IDbConnection                   connection,
@@ -52,6 +53,7 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
             this.executionMode    = executionMode;
             this.command          = connection.CreateCommand(schema, name, timeout, out this.connection);
+            this.parameters       = parameters;
             this.transformers     = transformers;
             this.token            = token;
             this.continueOnCaller = true;
@@ -90,7 +92,8 @@ namespace CodeOnlyStoredProcedure.Dynamic
                 token.ThrowIfCancellationRequested();
                 var res = command.ExecuteReader();
 
-                TransferOutputParameters(parameters, token);
+                // If there are any result sets, this won't actually have populated the parameters
+                TransferOutputParameters(parameters, token, throwIfNonMatchingTypes: false);
 
                 if (token.IsCancellationRequested)
                 {
@@ -118,7 +121,8 @@ namespace CodeOnlyStoredProcedure.Dynamic
 
                 resultTask = resultTask.ContinueWith(r =>
                 {
-                    TransferOutputParameters(parameters, token);                                       
+                    // If there are any result sets, the parameters won't actually have been set yet
+                    TransferOutputParameters(parameters, token, throwIfNonMatchingTypes: false);
                     return r.Result;
                 }, token);
             }
@@ -144,10 +148,24 @@ namespace CodeOnlyStoredProcedure.Dynamic
             finally
             {
                 if (isSingle)
+                {
+                    ReadToEnd();
                     resultTask.Result.Dispose();
+                }
             }
         }
-        
+
+        private void ReadToEnd()
+        {
+            while (resultTask.Result.NextResult())
+            {
+                while (resultTask.Result.Read())
+                    token.ThrowIfCancellationRequested();
+            }
+
+            TransferOutputParameters(parameters, token);
+        }
+
         private Task ContinueNoResults()
         {
             if (nonQueryTask != null)
@@ -217,6 +235,8 @@ namespace CodeOnlyStoredProcedure.Dynamic
                                            .Invoke(this, new object[] { false });
                 }).ToArray();
 
+                ReadToEnd();
+
                 return (T)tupleCreates.Value[types.Length]
                                       .MakeGenericMethod(types)
                                       .Invoke(null, res);
@@ -256,16 +276,24 @@ namespace CodeOnlyStoredProcedure.Dynamic
             return DynamicStoredProcedureResultsAwaiter.Create(this, nonQueryTask ?? resultTask, continueOnCaller);
         }
 
-        private void TransferOutputParameters(List<IStoredProcedureParameter> parameters, CancellationToken token)
+        private void TransferOutputParameters(List<IStoredProcedureParameter> parameters, CancellationToken token, bool throwIfNonMatchingTypes = true)
         {
             foreach (IDbDataParameter p in command.Parameters)
             {
                 token.ThrowIfCancellationRequested();
                 if (p.Direction != ParameterDirection.Input)
                 {
-                    parameters.OfType<IOutputStoredProcedureParameter>()
-                              .FirstOrDefault(sp => sp.ParameterName == p.ParameterName)
-                             ?.TransferOutputValue(p.Value);
+                    try
+                    {
+                        parameters.OfType<IOutputStoredProcedureParameter>()
+                                  .FirstOrDefault(sp => sp.ParameterName == p.ParameterName)
+                                 ?.TransferOutputValue(p.Value);
+                    }
+                    catch (Exception ex)
+                    {
+                        if (throwIfNonMatchingTypes)
+                            throw new StoredProcedureException($"Error setting the output parameter {p.ParameterName}.", ex);
+                    }
                 }
             }
         }
