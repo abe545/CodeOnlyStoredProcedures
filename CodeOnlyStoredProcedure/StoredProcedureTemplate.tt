@@ -129,6 +129,10 @@ public class StoredProcedureTemplate : Template
 		if (TypeCount == 1)
         {
 			WriteLine("results = T1Factory.ParseRows(reader, DataTransformers, token);");
+			WriteLine("");
+			WriteLine("ReadToEnd(reader, token);");
+			WriteLine("");
+			WriteLine("TransferOutputParameters(token, dbParameters);");
 		    PopIndent();
             WriteLine("}");
 			PopIndent();
@@ -156,9 +160,9 @@ public class StoredProcedureTemplate : Template
 		WriteLine(");");
 		
 		WriteLine("");
-		WriteLine("token.ThrowIfCancellationRequested();");
+		WriteLine("ReadToEnd(reader, token);");
 		WriteLine("");
-		WriteLine("TransferOutputParameters(CancellationToken.None, dbParameters);");
+		WriteLine("TransferOutputParameters(token, dbParameters);");
 
 		PopIndent();
         WriteLine("}");
@@ -419,7 +423,7 @@ public class StoredProcedureTemplate : Template
             {
 			    <#+ WriteReadResultsAsync(); #>
 
-                token.ThrowIfCancellationRequested();
+                ReadToEnd(reader, token);
 			    TransferOutputParameters(token, dbParameters);
             }
 

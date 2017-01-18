@@ -433,5 +433,19 @@ namespace CodeOnlyStoredProcedure
                          ?.TransferOutputValue(parm.Value);
             }
         }
+
+        /// <summary>
+        /// Will read the sql stream to the end, so output parameters can be set.
+        /// </summary>
+        /// <param name="reader">The <see cref="IDataReader"/> used to retrieve results from a stored procedure.</param>
+        /// <param name="token">The <see cref="CancellationToken"/> used to control the lifetime of the execution of the stored procedure.</param>
+        protected void ReadToEnd(IDataReader reader, CancellationToken token)
+        {
+            while (reader.NextResult())
+            {
+                while (reader.Read())
+                    token.ThrowIfCancellationRequested();
+            }
+        }
     }
 }
