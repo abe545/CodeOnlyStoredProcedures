@@ -178,6 +178,63 @@ namespace CodeOnlyTests.RowFactory
             }
 
             [TestMethod]
+            public void ParsesByteArray_AsObject()
+            {
+                var rdr = new Mock<IDataReader>();
+                rdr.Setup(r => r.GetFieldType(0)).Returns(typeof(byte[]));
+                rdr.SetupSequence(r => r.IsDBNull(0))
+                    .Returns(false)
+                    .Returns(true)
+                    .Returns(false);
+                rdr.SetupSequence(r => r.Read())
+                   .Returns(true)
+                   .Returns(true)
+                   .Returns(true)
+                   .Returns(false);
+                rdr.SetupSequence(r => r.GetValue(0))
+                    .Returns(new byte[] { 0 })
+                    .Returns(new byte[] { 1 });
+
+                var toTest = new SimpleTypeRowFactory<byte[]>();
+
+                var res = toTest.ParseRows(rdr.Object, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
+                res.First().Should().ContainSingle().Which.Should().Be(0);
+                res.Skip(1).First().Should().BeNull();
+                res.Last().Should().ContainSingle().Which.Should().Be(1);
+            }
+
+            [TestMethod]
+            public void ParsesByteArray_AsInt_WhenGlobalConvert()
+            {
+                using (GlobalSettings.UseTestInstance())
+                {
+                    GlobalSettings.Instance.ConvertAllNumericValues = true;
+
+                    var rdr = new Mock<IDataReader>();
+                    rdr.Setup(r => r.GetFieldType(0)).Returns(typeof(int));
+                    rdr.SetupSequence(r => r.IsDBNull(0))
+                        .Returns(false)
+                        .Returns(true)
+                        .Returns(false);
+                    rdr.SetupSequence(r => r.Read())
+                       .Returns(true)
+                       .Returns(true)
+                       .Returns(true)
+                       .Returns(false);
+                    rdr.SetupSequence(r => r.GetValue(0))
+                        .Returns(0)
+                        .Returns(1);
+
+                    var toTest = new SimpleTypeRowFactory<byte[]>();
+
+                    var res = toTest.ParseRows(rdr.Object, Enumerable.Empty<IDataTransformer>(), CancellationToken.None);
+                    res.First().Should().ContainInOrder(BitConverter.GetBytes(0));
+                    res.Skip(1).First().Should().BeNull();
+                    res.Last().Should().ContainInOrder(BitConverter.GetBytes(1));
+                }
+            }
+
+            [TestMethod]
             public void HelpfulExceptionWhenColumnWrongType()
             {
                 var reader  = new Mock<IDataReader>();

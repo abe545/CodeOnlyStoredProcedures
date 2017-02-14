@@ -114,6 +114,14 @@ namespace CodeOnlyStoredProcedure.RowFactory
                             else
                                 res = Expression.NotEqual(res, Zero(dbColumnType));
                         }
+                        else if (expectedType == typeof(byte[]))
+                        {
+                            //BitConverter.GetBytes()
+                            res = Expression.Condition(
+                                Expression.Equal(res, Expression.Constant(null)),
+                                Expression.Constant(default(byte[]), typeof(byte[])), 
+                                Expression.Call(null, typeof(BitConverter).GetMethod(nameof(BitConverter.GetBytes), new[] { dbColumnType }), Expression.Property(res, "Value")));
+                        }
                         else
                             res = Expression.Convert(res, type);
                     }

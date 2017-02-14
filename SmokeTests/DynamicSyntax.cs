@@ -704,6 +704,26 @@ namespace SmokeTests
             return Tuple.Create(true, "");
         }
 
+        [SmokeTest("Dynamic Syntax Empty Binary ResultSet")]
+        Tuple<bool, string> ExecutEmptyBinarySync(IDbConnection db)
+        {
+            byte[] res = db.Execute(Program.timeout).usp_GetEmptyBinary(@includeResults: false);
+            if (res != null)
+                return Tuple.Create(false, "The stored procedure returned an empty result set, so should not have a value");
+
+            return Tuple.Create(true, "");
+        }
+
+        [SmokeTest("Dynamic Syntax NULL Binary ResultSet")]
+        Tuple<bool, string> ExecutNullBinarySync(IDbConnection db)
+        {
+            byte[] res = db.Execute(Program.timeout).usp_GetEmptyBinary(@includeResults: true);
+            if (res != null)
+                return Tuple.Create(false, "The stored procedure returned an empty result set, so should not have a value");
+
+            return Tuple.Create(true, "");
+        }
+
         [SmokeTest("Dynamic Syntax Binary ResultSet (await)")]
         async Task<Tuple<bool, string>> ExecuteBinaryAsync(IDbConnection db)
         {
@@ -713,6 +733,26 @@ namespace SmokeTests
 
             if (BitConverter.ToInt32(res, 0) != 42)
                 return Tuple.Create(false, "The bytes returned from the stored procedure did not match the expected results");
+
+            return Tuple.Create(true, "");
+        }
+
+        [SmokeTest("Dynamic Syntax Empty Binary ResultSet (await)")]
+        async Task<Tuple<bool, string>> ExecutEmptyBinaryAsync(IDbConnection db)
+        {
+            byte[] res = await db.ExecuteAsync(Program.timeout).usp_GetEmptyBinary(@includeResults: false);
+            if (res != null)
+                return Tuple.Create(false, "The stored procedure returned an empty result set, so should not have a value");
+
+            return Tuple.Create(true, "");
+        }
+
+        [SmokeTest("Dynamic Syntax NULL Binary ResultSet (await)")]
+        async Task<Tuple<bool, string>> ExecutNullBinaryAsync(IDbConnection db)
+        {
+            byte[] res = await db.ExecuteAsync(Program.timeout).usp_GetEmptyBinary(@includeResults: true);
+            if (res != null)
+                return Tuple.Create(false, "The stored procedure returned an empty result set, so should not have a value");
 
             return Tuple.Create(true, "");
         }
@@ -734,6 +774,36 @@ namespace SmokeTests
 
                 return Tuple.Create(true, "");
 
+            });
+        }
+
+        [SmokeTest("Dynamic Syntax Empty Binary ResultSet (task)")]
+        Task<Tuple<bool, string>> ExecutEmptyBinaryTask(IDbConnection db)
+        {
+            Task<byte[]> t = db.ExecuteAsync(Program.timeout).usp_GetEmptyBinary(@includeResults: false);
+
+            return t.ContinueWith(r =>
+            {
+                var res = t.Result;
+                if (res != null)
+                    return Tuple.Create(false, "The stored procedure returned an empty result set, so should not have a value");
+
+                return Tuple.Create(true, "");
+            });
+        }
+
+        [SmokeTest("Dynamic Syntax NULL Binary ResultSet (task)")]
+        Task<Tuple<bool, string>> ExecutNullBinaryTask(IDbConnection db)
+        {
+            Task<byte[]> t = db.ExecuteAsync(Program.timeout).usp_GetEmptyBinary(@includeResults: true);
+
+            return t.ContinueWith(r =>
+            {
+                var res = t.Result;
+                if (res != null)
+                    return Tuple.Create(false, "The stored procedure returned an empty result set, so should not have a value");
+
+                return Tuple.Create(true, "");
             });
         }
 
