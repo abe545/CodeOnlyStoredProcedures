@@ -977,6 +977,36 @@ namespace SmokeTests
             return Tuple.Create(true, "");
         }
 
+        [SmokeTest("Fluent Syntax Empty Binary ResultSet")]
+        Tuple<bool, string> ExecuteEmptyBinarySync(IDbConnection db)
+        {
+            byte[] res = StoredProcedure.Create("usp_GetEmptyBinary")
+                                        .WithParameter("includeResults", false)
+                                        .WithResults<byte[]>()
+                                        .Execute(db, Program.timeout)
+                                        .SingleOrDefault();
+
+            if (res != null)
+                return Tuple.Create(false, "The bytes returned from the stored procedure were not null");
+
+            return Tuple.Create(true, "");
+        }
+
+        [SmokeTest("Fluent Syntax NULL Binary ResultSet")]
+        Tuple<bool, string> ExecuteNullBinarySync(IDbConnection db)
+        {
+            byte[] res = StoredProcedure.Create("usp_GetEmptyBinary")
+                                        .WithParameter("includeResults", true)
+                                        .WithResults<byte[]>()
+                                        .Execute(db, Program.timeout)
+                                        .Single();
+
+            if (res != null)
+                return Tuple.Create(false, "The bytes returned from the stored procedure were not null");
+
+            return Tuple.Create(true, "");
+        }
+
         [SmokeTest("Fluent Syntax Binary ResultSet (await)")]
         async Task<Tuple<bool, string>> ExecuteBinaryAsync(IDbConnection db)
         {
@@ -990,6 +1020,36 @@ namespace SmokeTests
 
             if (BitConverter.ToInt32(res, 0) != 42)
                 return Tuple.Create(false, "The bytes returned from the stored procedure did not match the expected results");
+
+            return Tuple.Create(true, "");
+        }
+
+        [SmokeTest("Fluent Syntax Empty Binary ResultSet (await)")]
+        async Task<Tuple<bool, string>> ExecuteEmptyBinaryAsync(IDbConnection db)
+        {
+            byte[] res = (await StoredProcedure.Create("usp_GetEmptyBinary")
+                                               .WithParameter("includeResults", false)
+                                               .WithResults<byte[]>()
+                                               .ExecuteAsync(db, Program.timeout))
+                                               .SingleOrDefault();
+
+            if (res != null)
+                return Tuple.Create(false, "The bytes returned from the stored procedure were not null");
+
+            return Tuple.Create(true, "");
+        }
+
+        [SmokeTest("Fluent Syntax NULL Binary ResultSet (await)")]
+        async Task<Tuple<bool, string>> ExecuteNullBinaryAsync(IDbConnection db)
+        {
+            byte[] res = (await StoredProcedure.Create("usp_GetEmptyBinary")
+                                               .WithParameter("includeResults", true)
+                                               .WithResults<byte[]>()
+                                               .ExecuteAsync(db, Program.timeout))
+                                               .Single();
+
+            if (res != null)
+                return Tuple.Create(false, "The bytes returned from the stored procedure were not null");
 
             return Tuple.Create(true, "");
         }
@@ -1014,6 +1074,44 @@ namespace SmokeTests
 
                 return Tuple.Create(true, "");
 
+            });
+        }
+
+        [SmokeTest("Fluent Syntax Empty Binary ResultSet (task)")]
+        Task<Tuple<bool, string>> ExecuteEmptyBinaryTask(IDbConnection db)
+        {
+            var t = StoredProcedure.Create("usp_GetEmptyBinary")
+                                   .WithParameter("includeResults", false)
+                                   .WithResults<byte[]>()
+                                   .ExecuteAsync(db, Program.timeout);
+
+            return t.ContinueWith(r =>
+            {
+                var res = r.Result.SingleOrDefault();
+
+                if (res != null)
+                    return Tuple.Create(false, "The bytes returned from the stored procedure were not null");
+
+                return Tuple.Create(true, "");
+            });
+        }
+
+        [SmokeTest("Fluent Syntax NULL Binary ResultSet")]
+        Task<Tuple<bool, string>> ExecuteNullBinaryTask(IDbConnection db)
+        {
+            var t = StoredProcedure.Create("usp_GetEmptyBinary")
+                                   .WithParameter("includeResults", true)
+                                   .WithResults<byte[]>()
+                                   .ExecuteAsync(db, Program.timeout);
+
+            return t.ContinueWith(r =>
+            {
+                var res = r.Result.Single();
+
+                if (res != null)
+                    return Tuple.Create(false, "The bytes returned from the stored procedure were not null");
+
+                return Tuple.Create(true, "");
             });
         }
 
