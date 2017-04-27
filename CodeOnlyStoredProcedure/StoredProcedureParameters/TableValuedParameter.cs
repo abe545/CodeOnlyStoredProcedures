@@ -25,6 +25,9 @@ namespace CodeOnlyStoredProcedure
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
             Contract.Requires(data != null);
 
+            if (string.IsNullOrWhiteSpace(data.TableName))
+                throw new NotSupportedException("When passing a DataTable, either set its TypeName to the TVP's type, or pass it in as one of the parameters.");
+
             ParameterName = name;
             this.data = data;
             this.TypeName = data.TableName;

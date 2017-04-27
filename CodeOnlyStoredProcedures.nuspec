@@ -12,6 +12,7 @@ Code Only Stored Procedures will not create any Stored Procedures on your databa
         <releaseNotes>2.4.0
 Added support for binary blobs for both results and parameters by using a byte array.
 Fixes bug where output parameters can not be used if the stored procedure returns results.
+Added support for using DataTable to pass a Table-Valued Parameter
             
 2.3.0
 Can now opt in to not clone the database connection before executing a StoredProcedure.

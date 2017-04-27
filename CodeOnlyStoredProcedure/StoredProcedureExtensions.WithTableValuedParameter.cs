@@ -96,6 +96,30 @@ namespace CodeOnlyStoredProcedure
         /// <typeparam name="TSP">The type of <see cref="StoredProcedure"/> to associate the Table Valued Parameter with.</typeparam>
         /// <param name="sp">The <see cref="StoredProcedure"/> to clone.</param>
         /// <param name="name">The name of the Table Valued Parameter in the stored procedure.</param>
+        /// <param name="table">The <see cref="DataTable"/>  to pass in the Table Valued Parameter. Make sure the <see cref="DataTable.TableName"/> is set,
+        /// as that will be used to identify the TVP's type in the database.</param>
+        /// <returns>A copy of the <see cref="StoredProcedure"/> that has the Table Valued Parameter set.</returns>
+        /// <remarks>StoredProcedures are immutable, so all the Fluent API methods return copies.</remarks>
+        public static TSP WithTableValuedParameter<TSP>(this TSP sp,
+            string name,
+            DataTable table)
+            where TSP : StoredProcedure
+        {
+            Contract.Requires(sp != null);
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Requires(table != null);
+            Contract.Ensures(Contract.Result<TSP>() != null);
+
+            return (TSP)sp.CloneWith(new TableValuedParameter(name, table));
+        }
+
+        /// <summary>
+        /// Clones the given <see cref="StoredProcedure"/>, and associates the <see cref="DataTable"/> items
+        /// as a Table Valued Parameter.
+        /// </summary>
+        /// <typeparam name="TSP">The type of <see cref="StoredProcedure"/> to associate the Table Valued Parameter with.</typeparam>
+        /// <param name="sp">The <see cref="StoredProcedure"/> to clone.</param>
+        /// <param name="name">The name of the Table Valued Parameter in the stored procedure.</param>
         /// <param name="table">The <see cref="DataTable"/>  to pass in the Table Valued Parameter.</param>
         /// <param name="tableTypeName">The name of the table that the database's stored procedure expects
         /// in its Table Valued Parameter.</param>
