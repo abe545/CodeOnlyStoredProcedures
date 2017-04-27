@@ -358,6 +358,39 @@ namespace CodeOnlyTests.Dynamic
             }
 
             [TestMethod]
+            public void CanPassDataTable_AsTableValuedParameter()
+            {
+                var reader = new Mock<IDataReader>();
+                reader.SetupGet(r => r.FieldCount).Returns(0);
+                reader.Setup(r => r.Read()).Returns(false);
+
+                var parms = new DataParameterCollection();
+                var cmd = new Mock<IDbCommand>();
+                cmd.SetupAllProperties();
+                cmd.Setup(c => c.ExecuteReader()).Returns(reader.Object);
+                cmd.SetupGet(c => c.Parameters).Returns(parms);
+                cmd.Setup(c => c.CreateParameter()).Returns(new SqlParameter());
+
+                var ctx = new Mock<IDbConnection>();
+                ctx.Setup(c => c.CreateCommand()).Returns(cmd.Object);
+
+                var dt = new DataTable();
+                dt.TableName = "[dbo].[Person]";
+                dt.Columns.Add("FirstName");
+                dt.Rows.Add("Foo");
+                dt.Rows.Add("Bar");
+
+                dynamic toTest = new DynamicStoredProcedure(ctx.Object, transformers, CancellationToken.None, TEST_TIMEOUT, DynamicExecutionMode.Synchronous, true);
+
+                toTest.usp_AddPeople(people: dt);
+
+                var p = parms.OfType<SqlParameter>().Single();
+                p.ParameterName.Should().Be("people", "because that was the argument name");
+                p.SqlDbType.Should().Be(SqlDbType.Structured, "because it is a table-valued parameter");
+                p.TypeName.Should().Be("[dbo].[Person]", "because that is the name of the TableName set on the DataTable being passed as a TVP");
+            }
+
+            [TestMethod]
             public void CanPassNullParameter()
             {
                 var ctx = CreatePeople(parms =>
