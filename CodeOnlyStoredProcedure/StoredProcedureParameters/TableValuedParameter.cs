@@ -13,10 +13,24 @@ namespace CodeOnlyStoredProcedure
     {
         private readonly IEnumerable values;
         private readonly Type        valueType;
+        private readonly DataTable   data;
 
         public   string ParameterName { get; }
-        public   object Value         { get { return values; } }
+        public   object Value         { get { return data as object ?? values; } }
+
         internal string TypeName      { get; }
+
+        public TableValuedParameter(string name, DataTable data, string tableTypeName, string tableTypeSchema = "dbo")
+        {
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Requires(data != null);
+            Contract.Requires(!string.IsNullOrWhiteSpace(tableTypeName));
+            Contract.Requires(!string.IsNullOrWhiteSpace(tableTypeSchema));
+
+            ParameterName = name;
+            this.data     = data;
+            this.TypeName = $"[{tableTypeSchema}].[{tableTypeName}]";
+        }
 
         public TableValuedParameter(string name, IEnumerable values, Type valueType, string tableTypeName, string tableTypeSchema = "dbo")
         {
@@ -43,7 +57,9 @@ namespace CodeOnlyStoredProcedure
             parm.SqlDbType     = SqlDbType.Structured;
             parm.TypeName      = TypeName;
 
-            if (values.Cast<object>().Any())
+            if (data != null)
+                parm.Value = data;
+            else if (values.Cast<object>().Any())
                 parm.Value = CrateValuedParameter(values, valueType);
 
             return parm;
@@ -51,11 +67,17 @@ namespace CodeOnlyStoredProcedure
 
         public override string ToString()
         {
+            if (data != null)
+                return $"@{ParameterName.FormatParameterName()} = DataTable ({data.Rows.Count} items)";
+
             return $"@{ParameterName.FormatParameterName()} = IEnumerable<{valueType}> ({GetValueCount()} items)";
         }
 
         private int GetValueCount()
         {
+            if (data != null)
+                return data.Rows.Count;
+
             int i = 0;
             foreach (var o in values)
                 ++i;
@@ -86,9 +108,10 @@ namespace CodeOnlyStoredProcedure
             }
 
             // copy the input list into a list of SqlDataRecords
+            var columns = columnList.ToArray();
             foreach (var row in table)
             {
-                var record = new SqlDataRecord(columnList.ToArray());
+                var record = new SqlDataRecord(columns);
                 for (int i = 0; i < columnList.Count; i++)
                 {
                     // locate the value of the matching property

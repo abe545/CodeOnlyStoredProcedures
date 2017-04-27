@@ -53,6 +53,30 @@ namespace CodeOnlyTests.StoredProcedureParameters
         }
 
         [TestMethod]
+        public void SetsConstructorDataTableOnParameter()
+        {
+            var cmd = new Mock<IDbCommand>();
+            cmd.Setup(c => c.CreateParameter()).Returns(new SqlParameter());
+            var dt = new DataTable();
+            dt.Columns.Add("Int", typeof(int));
+            dt.Rows.Add(42);
+
+            var toTest = new TableValuedParameter("Foo", dt, "CustomInt", "Schema");
+
+            var res = toTest.CreateDbDataParameter(cmd.Object);
+
+            res.DbType.Should().Be(DbType.Object, "table valued parameters pass DbType.Object");
+            res.ParameterName.Should().Be("Foo", "it was passed in the constructor");
+            res.Direction.Should().Be(ParameterDirection.Input, "it is an input parameter");
+
+            var typed = res.Should().BeOfType<SqlParameter>().Which;
+
+            typed.SqlDbType.Should().Be(SqlDbType.Structured, "table valued parameters are Structured");
+            typed.TypeName.Should().Be("[Schema].[CustomInt]", "it was passed in the constructor");
+            typed.Value.Should().Be(dt);
+        }
+
+        [TestMethod]
         public void IgnoresSetOnlyProperties()
         {
             var cmd = new Mock<IDbCommand>();
@@ -84,10 +108,32 @@ namespace CodeOnlyTests.StoredProcedureParameters
         }
 
         [TestMethod]
+        public void ToStringRepresentsTheDataTableParameter()
+        {
+            var dt = new DataTable();
+            dt.Columns.Add("Int", typeof(int));
+            dt.Rows.Add(42);
+
+            new TableValuedParameter("Foo", dt, "CustomInt", "Schema").ToString()
+                .Should().Be("@Foo = DataTable (1 items)");
+        }
+
+        [TestMethod]
         public void ToStringDoesNotDisplayExtraAts()
         {
             new TableValuedParameter("@Foo", new[] { new TVP(42) }, typeof(TVP), "CustomInt", "Schema").ToString()
                 .Should().Be(string.Format("@Foo = IEnumerable<{0}> (1 items)", typeof(TVP)));
+        }
+
+        [TestMethod]
+        public void ToStringDoesNotDisplayExtraAtsDataTable()
+        {
+            var dt = new DataTable();
+            dt.Columns.Add("Int", typeof(int));
+            dt.Rows.Add(42);
+
+            new TableValuedParameter("@Foo", dt, "CustomInt", "Schema").ToString()
+                .Should().Be("@Foo = DataTable (1 items)");
         }
 
         [TestMethod]
