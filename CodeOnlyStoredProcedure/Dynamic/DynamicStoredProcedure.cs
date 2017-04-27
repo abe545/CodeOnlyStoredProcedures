@@ -134,6 +134,8 @@ namespace CodeOnlyStoredProcedure.Dynamic
                                                      attr.Schema));
                     }
                 }
+                else if (argType == typeof(DataTable))
+                    parameters.Add(new TableValuedParameter(parmName, (DataTable)arg));
                 else if (dbType == DbType.Object)
                     parameters.AddRange(argType.GetParameters(arg));
                 else if (direction == ParameterDirection.Output)

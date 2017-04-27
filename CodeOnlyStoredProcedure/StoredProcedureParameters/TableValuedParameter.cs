@@ -20,6 +20,16 @@ namespace CodeOnlyStoredProcedure
 
         internal string TypeName      { get; }
 
+        public TableValuedParameter(string name, DataTable data)
+        {
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Requires(data != null);
+
+            ParameterName = name;
+            this.data = data;
+            this.TypeName = data.TableName;
+        }
+
         public TableValuedParameter(string name, DataTable data, string tableTypeName, string tableTypeSchema = "dbo")
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
